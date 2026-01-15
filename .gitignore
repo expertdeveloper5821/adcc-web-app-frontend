@@ -1,2 +1,26 @@
 .env
 /node_modules
+# vite
+/vite.config.ts
+
+#build
+/build
+
+# tsconfig
+/tsconfig.json
+/tsconfig.node.json
+
+# lock files
+*.lock.json
+
+# gitignore
+.gitignore
+
+# yarn
+yarn.lock
+
+# readme
+/README.md
+
+# license
+/LICENSE
