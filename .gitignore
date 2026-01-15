@@ -10,8 +10,8 @@
 /tsconfig.json
 /tsconfig.node.json
 
-# lock files
-*.lock.json
+# lock files (package-lock.json should be committed)
+# *.lock.json - removed to allow package-lock.json to be tracked
 
 # gitignore
 .gitignore
