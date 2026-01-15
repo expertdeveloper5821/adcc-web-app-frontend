@@ -196,7 +196,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
         </div>
         {canCreate && (
           <button
-            onClick={() => navigate('community-create')}
+            onClick={() => navigate('community-create', { editingCommunity: undefined, selectedCommunityId: undefined })}
             className="flex items-center gap-2 px-6 py-3 rounded-lg text-white transition-all hover:shadow-lg"
             style={{ backgroundColor: '#C12D32' }}
           >

@@ -56,9 +56,10 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
     },
   });
 
-  // Check if we're in edit mode and load community data
+  // Check if we're in edit mode and load community data, or reset to create mode
   useEffect(() => {
     if (editingCommunity && propCommunityId) {
+      // Edit mode: populate form with existing data
       setIsEditMode(true);
       setCommunityId(propCommunityId);
       
@@ -88,6 +89,29 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
       if (editingCommunity.image) {
         setImagePreview(editingCommunity.image);
       }
+    } else {
+      // Create mode: reset form to default values
+      setIsEditMode(false);
+      setCommunityId(null);
+      setSelectedCategories([]);
+      setImagePreview(null);
+      setValidationErrors({});
+      setCategorySearchTerm('');
+      
+      // Reset form to default values
+      reset({
+        title: '',
+        description: '',
+        type: 'city',
+        category: [],
+        location: 'Abu Dhabi',
+        city: 'Abu Dhabi',
+        image: '',
+        trackName: '',
+        distance: undefined,
+        terrain: 'Paved Road',
+        isActive: true,
+      });
     }
   }, [editingCommunity, propCommunityId, reset]);
 
@@ -154,7 +178,7 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
     return Object.keys(newErrors).length === 0;
   };
 
-  const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.8): Promise<string> => {
+  const compressImage = (file: File, maxWidth: number = 1200, maxHeight: number = 1200, quality: number = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
       // Check file size first (max 10MB before compression)
       const maxFileSize = 10 * 1024 * 1024; // 10MB
@@ -171,7 +195,7 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
           let width = img.width;
           let height = img.height;
 
-          // Calculate new dimensions
+          // Calculate new dimensions - reduced max size to prevent large payloads
           if (width > height) {
             if (width > maxWidth) {
               height = (height * maxWidth) / width;
@@ -196,18 +220,36 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
           // Draw and compress
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Convert to base64 with compression
-          const base64String = canvas.toDataURL('image/jpeg', quality);
+          // Target max base64 size: 500KB (to stay well under typical 1MB limits)
+          const maxBase64Size = 500 * 1024; // 500KB
+          let currentQuality = quality;
+          let base64String = canvas.toDataURL('image/jpeg', currentQuality);
           
-          // Check if compressed size is still too large (max 2MB base64)
-          const base64Size = base64String.length * 0.75; // Approximate byte size
-          if (base64Size > 2 * 1024 * 1024) {
-            // Try with lower quality
-            const lowerQualityBase64 = canvas.toDataURL('image/jpeg', 0.6);
-            resolve(lowerQualityBase64);
-          } else {
-            resolve(base64String);
+          // Iteratively reduce quality until we're under the size limit
+          let attempts = 0;
+          const maxAttempts = 5;
+          while (base64String.length > maxBase64Size && attempts < maxAttempts) {
+            currentQuality -= 0.1;
+            if (currentQuality < 0.3) {
+              currentQuality = 0.3; // Don't go below 30% quality
+              break;
+            }
+            base64String = canvas.toDataURL('image/jpeg', currentQuality);
+            attempts++;
           }
+          
+          // Final check - if still too large, reduce dimensions
+          if (base64String.length > maxBase64Size) {
+            // Reduce dimensions by 20% and try again
+            width = Math.floor(width * 0.8);
+            height = Math.floor(height * 0.8);
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            base64String = canvas.toDataURL('image/jpeg', 0.5);
+          }
+          
+          resolve(base64String);
         };
         img.onerror = () => reject(new Error('Failed to load image'));
         img.src = e.target?.result as string;
@@ -237,13 +279,13 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
         setIsCompressingImage(true);
         const compressedBase64 = await compressImage(file);
         
-        // Check final size (max 2MB base64 string)
-        const base64Size = compressedBase64.length * 0.75; // Approximate byte size
-        if (base64Size > 2 * 1024 * 1024) {
-          setValidationErrors(prev => ({ ...prev, image: 'Image is too large even after compression. Please use a smaller image.' }));
-          setIsCompressingImage(false);
-          return;
-        }
+      // Check final size (max 500KB base64 string to prevent payload errors)
+      const base64Size = compressedBase64.length * 0.75; // Approximate byte size
+      if (base64Size > 500 * 1024) {
+        setValidationErrors(prev => ({ ...prev, image: 'Image is too large even after compression. Please use a smaller image (max 500KB).' }));
+        setIsCompressingImage(false);
+        return;
+      }
 
         setImagePreview(compressedBase64);
         setValue('image', compressedBase64);
@@ -315,13 +357,13 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
       const terrain = (formData.terrain || currentValues.terrain || '').toString().trim();
       const distance = formData.distance !== undefined ? formData.distance : (currentValues.distance !== undefined ? currentValues.distance : undefined);
 
-      // Check image size before sending (max 2MB base64)
+      // Check image size before sending (max 500KB base64 to prevent payload errors)
       if (image) {
         const base64Size = image.length * 0.75; // Approximate byte size
-        if (base64Size > 2 * 1024 * 1024) {
-          setValidationErrors(prev => ({ ...prev, image: 'Image is too large. Please use a smaller image.' }));
+        if (base64Size > 500 * 1024) {
+          setValidationErrors(prev => ({ ...prev, image: 'Image is too large. Maximum size is 500KB after compression.' }));
           setIsLoading(false);
-          toast.error('Image is too large. Please compress or use a smaller image.');
+          toast.error('Image is too large. Please use a smaller image (max 500KB).');
           return;
         }
         communityData.image = image;
@@ -363,6 +405,14 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
       }
     } catch (error: any) {
       console.error('Error saving community:', error);
+      
+      // Handle payload too large error specifically
+      if (error?.response?.status === 413 || error?.message?.includes('PayloadTooLargeError') || error?.message?.includes('request entity too large')) {
+        setValidationErrors(prev => ({ ...prev, image: 'Image is too large. Please use a smaller image or contact support.' }));
+        toast.error('Image file is too large. Please use a smaller image (under 500KB).');
+        setIsLoading(false);
+        return;
+      }
       
       // Handle validation errors from API
       if (error?.response?.status === 400 || error?.response?.status === 422) {
@@ -780,7 +830,7 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
                         {isCompressingImage ? 'Compressing image...' : imagePreview ? 'Change image' : 'Upload community image'}
                       </p>
                       <p className="text-xs mt-1" style={{ color: '#999' }}>
-                        PNG, JPG - Max 10MB (will be compressed automatically)
+                        PNG, JPG - Max 10MB (will be compressed to max 500KB)
                       </p>
                     </label>
                     <input

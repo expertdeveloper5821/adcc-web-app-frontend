@@ -61,6 +61,14 @@ api.interceptors.response.use(
       fullError: error,
     });
     
+    // Handle payload too large error
+    if (error.response?.status === 413 || 
+        error.message?.includes('PayloadTooLargeError') || 
+        error.message?.includes('request entity too large')) {
+      console.error('⚠️ Payload Too Large - Request body exceeds server limit');
+      error.isPayloadTooLarge = true;
+    }
+    
     if (error.response?.status === 401) {
       console.warn('⚠️ Unauthorized - Removing token');
       // Handle unauthorized access
