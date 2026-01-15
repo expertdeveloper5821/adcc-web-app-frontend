@@ -9,6 +9,10 @@
       include: ['react', 'react-dom', 'react/jsx-runtime', 'react-router-dom'],
       force: true,
     },
+    preview: {
+      host: '0.0.0.0',
+      allowedHosts: ['all']
+    },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
