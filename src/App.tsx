@@ -37,6 +37,7 @@ export interface AppState {
   selectedEventId?: string;
   selectedCommunityId?: string;
   selectedTrackId?: string;
+  editingCommunity?: any;
 }
 
 function DashboardRoutes() {
@@ -76,7 +77,7 @@ function DashboardRoutes() {
       case 'communities':
         return <CommunitiesList navigate={navigate} role={state.currentRole} />;
       case 'community-create':
-        return <CommunityCreate navigate={navigate} />;
+        return <CommunityCreate navigate={navigate} editingCommunity={state.editingCommunity} communityId={state.selectedCommunityId} />;
       case 'community-detail':
         return <CommunityDetail communityId={state.selectedCommunityId || '1'} navigate={navigate} />;
       case 'tracks':
