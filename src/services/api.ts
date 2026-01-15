@@ -2,10 +2,10 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-console.log('🔧 API Configuration:', {
-  baseURL: BASE_URL,
-  timestamp: new Date().toISOString(),
-});
+// console.log('🔧 API Configuration:', {
+//   baseURL: BASE_URL,
+//   timestamp: new Date().toISOString(),
+// });
 
 export const api = axios.create({
   baseURL: BASE_URL,
