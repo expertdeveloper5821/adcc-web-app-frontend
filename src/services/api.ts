@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Create axios instance with base configuration
-const BASE_URL = 'https://adcc-b4f3.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 console.log('🔧 API Configuration:', {
   baseURL: BASE_URL,
   timestamp: new Date().toISOString(),
@@ -60,6 +60,14 @@ api.interceptors.response.use(
       data: error.response?.data,
       fullError: error,
     });
+    
+    // Handle payload too large error
+    if (error.response?.status === 413 || 
+        error.message?.includes('PayloadTooLargeError') || 
+        error.message?.includes('request entity too large')) {
+      console.error('⚠️ Payload Too Large - Request body exceeds server limit');
+      error.isPayloadTooLarge = true;
+    }
     
     if (error.response?.status === 401) {
       console.warn('⚠️ Unauthorized - Removing token');
