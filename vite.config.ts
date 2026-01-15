@@ -11,7 +11,7 @@
     },
     preview: {
       host: '0.0.0.0',
-      allowedHosts: ['all']
+      allowedHosts: ['adcc-web-app-frontend.onrender.com']
     },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
