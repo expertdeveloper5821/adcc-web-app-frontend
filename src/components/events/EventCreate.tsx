@@ -23,13 +23,114 @@ export function EventCreate({ navigate }: EventCreateProps) {
     youtubeLink: '',
   });
 
-  const handleImageUpload = (field: 'mainImage' | 'eventImage', file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setFormData({ ...formData, [field]: base64String });
-    };
-    reader.readAsDataURL(file);
+  // Helper function to compress and resize image before converting to base64
+  // More aggressive compression to prevent payload too large errors
+  const compressImage = (file: File, maxWidth: number = 1200, maxHeight: number = 800, maxBase64Size: number = 500 * 1024): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        reject(new Error('Please select a valid image file'));
+        return;
+      }
+
+      // Validate file size (max 10MB before compression)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        reject(new Error('Image size should be less than 10MB'));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Calculate new dimensions (more aggressive resizing)
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            } else {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          // Create canvas and compress
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          if (!ctx) {
+            reject(new Error('Failed to create canvas context'));
+            return;
+          }
+
+          // Use better image rendering
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Always convert to JPEG for better compression, regardless of input format
+          // Try different quality levels until we get under the size limit
+          const qualities = [0.7, 0.5, 0.4, 0.3, 0.2, 0.15];
+          let bestBase64 = '';
+          let bestSize = Infinity;
+
+          for (const quality of qualities) {
+            // Always use JPEG format for maximum compression
+            const base64String = canvas.toDataURL('image/jpeg', quality);
+            // Base64 string size is approximately 4/3 of the original size
+            const base64Size = (base64String.length * 3) / 4;
+            
+            if (base64Size <= maxBase64Size) {
+              resolve(base64String);
+              return;
+            }
+            
+            // Keep track of the smallest we've seen
+            if (base64Size < bestSize) {
+              bestSize = base64Size;
+              bestBase64 = base64String;
+            }
+          }
+
+          // If we still couldn't get under the limit, use the best we have
+          // but warn the user
+          if (bestBase64) {
+            console.warn(`Image compressed to ${Math.round(bestSize / 1024)}KB, which may still be large`);
+            resolve(bestBase64);
+          } else {
+            reject(new Error('Image is too large even after compression. Please use a smaller image.'));
+          }
+        };
+        img.onerror = () => {
+          reject(new Error('Failed to load image'));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (field: 'mainImage' | 'eventImage', file: File) => {
+    try {
+      // Compress and convert to base64
+      const base64String = await compressImage(file);
+      
+      // Update form data with base64 string
+      setFormData((prev) => ({ ...prev, [field]: base64String }));
+      toast.success('Image converted to base64 successfully');
+    } catch (error: any) {
+      console.error('Error processing image:', error);
+      toast.error(error.message || 'Failed to process image. Please try a smaller image.');
+    }
   };
 
   const handleSubmit = async (status: 'Draft' | 'Published') => {
@@ -38,16 +139,44 @@ export function EventCreate({ navigate }: EventCreateProps) {
       return;
     }
 
+    // Validate image sizes before submitting (max 500KB per image in base64)
+    const maxImageSize = 500 * 1024; // 500KB
+    if (formData.mainImage) {
+      const mainImageSize = (formData.mainImage.length * 3) / 4; // Approximate actual size
+      if (mainImageSize > maxImageSize) {
+        toast.error(`Main image is too large (${Math.round(mainImageSize / 1024)}KB). Please use a smaller image.`);
+        return;
+      }
+    }
+    if (formData.eventImage) {
+      const eventImageSize = (formData.eventImage.length * 3) / 4; // Approximate actual size
+      if (eventImageSize > maxImageSize) {
+        toast.error(`Event image is too large (${Math.round(eventImageSize / 1024)}KB). Please use a smaller image.`);
+        return;
+      }
+    }
+
+    // Check total payload size (max 1MB for both images combined)
+    const totalImageSize = 
+      (formData.mainImage ? (formData.mainImage.length * 3) / 4 : 0) +
+      (formData.eventImage ? (formData.eventImage.length * 3) / 4 : 0);
+    
+    if (totalImageSize > 1024 * 1024) { // 1MB total
+      toast.error('Combined image size is too large. Please reduce image sizes or remove one image.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Map status to API format
       const apiStatus = status === 'Published' ? 'upcoming' : 'upcoming'; // API uses: upcoming, ongoing, completed, cancelled
       
+      // Prepare event data with base64 images
       const eventData: Partial<EventApiResponse> = {
         title: formData.title,
         description: formData.description,
-        mainImage: formData.mainImage || undefined,
-        eventImage: formData.eventImage || undefined,
+        mainImage: formData.mainImage ? formData.mainImage : undefined,
+        eventImage: formData.eventImage ? formData.eventImage : undefined,
         eventDate: formData.eventDate,
         eventTime: formData.eventTime,
         address: formData.address,
@@ -58,12 +187,40 @@ export function EventCreate({ navigate }: EventCreateProps) {
         status: apiStatus,
       };
 
+      // Log image sizes and base64 URLs for debugging
+      if (eventData.mainImage) {
+        const mainImageSize = Math.round(((eventData.mainImage.length * 3) / 4) / 1024);
+        console.log(`Main image base64 size: ~${mainImageSize}KB`);
+        console.log('Main Image Base64 URL:', eventData.mainImage);
+        console.log('Main Image Base64 URL (first 100 chars):', eventData.mainImage.substring(0, 100) + '...');
+      }
+      if (eventData.eventImage) {
+        const eventImageSize = Math.round(((eventData.eventImage.length * 3) / 4) / 1024);
+        console.log(`Event image base64 size: ~${eventImageSize}KB`);
+        console.log('Event Image Base64 URL:', eventData.eventImage);
+        console.log('Event Image Base64 URL (first 100 chars):', eventData.eventImage.substring(0, 100) + '...');
+      }
+
+      // Log the complete event data being sent to backend
+      console.log('📤 Sending event data to backend:', {
+        ...eventData,
+        mainImage: eventData.mainImage ? `${eventData.mainImage.substring(0, 50)}... (${Math.round(eventData.mainImage.length / 1024)}KB)` : undefined,
+        eventImage: eventData.eventImage ? `${eventData.eventImage.substring(0, 50)}... (${Math.round(eventData.eventImage.length / 1024)}KB)` : undefined,
+      });
+
       const createdEvent = await createEvent(eventData);
       toast.success(`Event ${status === 'Published' ? 'published' : 'saved as draft'} successfully`);
       navigate('event-detail', { selectedEventId: createdEvent._id || createdEvent.id });
     } catch (error: any) {
       console.error('Error creating event:', error);
-      toast.error(error.response?.data?.message || 'Failed to create event. Please try again.');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create event. Please try again.';
+      
+      // Check for payload too large error
+      if (errorMessage.includes('too large') || errorMessage.includes('PayloadTooLarge')) {
+        toast.error('Image size is too large. Please use smaller images. Maximum recommended size is 500KB per image.');
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -202,7 +359,7 @@ export function EventCreate({ navigate }: EventCreateProps) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Main Image (Base64)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Main Image</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -213,13 +370,27 @@ export function EventCreate({ navigate }: EventCreateProps) {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
                   style={{ focusRing: '#C12D32' }}
                 />
-                {formData.mainImage && (
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>Image loaded (base64)</p>
-                )}
+                {formData.mainImage && (() => {
+                  const imageSize = Math.round(((formData.mainImage.length * 3) / 4) / 1024);
+                  const isTooLarge = imageSize > 500;
+                  return (
+                    <div className="mt-3">
+                      <p className={`text-xs mb-2 ${isTooLarge ? 'text-red-600 font-semibold' : ''}`} style={isTooLarge ? {} : { color: '#999' }}>
+                        Image converted to base64 (size: ~{imageSize}KB)
+                        {isTooLarge && ' - WARNING: Image is too large! Please use a smaller image.'}
+                      </p>
+                      <img 
+                        src={formData.mainImage} 
+                        alt="Main image preview" 
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Image (Base64)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Image</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -230,9 +401,23 @@ export function EventCreate({ navigate }: EventCreateProps) {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
                   style={{ focusRing: '#C12D32' }}
                 />
-                {formData.eventImage && (
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>Image loaded (base64)</p>
-                )}
+                {formData.eventImage && (() => {
+                  const imageSize = Math.round(((formData.eventImage.length * 3) / 4) / 1024);
+                  const isTooLarge = imageSize > 500;
+                  return (
+                    <div className="mt-3">
+                      <p className={`text-xs mb-2 ${isTooLarge ? 'text-red-600 font-semibold' : ''}`} style={isTooLarge ? {} : { color: '#999' }}>
+                        Image converted to base64 (size: ~{imageSize}KB)
+                        {isTooLarge && ' - WARNING: Image is too large! Please use a smaller image.'}
+                      </p>
+                      <img 
+                        src={formData.eventImage} 
+                        alt="Event image preview" 
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
