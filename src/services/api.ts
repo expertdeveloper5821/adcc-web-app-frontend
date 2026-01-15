@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Create axios instance with base configuration
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://adcc-b4f3.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'VITE_API_BASE_URL';
 console.log('🔧 API Configuration:', {
   baseURL: BASE_URL,
   timestamp: new Date().toISOString(),
