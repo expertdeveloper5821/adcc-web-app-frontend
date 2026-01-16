@@ -1,3 +1,30 @@
 .env
 /node_modules
+<<<<<<< HEAD
 package-lock.json
+=======
+# vite
+/vite.config.ts
+
+#build
+/build
+
+# tsconfig
+/tsconfig.json
+/tsconfig.node.json
+
+# lock files (package-lock.json should be committed)
+# *.lock.json - removed to allow package-lock.json to be tracked
+
+# gitignore
+.gitignore
+
+# yarn
+yarn.lock
+
+# readme
+/README.md
+
+# license
+/LICENSE
+>>>>>>> f9b4c2fb6a15e86d6f9d9d8a2cc1ca43061f0894

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Users, Calendar, Image, MessageSquare, Edit, MapPin, Award } from 'lucide-react';
-import { getCommunity } from '../../data/communitiesData';
+import { ArrowLeft, Users, Calendar, Image, MessageSquare, Edit, MapPin, Award, Trash2 } from 'lucide-react';
+import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
+import { toast } from 'sonner';
 
 type TabType = 'about' | 'members' | 'events' | 'gallery' | 'feed';
 
@@ -10,17 +11,70 @@ export function CommunityDetail() {
   const navigate = useNavigate();
   const communityId = id || '';
   const [activeTab, setActiveTab] = useState<TabType>('about');
-  const community = getCommunity(communityId);
+  const [community, setCommunity] = useState<CommunityApiResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useEffect(() => {
+    const fetchCommunity = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getCommunityById(communityId);
+        setCommunity(data);
+      } catch (error: any) {
+        console.error('Error fetching community:', error);
+        toast.error(error?.response?.data?.message || 'Failed to load community');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (communityId) {
+      fetchCommunity();
+    }
+  }, [communityId]);
+
+  const handleDelete = async () => {
+    try {
+      await deleteCommunityApi(communityId);
+      toast.success('Community deleted successfully');
+      navigate('/communities');
+    } catch (error: any) {
+      console.error('Error deleting community:', error);
+      toast.error(error?.response?.data?.message || 'Failed to delete community');
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleEdit = () => {
+    navigate('/communities/create', { state: { editingCommunity: community, communityId: communityId } });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg" style={{ color: '#666' }}>Loading community...</div>
+      </div>
+    );
+  }
 
   if (!community) {
-    return <div>Community not found</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg" style={{ color: '#666' }}>Community not found</div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       {/* Header with Cover */}
       <div className="relative h-64 rounded-2xl overflow-hidden">
-        <img src={community.coverImage} alt={community.name} className="w-full h-full object-cover" />
+        {community.image ? (
+          <img src={community.image} alt={community.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         
         <button
@@ -32,23 +86,26 @@ export function CommunityDetail() {
 
         <div className="absolute bottom-6 left-6 right-6">
           <div className="flex items-end gap-4">
-            <img
-              src={community.logo}
-              alt={community.name}
-              className="w-24 h-24 rounded-2xl border-4 border-white object-cover"
-            />
+            {community.image && (
+              <img
+                src={community.image}
+                alt={community.title}
+                className="w-24 h-24 rounded-2xl border-4 border-white object-cover"
+              />
+            )}
             <div className="flex-1 text-white">
-              <h1 className="text-4xl mb-2">{community.name}</h1>
+              <h1 className="text-4xl mb-2">{community.title}</h1>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1 text-sm">
                   <MapPin className="w-4 h-4" />
-                  <span>{community.city}</span>
+                  <span>{community.location}</span>
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
                   {community.type}
                 </span>
-                <span className="text-sm">{community.membersCount.toLocaleString()} members</span>
-                <span className="text-sm">{community.eventsCount} events</span>
+                <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
+                  {community.category}
+                </span>
               </div>
             </div>
           </div>
@@ -82,23 +139,6 @@ export function CommunityDetail() {
               <h2 className="text-xl mb-4" style={{ color: '#333' }}>About</h2>
               <p className="text-base leading-relaxed" style={{ color: '#666' }}>{community.description}</p>
             </div>
-
-            {community.teams.length > 0 && (
-              <div className="p-6 rounded-2xl shadow-sm bg-white">
-                <h2 className="text-xl mb-4" style={{ color: '#333' }}>Associated Teams</h2>
-                <div className="flex flex-wrap gap-2">
-                  {community.teams.map((team) => (
-                    <span
-                      key={team}
-                      className="px-4 py-2 rounded-full text-sm"
-                      style={{ backgroundColor: '#ECC180', color: '#333' }}
-                    >
-                      {team}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="space-y-6">
@@ -106,6 +146,7 @@ export function CommunityDetail() {
               <h3 className="text-lg mb-4" style={{ color: '#333' }}>Quick Actions</h3>
               <div className="space-y-2">
                 <button
+                  onClick={handleEdit}
                   className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
                   style={{ backgroundColor: '#ECC180', color: '#333' }}
                 >
@@ -113,10 +154,12 @@ export function CommunityDetail() {
                   <span>Edit Community</span>
                 </button>
                 <button
-                  className="w-full px-4 py-2 rounded-lg transition-all hover:shadow-md"
-                  style={{ backgroundColor: '#E1C06E', color: '#333' }}
+                  onClick={() => setShowDeleteModal(true)}
+                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md text-white"
+                  style={{ backgroundColor: '#C12D32' }}
                 >
-                  Feature on Homepage
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Community</span>
                 </button>
               </div>
             </div>
@@ -128,23 +171,39 @@ export function CommunityDetail() {
                   <span className="text-sm" style={{ color: '#666' }}>Status</span>
                   <span
                     className="px-3 py-1 rounded-full text-xs text-white"
-                    style={{ backgroundColor: community.status === 'Active' ? '#CF9F0C' : '#999' }}
+                    style={{ backgroundColor: community.isActive ? '#CF9F0C' : '#999' }}
                   >
-                    {community.status}
+                    {community.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Visibility</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.isPublic ? 'Public' : 'Private'}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>Type</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.type}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Featured</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.isFeatured ? 'Yes' : 'No'}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>Category</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.category}</span>
                 </div>
-                {community.adminName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm" style={{ color: '#666' }}>Location</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.location}</span>
+                </div>
+                {community.trackName && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: '#666' }}>Manager</span>
-                    <span className="text-sm" style={{ color: '#333' }}>{community.adminName}</span>
+                    <span className="text-sm" style={{ color: '#666' }}>Track Name</span>
+                    <span className="text-sm" style={{ color: '#333' }}>{community.trackName}</span>
+                  </div>
+                )}
+                {community.distance && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#666' }}>Distance</span>
+                    <span className="text-sm" style={{ color: '#333' }}>{community.distance} km</span>
+                  </div>
+                )}
+                {community.terrain && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#666' }}>Terrain</span>
+                    <span className="text-sm" style={{ color: '#333' }}>{community.terrain}</span>
                   </div>
                 )}
               </div>
@@ -155,14 +214,14 @@ export function CommunityDetail() {
 
       {activeTab === 'members' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Members ({community.membersCount.toLocaleString()})</h2>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Members</h2>
           <p style={{ color: '#666' }}>Member management interface would go here</p>
         </div>
       )}
 
       {activeTab === 'events' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Community Events ({community.eventsCount})</h2>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Community Events</h2>
           <p style={{ color: '#666' }}>Community events list would go here</p>
         </div>
       )}
@@ -178,6 +237,34 @@ export function CommunityDetail() {
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <h2 className="text-xl mb-6" style={{ color: '#333' }}>Community Feed</h2>
           <p style={{ color: '#666' }}>Community feed posts would go here</p>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Delete Community</h3>
+            <p className="mb-6" style={{ color: '#666' }}>
+              Are you sure you want to delete "{community.title}"? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded-lg"
+                style={{ backgroundColor: '#ECC180', color: '#333' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 rounded-lg text-white"
+                style={{ backgroundColor: '#C12D32' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
