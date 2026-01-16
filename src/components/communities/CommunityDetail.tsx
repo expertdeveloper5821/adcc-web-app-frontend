@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Users, Calendar, Image, MessageSquare, Edit, MapPin, Award } from 'lucide-react';
 import { getCommunity } from '../../data/communitiesData';
 
-interface CommunityDetailProps {
-  communityId: string;
-  navigate: (page: string, params?: any) => void;
-}
-
 type TabType = 'about' | 'members' | 'events' | 'gallery' | 'feed';
 
-export function CommunityDetail({ communityId, navigate }: CommunityDetailProps) {
+export function CommunityDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const communityId = id || '';
   const [activeTab, setActiveTab] = useState<TabType>('about');
   const community = getCommunity(communityId);
 
@@ -25,7 +24,7 @@ export function CommunityDetail({ communityId, navigate }: CommunityDetailProps)
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         
         <button
-          onClick={() => navigate('communities')}
+          onClick={() => navigate('/communities')}
           className="absolute top-4 left-4 p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />

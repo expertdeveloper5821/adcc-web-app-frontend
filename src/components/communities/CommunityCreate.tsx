@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Users, Search } from 'lucide-react';
 import { addCommunity, Community, availableTeams } from '../../data/communitiesData';
 import { toast } from 'sonner@2.0.3';
 
-interface CommunityCreateProps {
-  navigate: (page: string, params?: any) => void;
-}
-
-export function CommunityCreate({ navigate }: CommunityCreateProps) {
+export function CommunityCreate() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     city: 'Abu Dhabi',
@@ -53,14 +51,14 @@ export function CommunityCreate({ navigate }: CommunityCreateProps) {
 
     addCommunity(newCommunity);
     toast.success(`Community ${status === 'Active' ? 'published' : 'saved as draft'} successfully`);
-    navigate('community-detail', { selectedCommunityId: newCommunity.id });
+    navigate(`/communities/${newCommunity.id}`);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('communities')}
+          onClick={() => navigate('/communities')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
@@ -294,7 +292,7 @@ export function CommunityCreate({ navigate }: CommunityCreateProps) {
               Save as Draft
             </button>
             <button
-              onClick={() => navigate('communities')}
+              onClick={() => navigate('/communities')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >

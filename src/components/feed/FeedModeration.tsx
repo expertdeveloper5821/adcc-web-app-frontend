@@ -2,10 +2,6 @@ import React, { useState } from 'react';
 import { CheckCircle, XCircle, Ban, Trash2 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
-interface FeedModerationProps {
-  navigate: (page: string) => void;
-}
-
 type TabType = 'pending' | 'approved' | 'reported';
 
 const posts = [
@@ -14,7 +10,7 @@ const posts = [
   { id: '3', user: 'Mohammed Hassan', content: 'Check out my new bike! Ready for the desert adventure.', status: 'reported', image: 'https://images.unsplash.com/photo-1716738634956-1494117b349b?w=200' },
 ];
 
-export function FeedModeration({ navigate }: FeedModerationProps) {
+export function FeedModeration() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
 
   const handleApprove = (postId: string) => {

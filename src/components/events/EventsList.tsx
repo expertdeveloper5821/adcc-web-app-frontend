@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Edit, Copy, Trash2, Eye, MapPin, Calendar, Users, Star } from 'lucide-react';
 import { UserRole } from '../../App';
 import { toast } from 'sonner@2.0.3';
 import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
 
 interface EventsListProps {
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
-export function EventsList({ navigate, role }: EventsListProps) {
+export function EventsList({ role }: EventsListProps) {
+  const navigate = useNavigate();
   console.log('🎨 EventsList component rendered');
   console.log('🎨 Props:', { role });
   
@@ -124,7 +125,7 @@ export function EventsList({ navigate, role }: EventsListProps) {
         </div>
         {canEdit && (
           <button
-            onClick={() => navigate('event-create')}
+            onClick={() => navigate('/events/create')}
             className="flex items-center gap-2 px-6 py-3 rounded-lg text-white transition-all hover:shadow-lg"
             style={{ backgroundColor: '#C12D32' }}
           >
@@ -259,7 +260,7 @@ export function EventsList({ navigate, role }: EventsListProps) {
                       <td className="py-4 px-3">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => navigate('event-detail', { selectedEventId: eventId })}
+                            onClick={() => navigate(`/events/${eventId}`)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="View"
                           >
@@ -268,7 +269,7 @@ export function EventsList({ navigate, role }: EventsListProps) {
                           {canEdit && (
                             <>
                               <button
-                                onClick={() => navigate('event-detail', { selectedEventId: eventId })}
+                                onClick={() => navigate(`/events/${eventId}`)}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Edit"
                               >

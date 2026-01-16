@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, MapPin, Activity, Shield, Calendar, AlertCircle } from 'lucide-react';
 import { UserRole } from '../../App';
 import { getTrack, updateTrack } from '../../data/tracksData';
 import { toast } from 'sonner@2.0.3';
 
 interface TrackDetailProps {
-  trackId: string;
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
 type TabType = 'overview' | 'events' | 'safety' | 'media';
 
-export function TrackDetail({ trackId, navigate, role }: TrackDetailProps) {
+export function TrackDetail({ role }: TrackDetailProps) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const trackId = id || '';
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const track = getTrack(trackId);
 
@@ -40,7 +42,7 @@ export function TrackDetail({ trackId, navigate, role }: TrackDetailProps) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('tracks')}
+          onClick={() => navigate('/tracks')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
@@ -232,7 +234,7 @@ export function TrackDetail({ trackId, navigate, role }: TrackDetailProps) {
                 key={event.id}
                 className="p-4 rounded-xl hover:shadow-md transition-all cursor-pointer"
                 style={{ backgroundColor: '#FFF9EF' }}
-                onClick={() => navigate('event-detail', { selectedEventId: event.id })}
+                onClick={() => navigate(`/events/${event.id}`)}
               >
                 <div className="flex items-center justify-between">
                   <div>

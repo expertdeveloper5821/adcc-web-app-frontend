@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Users, MapPin, Calendar, Edit, Trash2, Eye, Ban } from 'lucide-react';
 import { UserRole } from '../../App';
 import { getAllCommunities, deleteCommunity } from '../../data/communitiesData';
 import { toast } from 'sonner@2.0.3';
 
 interface CommunitiesListProps {
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
-export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
+export function CommunitiesList({ role }: CommunitiesListProps) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -65,7 +66,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
         </div>
         {canCreate && (
           <button
-            onClick={() => navigate('community-create')}
+            onClick={() => navigate('/communities/create')}
             className="flex items-center gap-2 px-6 py-3 rounded-lg text-white transition-all hover:shadow-lg"
             style={{ backgroundColor: '#C12D32' }}
           >
@@ -207,7 +208,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
               {/* Actions */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate('community-detail', { selectedCommunityId: community.id })}
+                  onClick={() => navigate(`/communities/${community.id}`)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                   style={{ backgroundColor: '#ECC180', color: '#333' }}
                 >
@@ -217,7 +218,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
                 {canEdit && (
                   <>
                     <button
-                      onClick={() => navigate('community-detail', { selectedCommunityId: community.id })}
+                      onClick={() => navigate(`/communities/${community.id}`)}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                       title="Edit"
                     >

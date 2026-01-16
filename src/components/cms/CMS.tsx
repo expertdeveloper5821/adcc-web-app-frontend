@@ -1,10 +1,6 @@
 import React from 'react';
 import { Plus, GripVertical, Edit, Trash2 } from 'lucide-react';
 
-interface CMSProps {
-  navigate: (page: string) => void;
-}
-
 const sections = [
   { id: '1', title: 'Hero Banner', type: 'Image + Text', status: 'Active' },
   { id: '2', title: 'Featured Events', type: 'Event Grid', status: 'Active' },
@@ -12,7 +8,7 @@ const sections = [
   { id: '4', title: 'Track Showcase', type: 'Carousel', status: 'Active' },
 ];
 
-export function CMS({ navigate }: CMSProps) {
+export function CMS() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
