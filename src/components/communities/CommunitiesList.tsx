@@ -87,7 +87,7 @@ export function CommunitiesList({  role }: CommunitiesListProps) {
               apiCommunities = nestedArray;
             } else {
               // Log the structure to help debug
-              console.log('response.data structure:', Object.keys(responseData));
+             
               console.warn('Could not find array in response.data:', responseData);
             }
           }

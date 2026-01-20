@@ -188,23 +188,14 @@ export function EventCreate() {
       // Log image sizes and base64 URLs for debugging
       if (eventData.mainImage) {
         const mainImageSize = Math.round(((eventData.mainImage.length * 3) / 4) / 1024);
-        console.log(`Main image base64 size: ~${mainImageSize}KB`);
-        console.log('Main Image Base64 URL:', eventData.mainImage);
-        console.log('Main Image Base64 URL (first 100 chars):', eventData.mainImage.substring(0, 100) + '...');
+       
       }
       if (eventData.eventImage) {
         const eventImageSize = Math.round(((eventData.eventImage.length * 3) / 4) / 1024);
-        console.log(`Event image base64 size: ~${eventImageSize}KB`);
-        console.log('Event Image Base64 URL:', eventData.eventImage);
-        console.log('Event Image Base64 URL (first 100 chars):', eventData.eventImage.substring(0, 100) + '...');
+        
       }
 
-      // Log the complete event data being sent to backend
-      console.log('📤 Sending event data to backend:', {
-        ...eventData,
-        mainImage: eventData.mainImage ? `${eventData.mainImage.substring(0, 50)}... (${Math.round(eventData.mainImage.length / 1024)}KB)` : undefined,
-        eventImage: eventData.eventImage ? `${eventData.eventImage.substring(0, 50)}... (${Math.round(eventData.eventImage.length / 1024)}KB)` : undefined,
-      });
+     
 
       const createdEvent = await createEvent(eventData);
       toast.success(`Event ${status === 'Published' ? 'published' : 'saved as draft'} successfully`);

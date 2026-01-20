@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { verifyFirebaseAuth, registerUser, getCurrentUser, logout as apiLogout, CurrentUserResponse } from '../services/authApi';
@@ -33,44 +33,95 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<CurrentUserResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
+  // Flag to prevent duplicate verification when handling auth manually
+  const isHandlingAuthManually = useRef(false);
+  // Flag to track if this is the initial mount (page reload)
+  const isInitialMount = useRef(true);
+
+  // Function to refresh user profile (defined early so it can be used in useEffect)
+  const refreshUserProfile = async () => {
+    try {
+      console.log('👤 Fetching current user profile...');
+      const response = await getCurrentUser();
+      setUserProfile(response.data);
+      console.log('✅ User profile refreshed:', response.data);
+    } catch (error: any) {
+      console.error('❌ Error refreshing user profile:', error);
+      console.error('❌ Profile error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+      });
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('🔥 Firebase auth state changed:', firebaseUser?.uid || 'null');
       setUser(firebaseUser);
       
       if (firebaseUser) {
-        // Get ID token and verify with backend
+        // Skip verification if we're handling auth manually (login/register)
+        if (isHandlingAuthManually.current) {
+          console.log('⏭️ Skipping verification - handling auth manually');
+          setLoading(false);
+          isInitialMount.current = false;
+          return;
+        }
+        
+        // On page reload: Don't call verify API, just load profile if tokens exist
+        // This prevents creating new refresh tokens on every page reload
+        if (isInitialMount.current) {
+          console.log('🔄 Page reload detected - skipping verify API call');
+          const existingAccessToken = localStorage.getItem('accessToken');
+          const existingRefreshToken = localStorage.getItem('refreshToken');
+          
+          if (existingAccessToken && existingRefreshToken) {
+            console.log('✅ Tokens found in localStorage - loading user profile');
+            try {
+              // Just load the user profile using existing tokens
+              // The API interceptor will handle token refresh if needed
+              await refreshUserProfile();
+              console.log('✅ User profile loaded from existing tokens');
+            } catch (error: any) {
+              console.error('❌ Error loading user profile:', error);
+              // If profile load fails (e.g., tokens expired), clear and let user login again
+              if (error?.response?.status === 401) {
+                console.log('⚠️ Tokens expired - clearing storage');
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                setUserProfile(null);
+                toast.error('Session expired. Please login again.');
+              }
+            }
+          } else {
+            console.log('⚠️ No tokens found in localStorage');
+            // No tokens found - user needs to login
+            setUserProfile(null);
+          }
+          isInitialMount.current = false;
+          setLoading(false);
+          return;
+        }
+        
+        // This code should not run in normal flow, but kept as fallback
+        // Only runs if onAuthStateChanged fires unexpectedly (shouldn't happen)
+        console.warn('⚠️ Unexpected auth state change - verifying with backend');
         try {
           const idToken = await firebaseUser.getIdToken();
-          console.log('🔑 Got Firebase ID token' , idToken);
-          
-          // Verify token with backend
           const verifyResponse = await verifyFirebaseAuth(idToken);
-          console.log('✅ Auth verification response:', verifyResponse);
           
-          // Store tokens
           if (verifyResponse.data.accessToken) {
             localStorage.setItem('accessToken', verifyResponse.data.accessToken);
             localStorage.setItem('refreshToken', verifyResponse.data.refreshToken);
-            console.log('✅ Tokens stored in localStorage');
           }
           
-          // If user profile exists, fetch it
           if (!verifyResponse.data.isNewUser && verifyResponse.data.user) {
-            console.log('👤 Existing user, fetching profile...');
             await refreshUserProfile();
           } else if (verifyResponse.data.isNewUser) {
-            console.log('🆕 New user detected, registration required');
+            toast.info('Please complete your registration');
           }
         } catch (error: any) {
           console.error('❌ Error verifying auth:', error);
-          console.error('❌ Error details:', {
-            message: error?.message,
-            code: error?.code,
-            response: error?.response?.data,
-            status: error?.response?.status,
-          });
           toast.error(error?.response?.data?.message || 'Failed to verify authentication');
         }
       } else {
@@ -82,6 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       setLoading(false);
+      isInitialMount.current = false;
     });
 
     return () => unsubscribe();
@@ -90,18 +142,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       console.log('🔐 Logging in with email:', email);
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('✅ Firebase login successful:', userCredential.user.uid);
+      isHandlingAuthManually.current = true;
       
-      // Get ID token
+      // Sign in with Firebase - this will trigger onAuthStateChanged
+      // but we'll skip verification there since we're handling it manually
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Firebase login successful');
+      
+      // Get ID token and verify with backend
       const idToken = await userCredential.user.getIdToken();
-      console.log('🔑 Got ID token for verification');
+      console.log('🔑 Got ID token for verification' , idToken);
       
       // Verify with backend
       const verifyResponse = await verifyFirebaseAuth(idToken);
       console.log('✅ Backend verification successful:', verifyResponse);
       
-      // Store tokens
+      // Store tokens 
       if (verifyResponse.data.accessToken) {
         localStorage.setItem('accessToken', verifyResponse.data.accessToken);
         localStorage.setItem('refreshToken', verifyResponse.data.refreshToken);
@@ -112,6 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (verifyResponse.data.isNewUser) {
         console.log('🆕 New user, redirecting to registration');
         toast.info('Please complete your registration');
+        isHandlingAuthManually.current = false;
         return;
       }
       
@@ -119,7 +176,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('👤 Fetching user profile...');
       await refreshUserProfile();
       toast.success('Login successful');
+      isHandlingAuthManually.current = false;
     } catch (error: any) {
+      isHandlingAuthManually.current = false;
       console.error('❌ Login error:', error);
       console.error('❌ Login error details:', {
         code: error?.code,
@@ -152,6 +211,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ) => {
     try {
       console.log('📝 Registering user:', { email, fullName, gender, age });
+      isHandlingAuthManually.current = true;
       
       // Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -159,7 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Get ID token
       const idToken = await userCredential.user.getIdToken();
-      console.log('🔑 Got ID token for verification');
+      console.log('🔑 Got ID token for verification', idToken);
       
       // Verify with backend (to get temporary token)
       const verifyResponse = await verifyFirebaseAuth(idToken);
@@ -178,6 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Fetch user profile
         await refreshUserProfile();
         toast.success('Account already exists. Logged in successfully.');
+        isHandlingAuthManually.current = false;
         return;
       }
       
@@ -204,10 +265,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Set user profile
-      setUserProfile(registerResponse.data.user);
+      setUserProfile(registerResponse.data.user as any);
       console.log('✅ User profile set:', registerResponse.data.user);
       toast.success('Registration successful');
+      isHandlingAuthManually.current = false;
     } catch (error: any) {
+      isHandlingAuthManually.current = false;
       console.error('❌ Registration error:', error);
       console.error('❌ Registration error details:', {
         code: error?.code,
@@ -276,22 +339,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('❌ Logout error:', error);
       toast.error('Logout failed');
       throw error;
-    }
-  };
-
-  const refreshUserProfile = async () => {
-    try {
-      console.log('👤 Fetching current user profile...');
-      const response = await getCurrentUser();
-      setUserProfile(response.data);
-      console.log('✅ User profile refreshed:', response.data);
-    } catch (error: any) {
-      console.error('❌ Error refreshing user profile:', error);
-      console.error('❌ Profile error details:', {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-      });
     }
   };
 

@@ -11,8 +11,7 @@ interface EventsListProps {
 
 export function EventsList({ role }: EventsListProps) {
   const navigate = useNavigate();
-  console.log('🎨 EventsList component rendered');
-  console.log('🎨 Props:', { role });
+ 
   
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
@@ -22,26 +21,14 @@ export function EventsList({ role }: EventsListProps) {
   const [events, setEvents] = useState<EventApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  console.log('📊 Component state:', {
-    eventsCount: events.length,
-    isLoading,
-    statusFilter,
-    searchTerm,
-    cityFilter,
-  });
+ 
 
   useEffect(() => {
-    console.log('🔄 EventsList useEffect triggered, statusFilter:', statusFilter);
     loadEvents();
   }, [statusFilter]);
 
   const loadEvents = async () => {
-    console.log('🔄 loadEvents function called');
-    console.log('📊 Current state:', {
-      statusFilter,
-      isLoading,
-      eventsCount: events.length,
-    });
+  
     
     setIsLoading(true);
     try {
@@ -50,25 +37,17 @@ export function EventsList({ role }: EventsListProps) {
         statusFilter === 'Draft' ? 'upcoming' :
         statusFilter.toLowerCase() as 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
       
-      console.log('🔍 Status filter mapping:', {
-        original: statusFilter,
-        mapped: apiStatus,
-      });
+  
       
-      console.log('📡 Calling getAllEvents API...');
+     
       const fetchedEvents = await getAllEvents({ 
         status: apiStatus,
         page: 1,
         limit: 100 
       });
-      
-      console.log('✅ Events fetched successfully:', {
-        count: fetchedEvents.length,
-        events: fetchedEvents,
-      });
+ 
       
       setEvents(fetchedEvents);
-      console.log('✅ Events state updated');
     } catch (error: any) {
       console.error('❌ Error in loadEvents:', error);
       console.error('❌ Error details:', {
@@ -80,7 +59,6 @@ export function EventsList({ role }: EventsListProps) {
       toast.error('Failed to load events. Please try again.');
     } finally {
       setIsLoading(false);
-      console.log('🏁 loadEvents completed, isLoading set to false');
     }
   };
 

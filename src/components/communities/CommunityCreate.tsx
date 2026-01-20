@@ -423,9 +423,7 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
         communityData.terrain = terrain;
       }
 
-      console.log('📤 Sending community data:', JSON.stringify(communityData, null, 2));
-      console.log('🔍 Debug - location value:', location, 'category array:', category);
-      console.log('🔍 Debug - form location:', getValues('location'), 'selectedCategories:', selectedCategories);
+      
 
       let result: CommunityApiResponse;
       if (isEditMode && communityId) {
