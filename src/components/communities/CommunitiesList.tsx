@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Users, MapPin, Calendar, Edit, Trash2, Eye, Ban } from 'lucide-react';
 import { UserRole } from '../../App';
 import { getAllCommunities as getAllCommunitiesApi, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { toast } from 'sonner';
 
 interface CommunitiesListProps {
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
+
+ 
 interface Community {
   id: string;
   name: string;
@@ -22,7 +24,8 @@ interface Community {
   eventsCount: number;
 }
 
-export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
+export function CommunitiesList({  role }: CommunitiesListProps) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -32,6 +35,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   // Map API response to component format
   const mapApiResponseToCommunity = (apiCommunity: CommunityApiResponse): Community => {
@@ -83,7 +87,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
               apiCommunities = nestedArray;
             } else {
               // Log the structure to help debug
-              console.log('response.data structure:', Object.keys(responseData));
+             
               console.warn('Could not find array in response.data:', responseData);
             }
           }
@@ -196,7 +200,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
         </div>
         {canCreate && (
           <button
-            onClick={() => navigate('community-create', { editingCommunity: undefined, selectedCommunityId: undefined })}
+            onClick={() => navigate('/communities/create')}
             className="flex items-center gap-2 px-6 py-3 rounded-lg text-white transition-all hover:shadow-lg"
             style={{ backgroundColor: '#C12D32' }}
           >
@@ -340,7 +344,7 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
               {/* Actions */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate('community-detail', { selectedCommunityId: community.id })}
+                  onClick={() => navigate(`/communities/${community.id}`)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                   style={{ backgroundColor: '#ECC180', color: '#333' }}
                 >
@@ -350,7 +354,10 @@ export function CommunitiesList({ navigate, role }: CommunitiesListProps) {
                 {canEdit && (
                   <>
                     <button
-                      onClick={() => navigate('community-detail', { selectedCommunityId: community.id })}
+                      onClick={() => {
+                        // Fetch community data for editing
+                        navigate('/communities/create', { state: { communityId: community.id } });
+                      }}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                       title="Edit"
                     >

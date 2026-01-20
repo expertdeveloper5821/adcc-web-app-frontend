@@ -1,5 +1,8 @@
 .env
 /node_modules
+<<<<<<< HEAD
+package-lock.json
+=======
 # vite
 /vite.config.ts
 
@@ -24,3 +27,4 @@ yarn.lock
 
 # license
 /LICENSE
+>>>>>>> f9b4c2fb6a15e86d6f9d9d8a2cc1ca43061f0894

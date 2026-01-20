@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Calendar, MapPin, Clock, Users, Image as ImageIcon, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { createEvent, EventApiResponse } from '../../services/eventsApi';
 
-interface EventCreateProps {
-  navigate: (page: string, params?: any) => void;
-}
-
-export function EventCreate({ navigate }: EventCreateProps) {
+export function EventCreate() {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -190,27 +188,18 @@ export function EventCreate({ navigate }: EventCreateProps) {
       // Log image sizes and base64 URLs for debugging
       if (eventData.mainImage) {
         const mainImageSize = Math.round(((eventData.mainImage.length * 3) / 4) / 1024);
-        console.log(`Main image base64 size: ~${mainImageSize}KB`);
-        console.log('Main Image Base64 URL:', eventData.mainImage);
-        console.log('Main Image Base64 URL (first 100 chars):', eventData.mainImage.substring(0, 100) + '...');
+       
       }
       if (eventData.eventImage) {
         const eventImageSize = Math.round(((eventData.eventImage.length * 3) / 4) / 1024);
-        console.log(`Event image base64 size: ~${eventImageSize}KB`);
-        console.log('Event Image Base64 URL:', eventData.eventImage);
-        console.log('Event Image Base64 URL (first 100 chars):', eventData.eventImage.substring(0, 100) + '...');
+        
       }
 
-      // Log the complete event data being sent to backend
-      console.log('📤 Sending event data to backend:', {
-        ...eventData,
-        mainImage: eventData.mainImage ? `${eventData.mainImage.substring(0, 50)}... (${Math.round(eventData.mainImage.length / 1024)}KB)` : undefined,
-        eventImage: eventData.eventImage ? `${eventData.eventImage.substring(0, 50)}... (${Math.round(eventData.eventImage.length / 1024)}KB)` : undefined,
-      });
+     
 
       const createdEvent = await createEvent(eventData);
       toast.success(`Event ${status === 'Published' ? 'published' : 'saved as draft'} successfully`);
-      navigate('event-detail', { selectedEventId: createdEvent._id || createdEvent.id });
+      navigate(`/events/${createdEvent._id || createdEvent.id}`);
     } catch (error: any) {
       console.error('Error creating event:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create event. Please try again.';
@@ -230,7 +219,7 @@ export function EventCreate({ navigate }: EventCreateProps) {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('events')}
+          onClick={() => navigate('/events')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
@@ -490,7 +479,7 @@ export function EventCreate({ navigate }: EventCreateProps) {
               {isLoading ? 'Saving...' : 'Save as Draft'}
             </button>
             <button
-              onClick={() => navigate('events')}
+              onClick={() => navigate('/events')}
               disabled={isLoading}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50 disabled:opacity-50"
               style={{ color: '#666' }}

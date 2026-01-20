@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Users, Calendar, Image, MessageSquare, Edit, MapPin, Award, Trash2 } from 'lucide-react';
 import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { toast } from 'sonner';
 
-interface CommunityDetailProps {
-  communityId: string;
-  navigate: (page: string, params?: any) => void;
-}
-
 type TabType = 'about' | 'members' | 'events' | 'gallery' | 'feed';
 
-export function CommunityDetail({ communityId, navigate }: CommunityDetailProps) {
+export function CommunityDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const communityId = id || '';
   const [activeTab, setActiveTab] = useState<TabType>('about');
   const [community, setCommunity] = useState<CommunityApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +38,7 @@ export function CommunityDetail({ communityId, navigate }: CommunityDetailProps)
     try {
       await deleteCommunityApi(communityId);
       toast.success('Community deleted successfully');
-      navigate('communities');
+      navigate('/communities');
     } catch (error: any) {
       console.error('Error deleting community:', error);
       toast.error(error?.response?.data?.message || 'Failed to delete community');
@@ -48,7 +47,7 @@ export function CommunityDetail({ communityId, navigate }: CommunityDetailProps)
   };
 
   const handleEdit = () => {
-    navigate('community-create', { selectedCommunityId: communityId, editingCommunity: community });
+    navigate('/communities/create', { state: { editingCommunity: community, communityId: communityId } });
   };
 
   if (isLoading) {
@@ -79,7 +78,7 @@ export function CommunityDetail({ communityId, navigate }: CommunityDetailProps)
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         
         <button
-          onClick={() => navigate('communities')}
+          onClick={() => navigate('/communities')}
           className="absolute top-4 left-4 p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />

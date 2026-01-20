@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Edit, Copy, Trash2, Eye, MapPin, Calendar, Users, Star } from 'lucide-react';
 import { UserRole } from '../../App';
 import { toast } from 'sonner@2.0.3';
 import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
 
 interface EventsListProps {
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
-export function EventsList({ navigate, role }: EventsListProps) {
-  console.log('🎨 EventsList component rendered');
-  console.log('🎨 Props:', { role });
+export function EventsList({ role }: EventsListProps) {
+  const navigate = useNavigate();
+ 
   
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
@@ -21,26 +21,14 @@ export function EventsList({ navigate, role }: EventsListProps) {
   const [events, setEvents] = useState<EventApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  console.log('📊 Component state:', {
-    eventsCount: events.length,
-    isLoading,
-    statusFilter,
-    searchTerm,
-    cityFilter,
-  });
+ 
 
   useEffect(() => {
-    console.log('🔄 EventsList useEffect triggered, statusFilter:', statusFilter);
     loadEvents();
   }, [statusFilter]);
 
   const loadEvents = async () => {
-    console.log('🔄 loadEvents function called');
-    console.log('📊 Current state:', {
-      statusFilter,
-      isLoading,
-      eventsCount: events.length,
-    });
+  
     
     setIsLoading(true);
     try {
@@ -49,25 +37,17 @@ export function EventsList({ navigate, role }: EventsListProps) {
         statusFilter === 'Draft' ? 'upcoming' :
         statusFilter.toLowerCase() as 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
       
-      console.log('🔍 Status filter mapping:', {
-        original: statusFilter,
-        mapped: apiStatus,
-      });
+  
       
-      console.log('📡 Calling getAllEvents API...');
+     
       const fetchedEvents = await getAllEvents({ 
         status: apiStatus,
         page: 1,
         limit: 100 
       });
-      
-      console.log('✅ Events fetched successfully:', {
-        count: fetchedEvents.length,
-        events: fetchedEvents,
-      });
+ 
       
       setEvents(fetchedEvents);
-      console.log('✅ Events state updated');
     } catch (error: any) {
       console.error('❌ Error in loadEvents:', error);
       console.error('❌ Error details:', {
@@ -79,7 +59,6 @@ export function EventsList({ navigate, role }: EventsListProps) {
       toast.error('Failed to load events. Please try again.');
     } finally {
       setIsLoading(false);
-      console.log('🏁 loadEvents completed, isLoading set to false');
     }
   };
 
@@ -124,7 +103,7 @@ export function EventsList({ navigate, role }: EventsListProps) {
         </div>
         {canEdit && (
           <button
-            onClick={() => navigate('event-create')}
+            onClick={() => navigate('/events/create')}
             className="flex items-center gap-2 px-6 py-3 rounded-lg text-white transition-all hover:shadow-lg"
             style={{ backgroundColor: '#C12D32' }}
           >
@@ -259,7 +238,7 @@ export function EventsList({ navigate, role }: EventsListProps) {
                       <td className="py-4 px-3">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => navigate('event-detail', { selectedEventId: eventId })}
+                            onClick={() => navigate(`/events/${eventId}`)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="View"
                           >
@@ -268,7 +247,7 @@ export function EventsList({ navigate, role }: EventsListProps) {
                           {canEdit && (
                             <>
                               <button
-                                onClick={() => navigate('event-detail', { selectedEventId: eventId })}
+                                onClick={() => navigate(`/events/${eventId}`)}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Edit"
                               >

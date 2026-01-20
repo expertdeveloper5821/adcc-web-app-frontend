@@ -46,6 +46,7 @@ export interface RefreshTokenResponse {
   message: string;
   data: {
     accessToken: string;
+    refreshToken?: string; // Optional - backend may return new refresh token
   };
 }
 

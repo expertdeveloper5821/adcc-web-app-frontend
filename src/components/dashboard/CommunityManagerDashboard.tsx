@@ -1,12 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, MapPin, TrendingUp } from 'lucide-react';
 import { StatCard } from './StatCard';
 
-interface CommunityManagerDashboardProps {
-  navigate: (page: string, params?: any) => void;
-}
-
-export function CommunityManagerDashboard({ navigate }: CommunityManagerDashboardProps) {
+export function CommunityManagerDashboard() {
+  const navigate = useNavigate();
   const chapters = [
     { name: 'Abu Dhabi Chapter', members: 3420, growth: '+12%', events: 18 },
     { name: 'Dubai Chapter', members: 2890, growth: '+8%', events: 15 },
@@ -27,21 +25,21 @@ export function CommunityManagerDashboard({ navigate }: CommunityManagerDashboar
           value="7,550"
           icon={<Users className="w-6 h-6" />}
           trend="+11%"
-          onClick={() => navigate('communities')}
+          onClick={() => navigate('/communities')}
         />
         <StatCard
           label="Active Chapters"
           value="28"
           icon={<MapPin className="w-6 h-6" />}
           trend="+3"
-          onClick={() => navigate('communities')}
+          onClick={() => navigate('/communities')}
         />
         <StatCard
           label="Upcoming Events"
           value="47"
           icon={<Calendar className="w-6 h-6" />}
           trend="+23%"
-          onClick={() => navigate('events')}
+          onClick={() => navigate('/events')}
         />
         <StatCard
           label="Monthly Growth"
@@ -56,7 +54,7 @@ export function CommunityManagerDashboard({ navigate }: CommunityManagerDashboar
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl" style={{ color: '#333' }}>Chapter Performance</h2>
           <button
-            onClick={() => navigate('communities')}
+            onClick={() => navigate('/communities')}
             className="text-sm hover:underline"
             style={{ color: '#C12D32' }}
           >

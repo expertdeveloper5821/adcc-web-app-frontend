@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Copy, XCircle, Send, Eye, Users, Star, Share2, Calendar, MapPin, Clock, Download, Upload, FileText, Image as ImageIcon, Save, X } from 'lucide-react';
 import { UserRole } from '../../App';
 import { toast } from 'sonner';
 import { getEventById, updateEvent as updateEventApi, EventApiResponse } from '../../services/eventsApi';
 
 interface EventDetailProps {
-  eventId: string;
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
 type TabType = 'overview' | 'registrations' | 'media' | 'ratings' | 'notifications';
 
-export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
+export function EventDetail({ role }: EventDetailProps) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const eventId = id || '';
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [event, setEvent] = useState<EventApiResponse | null>(null);
@@ -108,7 +110,7 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
 
   const handleDuplicate = () => {
     toast.success('Event duplicated successfully');
-    navigate('events');
+    navigate('/events');
   };
 
   const handleSendPush = () => {

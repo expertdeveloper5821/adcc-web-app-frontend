@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../App';
 import { Search, Bell, ChevronDown, LogOut, User } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
@@ -22,6 +23,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { userProfile, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,6 +43,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
     try {
       await logout();
       setUserMenuOpen(false);
+      navigate('/login');
     } catch (error) {
       // Error handled in AuthContext
     }
@@ -49,6 +52,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
   const handleRoleChange = (role: UserRole) => {
     setRole(role);
     setDropdownOpen(false);
+    navigate('/dashboard'); // Navigate to dashboard when role changes
     toast.success(`Viewing as ${roleLabels[role]}`);
   };
 

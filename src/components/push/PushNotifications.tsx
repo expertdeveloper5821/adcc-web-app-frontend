@@ -2,11 +2,7 @@ import React from 'react';
 import { Send, Users, Clock } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
-interface PushNotificationsProps {
-  navigate: (page: string) => void;
-}
-
-export function PushNotifications({ navigate }: PushNotificationsProps) {
+export function PushNotifications() {
   const handleSend = () => {
     toast.success('Push notification sent');
   };

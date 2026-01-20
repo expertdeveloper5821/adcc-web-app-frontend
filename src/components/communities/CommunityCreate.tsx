@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Upload, Search } from 'lucide-react';
-import { createCommunity, updateCommunity, CreateCommunityRequest, CommunityApiResponse } from '../../services/communitiesApi';
+import { createCommunity, updateCommunity, getCommunityById, CreateCommunityRequest, CommunityApiResponse } from '../../services/communitiesApi';
 import { toast } from 'sonner';
 import { Input } from '../ui/input';
 
@@ -12,7 +13,7 @@ const availableCategories = [
 ];
 
 interface CommunityCreateProps {
-  navigate: (page: string, params?: any) => void;
+  navigate?: (page: string, params?: any) => void;
   editingCommunity?: any;
   communityId?: string;
 }
@@ -20,9 +21,16 @@ interface CommunityCreateProps {
 interface FormData extends CreateCommunityRequest {
   imageFile?: File | null;
   city?: string;
+  isFeatured?: boolean;
 }
 
-export function CommunityCreate({ navigate, editingCommunity, communityId: propCommunityId }: CommunityCreateProps) {
+export function CommunityCreate({ editingCommunity: propEditingCommunity, communityId: propCommunityId }: CommunityCreateProps = {}) {
+  const location = useLocation();
+  // Get editing data from location state (React Router v6 way)
+  const locationState = location.state as { editingCommunity?: CommunityApiResponse; communityId?: string } | null;
+  const [fetchedCommunity, setFetchedCommunity] = useState<CommunityApiResponse | null>(null);
+  const editingCommunity = propEditingCommunity || locationState?.editingCommunity || fetchedCommunity;
+  const stateCommunityId = propCommunityId || locationState?.communityId;
   const [isLoading, setIsLoading] = useState(false);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -31,7 +39,7 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
-
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -53,41 +61,67 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
       distance: undefined,
       terrain: 'Paved Road',
       isActive: true,
+      isFeatured: false,
     },
   });
 
+  // Fetch community data if only ID is provided (from CommunitiesList edit button)
+  useEffect(() => {
+    const fetchCommunityData = async () => {
+      if (stateCommunityId && !propEditingCommunity && !locationState?.editingCommunity && !fetchedCommunity) {
+        try {
+          setIsLoading(true);
+          const communityData = await getCommunityById(stateCommunityId);
+          setFetchedCommunity(communityData);
+        } catch (error: any) {
+          console.error('Error fetching community:', error);
+          toast.error(error?.response?.data?.message || 'Failed to load community data');
+          navigate('/communities');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchCommunityData();
+  }, [stateCommunityId, propEditingCommunity, locationState, fetchedCommunity, navigate]);
+
   // Check if we're in edit mode and load community data, or reset to create mode
   useEffect(() => {
-    if (editingCommunity && propCommunityId) {
+    const currentEditingCommunity = propEditingCommunity || locationState?.editingCommunity || fetchedCommunity;
+    const currentCommunityId = propCommunityId || locationState?.communityId || stateCommunityId;
+
+    if (currentEditingCommunity && currentCommunityId) {
       // Edit mode: populate form with existing data
       setIsEditMode(true);
-      setCommunityId(propCommunityId);
+      setCommunityId(currentCommunityId);
       
       // Handle categories if category contains comma-separated values or is an array
       let categoryArray: string[] = [];
-      if (editingCommunity.category) {
-        categoryArray = Array.isArray(editingCommunity.category) 
-          ? editingCommunity.category 
-          : editingCommunity.category.split(',').map((c: string) => c.trim()).filter(Boolean);
+      if (currentEditingCommunity.category) {
+        categoryArray = Array.isArray(currentEditingCommunity.category) 
+          ? currentEditingCommunity.category 
+          : currentEditingCommunity.category.split(',').map((c: string) => c.trim()).filter(Boolean);
         setSelectedCategories(categoryArray);
       }
 
       // Populate form with existing data
       reset({
-        title: editingCommunity.title || '',
-        description: editingCommunity.description || '',
-        type: editingCommunity.type || 'city',
+        title: currentEditingCommunity.title || '',
+        description: currentEditingCommunity.description || '',
+        type: currentEditingCommunity.type || 'city',
         category: categoryArray,
-        location: editingCommunity.location || 'Abu Dhabi',
-        image: editingCommunity.image || '',
-        trackName: editingCommunity.trackName || '',
-        distance: editingCommunity.distance || undefined,
-        terrain: editingCommunity.terrain || 'Paved Road',
-        isActive: editingCommunity.isActive !== undefined ? editingCommunity.isActive : true,
+        location: currentEditingCommunity.location || 'Abu Dhabi',
+        image: currentEditingCommunity.image || '',
+        trackName: currentEditingCommunity.trackName || '',
+        distance: currentEditingCommunity.distance || undefined,
+        terrain: currentEditingCommunity.terrain || 'Paved Road',
+        isActive: currentEditingCommunity.isActive !== undefined ? currentEditingCommunity.isActive : true,
+        isFeatured: (currentEditingCommunity as any).isFeatured !== undefined ? (currentEditingCommunity as any).isFeatured : false,
       });
 
-      if (editingCommunity.image) {
-        setImagePreview(editingCommunity.image);
+      if (currentEditingCommunity.image) {
+        setImagePreview(currentEditingCommunity.image);
       }
     } else {
       // Create mode: reset form to default values
@@ -111,9 +145,10 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
         distance: undefined,
         terrain: 'Paved Road',
         isActive: true,
+        isFeatured: false,
       });
     }
-  }, [editingCommunity, propCommunityId, reset]);
+  }, [propEditingCommunity, locationState, fetchedCommunity, propCommunityId, stateCommunityId, reset]);
 
   const validateForm = (formData: FormData): boolean => {
     const newErrors: Record<string, string> = {};
@@ -341,14 +376,18 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
 
     setIsLoading(true);
     try {
+      // Get isFeatured from form data
+      const isFeatured = formData.isFeatured !== undefined ? formData.isFeatured : (currentValues.isFeatured !== undefined ? currentValues.isFeatured : false);
+      
       // Build the request payload
-      const communityData: CreateCommunityRequest = {
+      const communityData: CreateCommunityRequest & { isFeatured?: boolean } = {
         title,
         description,
         type,
         category,
         location,
         isActive: formData.isActive !== undefined ? formData.isActive : (currentValues.isActive !== undefined ? currentValues.isActive : true),
+        isFeatured: isFeatured,
       };
 
       // Only add optional fields if they have values
@@ -384,14 +423,13 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
         communityData.terrain = terrain;
       }
 
-      console.log('📤 Sending community data:', JSON.stringify(communityData, null, 2));
-      console.log('🔍 Debug - location value:', location, 'category array:', category);
-      console.log('🔍 Debug - form location:', getValues('location'), 'selectedCategories:', selectedCategories);
+      
 
       let result: CommunityApiResponse;
       if (isEditMode && communityId) {
         result = await updateCommunity(communityId, communityData);
         toast.success('Community updated successfully');
+        navigate(`/communities/${communityId}`);
       } else {
         result = await createCommunity(communityData);
         toast.success('Community created successfully');
@@ -399,9 +437,9 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
 
       const id = result._id || result.id || communityId;
       if (id) {
-        navigate('community-detail', { selectedCommunityId: id });
+        navigate(`/communities/${id}`);
       } else {
-        navigate('communities');
+        navigate('/communities');
       }
     } catch (error: any) {
       console.error('Error saving community:', error);
@@ -453,7 +491,7 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('communities')}
+          onClick={() => navigate('/communities')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
@@ -863,8 +901,8 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
                     render={({ field }) => (
                       <input
                         type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
+                        checked={field.value || false}
+                        onChange={(e) => field.onChange(e.target.checked)}
                         className="w-4 h-4"
                         style={{ accentColor: '#C12D32' }}
                       />
@@ -878,13 +916,13 @@ export function CommunityCreate({ navigate, editingCommunity, communityId: propC
               <div className="space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Controller
-                    name="isActive"
+                    name="isFeatured"
                     control={control}
-                    render={() => (
+                    render={({ field }) => (
                       <input
                         type="checkbox"
-                        checked={false}
-                        onChange={() => {}}
+                        checked={field.value || false}
+                        onChange={(e) => field.onChange(e.target.checked)}
                         className="w-4 h-4"
                         style={{ accentColor: '#C12D32' }}
                       />
