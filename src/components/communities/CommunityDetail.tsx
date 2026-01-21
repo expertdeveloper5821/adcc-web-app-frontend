@@ -47,7 +47,7 @@ export function CommunityDetail() {
   };
 
   const handleEdit = () => {
-    navigate('/communities/create', { state: { editingCommunity: community, communityId: communityId } });
+    navigate(`/communities/${communityId}/edit`);
   };
 
   if (isLoading) {
@@ -78,8 +78,9 @@ export function CommunityDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         
         <button
-          onClick={() => navigate('/communities')}
+          onClick={() => navigate(-1)}
           className="absolute top-4 left-4 p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white transition-colors"
+          title="Back"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>

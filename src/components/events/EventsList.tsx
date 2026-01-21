@@ -89,7 +89,7 @@ export function EventsList({ role }: EventsListProps) {
   };
 
   const handleDuplicate = (event: EventApiResponse) => {
-    toast.success('Event duplicated successfully');
+    // toast.success('Event duplicated successfully');
   };
 
   const canEdit = role === 'super-admin' || role === 'content-manager' || role === 'community-manager';
@@ -247,7 +247,7 @@ export function EventsList({ role }: EventsListProps) {
                           {canEdit && (
                             <>
                               <button
-                                onClick={() => navigate(`/events/${eventId}`)}
+                                onClick={() => navigate(`/events/${eventId}/edit`)}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Edit"
                               >
