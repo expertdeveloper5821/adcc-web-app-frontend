@@ -96,7 +96,7 @@ export function CommunityDetail() {
             )}
             <div className="flex-1 text-white">
               <h1 className="text-4xl mb-2">{community.title}</h1>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-1 text-sm">
                   <MapPin className="w-4 h-4" />
                   <span>{community.location}</span>
@@ -104,9 +104,11 @@ export function CommunityDetail() {
                 <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
                   {community.type}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
-                  {community.category}
-                </span>
+                {/* <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
+                  {Array.isArray(community.category) ? community.category.join(', ') : community.category}
+                </span> */}
+                <span className="text-sm">{(community.membersCount ?? 3420).toLocaleString()} members</span>
+                <span className="text-sm">{community.eventsCount ?? 18} events</span>
               </div>
             </div>
           </div>
@@ -135,10 +137,26 @@ export function CommunityDetail() {
       {/* Content */}
       {activeTab === 'about' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="p-6 rounded-2xl shadow-sm bg-white mb-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="p-6 rounded-2xl shadow-sm bg-white">
               <h2 className="text-xl mb-4" style={{ color: '#333' }}>About</h2>
               <p className="text-base leading-relaxed" style={{ color: '#666' }}>{community.description}</p>
+            </div>
+
+            {/* Associated Teams - separate card underneath About */}
+            <div className="p-6 rounded-2xl shadow-sm bg-white">
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Associated Teams</h3>
+              <div className="flex flex-wrap gap-3">
+                {(community.associatedTeams ?? ['ADCycling Team', 'Al Wathba CT', 'Al Fursan CT']).map((team) => (
+                  <span
+                    key={team}
+                    className="px-4 py-2 rounded-full text-sm"
+                    style={{ backgroundColor: '#ECC180', color: '#334155' }}
+                  >
+                    {team}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -155,12 +173,10 @@ export function CommunityDetail() {
                   <span>Edit Community</span>
                 </button>
                 <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md text-white"
-                  style={{ backgroundColor: '#C12D32' }}
+                  className="w-full px-4 py-2 rounded-lg transition-all hover:shadow-md"
+                  style={{ backgroundColor: '#E1C06E', color: '#333' }}
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete Community</span>
+                  Feature on Homepage
                 </button>
               </div>
             </div>
@@ -178,35 +194,17 @@ export function CommunityDetail() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Type</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.type}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>Visibility</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.visibility ?? 'Public'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Category</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.category}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>Featured</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.featured ?? true ? 'Yes' : 'No'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Location</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.location}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>Manager</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.manager ?? 'Ahmed Al Mansoori'}</span>
                 </div>
-                {community.trackName && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: '#666' }}>Track Name</span>
-                    <span className="text-sm" style={{ color: '#333' }}>{community.trackName}</span>
-                  </div>
-                )}
-                {community.distance && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: '#666' }}>Distance</span>
-                    <span className="text-sm" style={{ color: '#333' }}>{community.distance} km</span>
-                  </div>
-                )}
-                {community.terrain && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: '#666' }}>Terrain</span>
-                    <span className="text-sm" style={{ color: '#333' }}>{community.terrain}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>

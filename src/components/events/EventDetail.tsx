@@ -19,6 +19,7 @@ export function EventDetail({ role }: EventDetailProps) {
   const [event, setEvent] = useState<EventApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [updatingField, setUpdatingField] = useState<string | null>(null);
 
   useEffect(() => {
     loadEvent();
@@ -82,6 +83,34 @@ export function EventDetail({ role }: EventDetailProps) {
 
   const handleSendPush = () => {
     toast.success('Push notification sent to all registrants');
+  };
+
+  const handleFeaturedToggle = async () => {
+    const next = !(event!.featured ?? true);
+    setUpdatingField('featured');
+    try {
+      await updateEventApi(eventId, { featured: next });
+      setEvent((prev) => (prev ? { ...prev, featured: next } : null));
+      toast.success(next ? 'Event featured' : 'Event unfeatured');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally {
+      setUpdatingField(null);
+    }
+  };
+
+  const handleRegistrationToggle = async () => {
+    const next = !(event!.registrationOpen ?? true);
+    setUpdatingField('registration');
+    try {
+      await updateEventApi(eventId, { registrationOpen: next });
+      setEvent((prev) => (prev ? { ...prev, registrationOpen: next } : null));
+      toast.success(next ? 'Registration opened' : 'Registration closed');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally {
+      setUpdatingField(null);
+    }
   };
 
   return (
@@ -163,14 +192,14 @@ export function EventDetail({ role }: EventDetailProps) {
                   </div>
                 </div>
 
-                {event.youtubeLink && (
+                {/* {event.youtubeLink && (
                   <div className="flex items-start gap-3">
                     <div className="text-sm mb-1" style={{ color: '#666' }}>YouTube Link</div>
                     <a href={event.youtubeLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
                       {event.youtubeLink}
                     </a>
                   </div>
-                )}
+                )} */}
 
                 <div className="pt-4 border-t border-gray-200">
                   <div className="text-sm mb-2" style={{ color: '#666' }}>Description</div>
@@ -179,7 +208,7 @@ export function EventDetail({ role }: EventDetailProps) {
               </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Stats Cards
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#E1C06E' }}>
                 <Users className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
@@ -193,6 +222,30 @@ export function EventDetail({ role }: EventDetailProps) {
                   <div className="text-xs" style={{ color: '#666' }}>Age Range</div>
                 </div>
               )}
+            </div> */}
+
+         {/* Stats Cards */}
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#ECC180' }}>
+                <Eye className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
+                <div className="text-2xl mb-1" style={{ color: '#333' }}>{(event.views ?? 0).toLocaleString()}</div>
+                <div className="text-xs" style={{ color: '#666' }}>Views</div>
+              </div>
+              <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#E1C06E' }}>
+                <Users className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
+                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.registrations ?? 0}</div>
+                <div className="text-xs" style={{ color: '#666' }}>Registrations</div>
+              </div>
+              <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#CF9F0C', color: '#fff' }}>
+                <Star className="w-6 h-6 mx-auto mb-2" />
+                <div className="text-2xl mb-1">{event.rating ?? '—'}</div>
+                <div className="text-xs opacity-90">Rating</div>
+              </div>
+              <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#ECC180' }}>
+                <Share2 className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
+                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.shares ?? 0}</div>
+                <div className="text-xs" style={{ color: '#666' }}>Shares</div>
+              </div>
             </div>
           </div>
 
@@ -262,15 +315,23 @@ export function EventDetail({ role }: EventDetailProps) {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Max Participants</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{event.maxParticipants}</span>
-                </div>
-                {event.minAge && event.maxAge && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: '#666' }}>Age Range</span>
-                    <span className="text-sm" style={{ color: '#333' }}>{event.minAge} - {event.maxAge}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>Featured</span>
+                  <div className="flex items-center gap-2">
+                   
+                    <span className="text-sm" style={{ color: '#333' }}>{event.featured ?? true ? 'Yes' : 'No'}</span>
                   </div>
-                )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm" style={{ color: '#666' }}>Registration</span>
+                  <div className="flex items-center gap-2">
+                
+                    <span className="text-sm" style={{ color: '#333' }}>{event.registrationOpen ?? true ? 'Open' : 'Closed'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm" style={{ color: '#666' }}>Capacity</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{event.registrations ?? 0}/{event.maxParticipants}</span>
+                </div>
               </div>
             </div>
           </div>

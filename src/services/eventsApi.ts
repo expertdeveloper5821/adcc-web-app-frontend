@@ -17,6 +17,12 @@ export interface EventApiResponse {
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'Draft' | 'Published' | 'Cancelled';
   createdAt?: string;
   updatedAt?: string;
+  views?: number;
+  registrations?: number;
+  rating?: number;
+  shares?: number;
+  featured?: boolean;
+  registrationOpen?: boolean;
 }
 
 export interface GetEventsParams {

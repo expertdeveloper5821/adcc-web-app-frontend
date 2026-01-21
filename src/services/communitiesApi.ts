@@ -15,6 +15,12 @@ export interface CommunityApiResponse {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  associatedTeams?: string[];
+  visibility?: string;
+  featured?: boolean;
+  manager?: string;
+  membersCount?: number;
+  eventsCount?: number;
 }
 
 export interface CreateCommunityRequest {
