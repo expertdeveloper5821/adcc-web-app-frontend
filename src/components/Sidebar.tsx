@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { UserRole } from '../App';
 import { 
   LayoutDashboard, 
@@ -21,7 +22,6 @@ import {
 interface SidebarProps {
   currentRole: UserRole;
   currentPage: string;
-  navigate: (page: string) => void;
 }
 
 interface MenuItem {
@@ -31,24 +31,27 @@ interface MenuItem {
   roles: UserRole[];
 }
 
-const menuItems: MenuItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager', 'moderator'] },
-  { id: 'events', label: 'Events', icon: <Calendar className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager'] },
-  { id: 'communities', label: 'Communities', icon: <Users className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager'] },
-  { id: 'tracks', label: 'Tracks', icon: <MapPin className="w-5 h-5" />, roles: ['super-admin', 'community-manager'] },
-  { id: 'feed', label: 'Feed Moderation', icon: <MessageSquare className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'moderator'] },
-  { id: 'marketplace', label: 'Marketplace', icon: <ShoppingBag className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'moderator'] },
-  { id: 'cms', label: 'Content Manager', icon: <FileText className="w-5 h-5" />, roles: ['super-admin', 'content-manager'] },
-  { id: 'media', label: 'Media Library', icon: <Image className="w-5 h-5" />, roles: ['super-admin', 'content-manager'] },
-  { id: 'push', label: 'Push Notifications', icon: <Bell className="w-5 h-5" />, roles: ['super-admin', 'content-manager'] },
-  { id: 'users', label: 'Users', icon: <UserCog className="w-5 h-5" />, roles: ['super-admin', 'moderator'] },
-  { id: 'reports', label: 'Reports & Analytics', icon: <BarChart3 className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager', 'moderator'] },
-  { id: 'config', label: 'App Configuration', icon: <Settings className="w-5 h-5" />, roles: ['super-admin'] },
-  { id: 'languages', label: 'Languages', icon: <Globe className="w-5 h-5" />, roles: ['super-admin'] },
-  { id: 'roles', label: 'Roles & Permissions', icon: <Shield className="w-5 h-5" />, roles: ['super-admin'] },
+interface MenuItemWithPath extends MenuItem {
+  path: string;
+}
+
+const menuItems: MenuItemWithPath[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager', 'moderator'], path: '/dashboard' },
+  { id: 'events', label: 'Events', icon: <Calendar className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager'], path: '/events' },
+  { id: 'communities', label: 'Communities', icon: <Users className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager'], path: '/communities' },
+  { id: 'tracks', label: 'Tracks', icon: <MapPin className="w-5 h-5" />, roles: ['super-admin', 'community-manager'], path: '/tracks' },
+  { id: 'feed', label: 'Feed Moderation', icon: <MessageSquare className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'moderator'], path: '/feed' },
+  { id: 'marketplace', label: 'Marketplace', icon: <ShoppingBag className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'moderator'], path: '/marketplace' },
+  { id: 'cms', label: 'Content Manager', icon: <FileText className="w-5 h-5" />, roles: ['super-admin', 'content-manager'], path: '/cms' },
+  { id: 'media', label: 'Media Library', icon: <Image className="w-5 h-5" />, roles: ['super-admin', 'content-manager'], path: '/media' },
+  { id: 'push', label: 'Push Notifications', icon: <Bell className="w-5 h-5" />, roles: ['super-admin', 'content-manager'], path: '/push' },
+  { id: 'users', label: 'Users', icon: <UserCog className="w-5 h-5" />, roles: ['super-admin', 'moderator'], path: '/users' },
+  { id: 'reports', label: 'Reports & Analytics', icon: <BarChart3 className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager', 'moderator'], path: '/reports' },
+  { id: 'config', label: 'App Configuration', icon: <Settings className="w-5 h-5" />, roles: ['super-admin'], path: '/config' },
+  { id: 'roles', label: 'Roles & Permissions', icon: <Shield className="w-5 h-5" />, roles: ['super-admin'], path: '/roles' },
 ];
 
-export function Sidebar({ currentRole, currentPage, navigate }: SidebarProps) {
+export function Sidebar({ currentRole, currentPage }: SidebarProps) {
   const visibleItems = menuItems.filter(item => item.roles.includes(currentRole));
 
   return (
@@ -65,18 +68,22 @@ export function Sidebar({ currentRole, currentPage, navigate }: SidebarProps) {
 
         <nav className="space-y-1">
           {visibleItems.map(item => (
-            <button
+            <NavLink
               key={item.id}
-              onClick={() => navigate(item.id)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all"
-              style={{
-                backgroundColor: currentPage === item.id ? '#ECC180' : 'transparent',
+              to={item.path}
+              className={({ isActive }) =>
+                `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  isActive ? '' : ''
+                }`
+              }
+              style={({ isActive }) => ({
+                backgroundColor: isActive ? '#ECC180' : 'transparent',
                 color: '#333',
-              }}
+              })}
             >
               {item.icon}
               <span className="text-sm">{item.label}</span>
-            </button>
+            </NavLink>
           ))}
         </nav>
       </div>

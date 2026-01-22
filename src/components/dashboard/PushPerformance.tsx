@@ -1,9 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, TrendingUp, Eye, MousePointerClick } from 'lucide-react';
-
-interface PushPerformanceProps {
-  navigate: (page: string) => void;
-}
 
 const campaigns = [
   { name: 'Weekend Ride Reminder', sent: 8234, opened: 6187, clicked: 3421, rate: '75.2%' },
@@ -11,13 +8,14 @@ const campaigns = [
   { name: 'Community Milestone', sent: 8234, opened: 5345, clicked: 2138, rate: '64.9%' },
 ];
 
-export function PushPerformance({ navigate }: PushPerformanceProps) {
+export function PushPerformance() {
+  const navigate = useNavigate();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl" style={{ color: '#333' }}>Push Campaign Performance</h2>
         <button
-          onClick={() => navigate('push')}
+          onClick={() => navigate('/push')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
         >

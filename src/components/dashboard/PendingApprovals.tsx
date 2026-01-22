@@ -1,9 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, ShoppingBag, AlertCircle } from 'lucide-react';
-
-interface PendingApprovalsProps {
-  navigate: (page: string) => void;
-}
 
 const approvals = [
   { type: 'feed', count: 12, label: 'Pending Posts', icon: <MessageSquare className="w-5 h-5" /> },
@@ -11,7 +8,8 @@ const approvals = [
   { type: 'reports', count: 3, label: 'Reported Content', icon: <AlertCircle className="w-5 h-5" /> },
 ];
 
-export function PendingApprovals({ navigate }: PendingApprovalsProps) {
+export function PendingApprovals() {
+  const navigate = useNavigate();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
@@ -22,7 +20,7 @@ export function PendingApprovals({ navigate }: PendingApprovalsProps) {
         {approvals.map((approval) => (
           <button
             key={approval.type}
-            onClick={() => navigate(approval.type)}
+            onClick={() => navigate(`/${approval.type}`)}
             className="w-full p-4 rounded-xl transition-all hover:shadow-md"
             style={{ backgroundColor: '#FFF9EF' }}
           >

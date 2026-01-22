@@ -1,12 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, ShoppingBag, AlertCircle, UserX, Flag } from 'lucide-react';
 import { StatCard } from './StatCard';
 
-interface ModeratorDashboardProps {
-  navigate: (page: string, params?: any) => void;
-}
-
-export function ModeratorDashboard({ navigate }: ModeratorDashboardProps) {
+export function ModeratorDashboard() {
+  const navigate = useNavigate();
   const queue = [
     { type: 'Feed Post', user: 'Mohammed Ali', reason: 'Pending Review', priority: 'low' },
     { type: 'Marketplace Item', user: 'Sara Ahmed', reason: 'Reported: Spam', priority: 'high' },
@@ -27,13 +25,13 @@ export function ModeratorDashboard({ navigate }: ModeratorDashboardProps) {
           label="Pending Posts"
           value="12"
           icon={<MessageSquare className="w-6 h-6" />}
-          onClick={() => navigate('feed')}
+          onClick={() => navigate('/feed')}
         />
         <StatCard
           label="Reported Content"
           value="8"
           icon={<Flag className="w-6 h-6" />}
-          onClick={() => navigate('feed')}
+          onClick={() => navigate('/feed')}
         />
         <StatCard
           label="Marketplace Queue"
@@ -45,7 +43,7 @@ export function ModeratorDashboard({ navigate }: ModeratorDashboardProps) {
           label="User Reports"
           value="3"
           icon={<UserX className="w-6 h-6" />}
-          onClick={() => navigate('users')}
+          onClick={() => navigate('/users')}
         />
       </div>
 
@@ -140,7 +138,7 @@ export function ModeratorDashboard({ navigate }: ModeratorDashboardProps) {
                 2 items require immediate attention
               </div>
               <button
-                onClick={() => navigate('feed')}
+                onClick={() => navigate('/feed')}
                 className="mt-3 px-4 py-2 rounded-lg bg-white text-sm"
                 style={{ color: '#C12D32' }}
               >

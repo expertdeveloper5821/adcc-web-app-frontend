@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, MapPin, Activity, Shield } from 'lucide-react';
 import { addTrack, Track } from '../../data/tracksData';
 import { toast } from 'sonner@2.0.3';
 
-interface TrackCreateProps {
-  navigate: (page: string, params?: any) => void;
-}
-
-export function TrackCreate({ navigate }: TrackCreateProps) {
+export function TrackCreate() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     city: 'Abu Dhabi',
@@ -43,14 +41,14 @@ export function TrackCreate({ navigate }: TrackCreateProps) {
 
     addTrack(newTrack);
     toast.success(`Track ${status === 'Active' ? 'published' : 'saved as draft'} successfully`);
-    navigate('track-detail', { selectedTrackId: newTrack.id });
+    navigate(`/tracks/${newTrack.id}`);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('tracks')}
+          onClick={() => navigate('/tracks')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
@@ -346,7 +344,7 @@ export function TrackCreate({ navigate }: TrackCreateProps) {
               Save as Draft
             </button>
             <button
-              onClick={() => navigate('tracks')}
+              onClick={() => navigate('/tracks')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >

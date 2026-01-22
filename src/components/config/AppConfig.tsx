@@ -1,11 +1,7 @@
 import React from 'react';
 import { Settings, Globe, Bell, Shield } from 'lucide-react';
 
-interface AppConfigProps {
-  navigate: (page: string) => void;
-}
-
-export function AppConfig({ navigate }: AppConfigProps) {
+export function AppConfig() {
   return (
     <div className="space-y-6">
       <div>

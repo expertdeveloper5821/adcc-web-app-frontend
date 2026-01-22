@@ -1,24 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Copy, XCircle, Send, Eye, Users, Star, Share2, Calendar, MapPin, Clock, Download, Upload } from 'lucide-react';
 import { UserRole } from '../../App';
-import { getEvent, updateEvent } from '../../data/eventsData';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
+import { getEventById, updateEvent as updateEventApi, EventApiResponse } from '../../services/eventsApi';
 
 interface EventDetailProps {
-  eventId: string;
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
 type TabType = 'overview' | 'registrations' | 'media' | 'ratings' | 'notifications';
 
-export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
+export function EventDetail({ role }: EventDetailProps) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const eventId = id || '';
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [isEditing, setIsEditing] = useState(false);
-  const event = getEvent(eventId);
+  const [event, setEvent] = useState<EventApiResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [updatingField, setUpdatingField] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadEvent();
+  }, [eventId]);
+
+  const loadEvent = async () => {
+    setIsLoading(true);
+    try {
+      const fetchedEvent = await getEventById(eventId);
+      setEvent(fetchedEvent);
+    } catch (error: any) {
+      console.error('Error loading event:', error);
+      toast.error('Failed to load event. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8" style={{ color: '#666' }}>Loading event...</div>;
+  }
 
   if (!event) {
-    return <div>Event not found</div>;
+    return <div className="text-center py-8" style={{ color: '#666' }}>Event not found</div>;
   }
 
   const canEdit = role === 'super-admin' || role === 'content-manager' || role === 'community-manager';
@@ -35,20 +60,57 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
     { id: '3', user: 'Omar Khalid', rating: 4, comment: 'Good event, would have liked more water stations.', date: '2026-01-07' },
   ];
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (confirm('Are you sure you want to cancel this event?')) {
-      updateEvent(eventId, { status: 'Cancelled' });
-      toast.success('Event cancelled successfully');
+      setIsSaving(true);
+      try {
+        await updateEventApi(eventId, { status: 'cancelled' });
+        toast.success('Event cancelled successfully');
+        loadEvent(); // Reload event to reflect changes
+      } catch (error: any) {
+        console.error('Error cancelling event:', error);
+        toast.error(error.response?.data?.message || 'Failed to cancel event. Please try again.');
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
   const handleDuplicate = () => {
-    toast.success('Event duplicated successfully');
-    navigate('events');
+    // toast.success('Event duplicated successfully');
+    // navigate('/sevents');
   };
 
   const handleSendPush = () => {
     toast.success('Push notification sent to all registrants');
+  };
+
+  const handleFeaturedToggle = async () => {
+    const next = !(event!.featured ?? true);
+    setUpdatingField('featured');
+    try {
+      await updateEventApi(eventId, { featured: next });
+      setEvent((prev) => (prev ? { ...prev, featured: next } : null));
+      toast.success(next ? 'Event featured' : 'Event unfeatured');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally {
+      setUpdatingField(null);
+    }
+  };
+
+  const handleRegistrationToggle = async () => {
+    const next = !(event!.registrationOpen ?? true);
+    setUpdatingField('registration');
+    try {
+      await updateEventApi(eventId, { registrationOpen: next });
+      setEvent((prev) => (prev ? { ...prev, registrationOpen: next } : null));
+      toast.success(next ? 'Registration opened' : 'Registration closed');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally {
+      setUpdatingField(null);
+    }
   };
 
   return (
@@ -56,14 +118,15 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('events')}
+          onClick={() => navigate(-1)}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Back"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{event.name}</h1>
-          <p style={{ color: '#666' }}>{event.shortDescription}</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{event.title}</h1>
+          <p style={{ color: '#666' }}>{event.description?.substring(0, 100)}...</p>
         </div>
       </div>
 
@@ -88,13 +151,16 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
 
       {/* Content */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+        <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Content */}
+              <div className="lg:col-span-2 space-y-6">
             {/* Cover Image */}
-            <div className="rounded-2xl overflow-hidden">
-              <img src={event.image} alt={event.name} className="w-full h-80 object-cover" />
-            </div>
+            {event.mainImage && (
+              <div className="rounded-2xl overflow-hidden">
+                <img src={event.mainImage} alt={event.title} className="w-full h-80 object-cover" />
+              </div>
+            )}
 
             {/* Event Info */}
             <div className="p-6 rounded-2xl shadow-sm bg-white">
@@ -105,12 +171,16 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
                   <Calendar className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#C12D32' }} />
                   <div>
                     <div className="text-sm mb-1" style={{ color: '#666' }}>Date & Time</div>
-                    <div className="text-sm" style={{ color: '#333' }}>
-                      {new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </div>
-                    <div className="text-sm" style={{ color: '#333' }}>
-                      {event.startTime} - {event.endTime}
-                    </div>
+                    {event.eventDate && (
+                      <div className="text-sm" style={{ color: '#333' }}>
+                        {new Date(event.eventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                    )}
+                    {event.eventTime && (
+                      <div className="text-sm" style={{ color: '#333' }}>
+                        {event.eventTime}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -118,38 +188,62 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
                   <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#C12D32' }} />
                   <div>
                     <div className="text-sm mb-1" style={{ color: '#666' }}>Location</div>
-                    <div className="text-sm" style={{ color: '#333' }}>{event.track}</div>
-                    <div className="text-sm" style={{ color: '#333' }}>{event.city}</div>
+                    <div className="text-sm" style={{ color: '#333' }}>{event.address}</div>
                   </div>
                 </div>
 
+                {/* {event.youtubeLink && (
+                  <div className="flex items-start gap-3">
+                    <div className="text-sm mb-1" style={{ color: '#666' }}>YouTube Link</div>
+                    <a href={event.youtubeLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                      {event.youtubeLink}
+                    </a>
+                  </div>
+                )} */}
+
                 <div className="pt-4 border-t border-gray-200">
                   <div className="text-sm mb-2" style={{ color: '#666' }}>Description</div>
-                  <p className="text-sm" style={{ color: '#333' }}>{event.fullDescription}</p>
+                  <p className="text-sm" style={{ color: '#333' }}>{event.description}</p>
                 </div>
               </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Stats Cards
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#E1C06E' }}>
+                <Users className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
+                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.maxParticipants}</div>
+                <div className="text-xs" style={{ color: '#666' }}>Max Participants</div>
+              </div>
+              {event.minAge && event.maxAge && (
+                <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#ECC180' }}>
+                  <Users className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
+                  <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.minAge}-{event.maxAge}</div>
+                  <div className="text-xs" style={{ color: '#666' }}>Age Range</div>
+                </div>
+              )}
+            </div> */}
+
+         {/* Stats Cards */}
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#ECC180' }}>
                 <Eye className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
-                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.views.toLocaleString()}</div>
+                <div className="text-2xl mb-1" style={{ color: '#333' }}>{(event.views ?? 0).toLocaleString()}</div>
                 <div className="text-xs" style={{ color: '#666' }}>Views</div>
               </div>
               <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#E1C06E' }}>
                 <Users className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
-                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.registrations}</div>
+                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.registrations ?? 0}</div>
                 <div className="text-xs" style={{ color: '#666' }}>Registrations</div>
               </div>
               <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#CF9F0C', color: '#fff' }}>
                 <Star className="w-6 h-6 mx-auto mb-2" />
-                <div className="text-2xl mb-1">{event.rating}</div>
+                <div className="text-2xl mb-1">{event.rating ?? '—'}</div>
                 <div className="text-xs opacity-90">Rating</div>
               </div>
               <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#ECC180' }}>
                 <Share2 className="w-6 h-6 mx-auto mb-2" style={{ color: '#333' }} />
-                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.shares}</div>
+                <div className="text-2xl mb-1" style={{ color: '#333' }}>{event.shares ?? 0}</div>
                 <div className="text-xs" style={{ color: '#666' }}>Shares</div>
               </div>
             </div>
@@ -163,7 +257,7 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
                 <h3 className="text-lg mb-4" style={{ color: '#333' }}>Quick Actions</h3>
                 <div className="space-y-2">
                   <button
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => navigate(`/events/${eventId}/edit`)}
                     className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
@@ -186,14 +280,15 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
                     <Send className="w-4 h-4" />
                     <span>Send Push</span>
                   </button>
-                  {event.status !== 'Cancelled' && (
+                  {(event.status !== 'cancelled' && event.status !== 'Cancelled') && (
                     <button
                       onClick={handleCancel}
-                      className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
+                      disabled={isSaving}
+                      className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md disabled:opacity-50"
                       style={{ backgroundColor: '#C12D32' }}
                     >
                       <XCircle className="w-4 h-4" />
-                      <span>Cancel Event</span>
+                      <span>{isSaving ? 'Cancelling...' : 'Cancel Event'}</span>
                     </button>
                   )}
                 </div>
@@ -207,11 +302,13 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#666' }}>Status</span>
                   <span
-                    className="px-3 py-1 rounded-full text-xs text-white"
+                    className="px-3 py-1 rounded-full text-xs text-white capitalize"
                     style={{
                       backgroundColor:
-                        event.status === 'Published' ? '#CF9F0C' :
-                        event.status === 'Draft' ? '#999' : '#C12D32'
+                        event.status === 'upcoming' || event.status === 'Published' ? '#CF9F0C' :
+                        event.status === 'ongoing' ? '#CF9F0C' :
+                        event.status === 'completed' ? '#999' :
+                        event.status === 'cancelled' || event.status === 'Cancelled' ? '#C12D32' : '#999'
                     }}
                   >
                     {event.status}
@@ -219,26 +316,33 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#666' }}>Featured</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{event.featured ? 'Yes' : 'No'}</span>
+                  <div className="flex items-center gap-2">
+                   
+                    <span className="text-sm" style={{ color: '#333' }}>{event.featured ?? true ? 'Yes' : 'No'}</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#666' }}>Registration</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{event.registrationOpen ? 'Open' : 'Closed'}</span>
+                  <div className="flex items-center gap-2">
+                
+                    <span className="text-sm" style={{ color: '#333' }}>{event.registrationOpen ?? true ? 'Open' : 'Closed'}</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#666' }}>Capacity</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{event.registrations}/{event.capacity}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{event.registrations ?? 0}/{event.maxParticipants}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        </>
       )}
 
       {activeTab === 'registrations' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl" style={{ color: '#333' }}>Registrations ({event.registrations})</h2>
+            <h2 className="text-xl" style={{ color: '#333' }}>Registrations</h2>
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-white"
               style={{ backgroundColor: '#C12D32' }}
@@ -279,9 +383,16 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <h2 className="text-xl mb-6" style={{ color: '#333' }}>Event Media</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="aspect-video rounded-lg overflow-hidden">
-              <img src={event.image} alt="Event" className="w-full h-full object-cover" />
-            </div>
+            {event.mainImage && (
+              <div className="aspect-video rounded-lg overflow-hidden">
+                <img src={event.mainImage} alt="Event Main" className="w-full h-full object-cover" />
+              </div>
+            )}
+            {event.eventImage && (
+              <div className="aspect-video rounded-lg overflow-hidden">
+                <img src={event.eventImage} alt="Event" className="w-full h-full object-cover" />
+              </div>
+            )}
             {canEdit && (
               <div
                 className="aspect-video rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
@@ -301,29 +412,10 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl" style={{ color: '#333' }}>Ratings & Reviews</h2>
-            <div className="flex items-center gap-2">
-              <Star className="w-6 h-6 fill-current" style={{ color: '#CF9F0C' }} />
-              <span className="text-2xl" style={{ color: '#333' }}>{event.rating}</span>
-            </div>
           </div>
 
-          <div className="space-y-4">
-            {ratings.map((rating) => (
-              <div key={rating.id} className="p-4 rounded-xl" style={{ backgroundColor: '#FFF9EF' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm" style={{ color: '#333' }}>{rating.user}</span>
-                  <div className="flex items-center gap-1">
-                    {[...Array(rating.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-current" style={{ color: '#CF9F0C' }} />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm mb-2" style={{ color: '#666' }}>{rating.comment}</p>
-                <p className="text-xs" style={{ color: '#999' }}>
-                  {new Date(rating.date).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
+          <div className="text-center py-8" style={{ color: '#666' }}>
+            No ratings available yet
           </div>
         </div>
       )}
@@ -338,8 +430,7 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
               <input
                 type="text"
                 placeholder="Notification title"
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                style={{ focusRing: '#C12D32' }}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
               />
             </div>
 
@@ -348,18 +439,16 @@ export function EventDetail({ eventId, navigate, role }: EventDetailProps) {
               <textarea
                 placeholder="Notification message"
                 rows={4}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                style={{ focusRing: '#C12D32' }}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
               />
             </div>
 
             <div>
               <label className="block text-sm mb-2" style={{ color: '#666' }}>Recipients</label>
               <select
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                style={{ focusRing: '#C12D32' }}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
               >
-                <option>All Registrants ({event.registrations})</option>
+                <option>All Registrants</option>
                 <option>All Members</option>
                 <option>Custom List</option>
               </select>

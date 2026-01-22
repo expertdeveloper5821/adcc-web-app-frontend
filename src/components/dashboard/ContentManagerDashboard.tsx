@@ -1,12 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, MessageSquare, ShoppingBag, TrendingUp, Image } from 'lucide-react';
 import { StatCard } from './StatCard';
 
-interface ContentManagerDashboardProps {
-  navigate: (page: string, params?: any) => void;
-}
-
-export function ContentManagerDashboard({ navigate }: ContentManagerDashboardProps) {
+export function ContentManagerDashboard() {
+  const navigate = useNavigate();
   const banners = [
     { title: 'Homepage Hero', status: 'Active', clicks: 1247, ctr: '3.2%' },
     { title: 'Event Promotion', status: 'Active', clicks: 892, ctr: '2.8%' },
@@ -27,7 +25,7 @@ export function ContentManagerDashboard({ navigate }: ContentManagerDashboardPro
           value="8"
           icon={<Image className="w-6 h-6" />}
           trend="+2"
-          onClick={() => navigate('cms')}
+          onClick={() => navigate('/cms')}
         />
         <StatCard
           label="Events Promoted"
@@ -41,14 +39,14 @@ export function ContentManagerDashboard({ navigate }: ContentManagerDashboardPro
           value="47"
           icon={<MessageSquare className="w-6 h-6" />}
           trend="+8"
-          onClick={() => navigate('feed')}
+          onClick={() => navigate('/feed')}
         />
         <StatCard
           label="Featured Items"
           value="15"
           icon={<ShoppingBag className="w-6 h-6" />}
           trend="+3"
-          onClick={() => navigate('marketplace')}
+          onClick={() => navigate('/marketplace')}
         />
       </div>
 
@@ -57,7 +55,7 @@ export function ContentManagerDashboard({ navigate }: ContentManagerDashboardPro
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl" style={{ color: '#333' }}>Homepage Banners</h2>
           <button
-            onClick={() => navigate('cms')}
+            onClick={() => navigate('/cms')}
             className="px-4 py-2 rounded-lg text-white text-sm"
             style={{ backgroundColor: '#C12D32' }}
           >

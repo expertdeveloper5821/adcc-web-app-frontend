@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../App';
-import { Search, Bell, ChevronDown } from 'lucide-react';
+import { Search, Bell, ChevronDown, LogOut, User } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
+import { useAuth } from '../contexts/AuthContext';
 
 interface TopBarProps {
   currentRole: UserRole;
@@ -17,12 +19,19 @@ const roleLabels: Record<UserRole, string> = {
 
 export function TopBar({ currentRole, setRole }: TopBarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const { userProfile, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
 
@@ -30,9 +39,20 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setUserMenuOpen(false);
+      navigate('/login');
+    } catch (error) {
+      // Error handled in AuthContext
+    }
+  };
+
   const handleRoleChange = (role: UserRole) => {
     setRole(role);
     setDropdownOpen(false);
+    navigate('/dashboard'); // Navigate to dashboard when role changes
     toast.success(`Viewing as ${roleLabels[role]}`);
   };
 
@@ -88,10 +108,44 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
         </button>
 
         {/* User Avatar */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: '#C12D32' }}>
-            <span>AD</span>
-          </div>
+        <div className="relative" ref={userMenuRef}>
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold" style={{ backgroundColor: '#C12D32' }}>
+              {userProfile?.fullName 
+                ? userProfile.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                : 'U'}
+            </div>
+            <ChevronDown className="w-4 h-4" style={{ color: '#666' }} />
+          </button>
+
+          {userMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+              {userProfile && (
+                <div className="px-4 py-3 border-b border-gray-200">
+                  <div className="text-sm font-semibold" style={{ color: '#333' }}>
+                    {userProfile.fullName}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: '#666' }}>
+                    {userProfile.email || userProfile.phone}
+                  </div>
+                  <div className="text-xs mt-1 capitalize" style={{ color: '#999' }}>
+                    Role: {userProfile.role}
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-colors text-left"
+                style={{ color: '#C12D32' }}
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">Logout</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

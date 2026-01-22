@@ -5,9 +5,19 @@
 
   export default defineConfig({
     plugins: [react()],
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react/jsx-runtime', 'react-router-dom'],
+      force: true,
+    },
+    preview: {
+      host: '0.0.0.0',
+      allowedHosts: ['adcc-web-app-frontend.onrender.com']
+    },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
+        'react': path.resolve(__dirname, './node_modules/react'),
+        'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
         'vaul@1.1.2': 'vaul',
         'sonner@2.0.3': 'sonner',
         'recharts@2.15.2': 'recharts',

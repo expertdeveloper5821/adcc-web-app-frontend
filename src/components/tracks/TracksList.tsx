@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, MapPin, Users, AlertCircle, Edit, Trash2, Eye } from 'lucide-react';
 import { UserRole } from '../../App';
 import { getAllTracks, deleteTrack } from '../../data/tracksData';
 import { toast } from 'sonner@2.0.3';
 
 interface TracksListProps {
-  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
-export function TracksList({ navigate, role }: TracksListProps) {
+export function TracksList({ role }: TracksListProps) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -71,7 +72,7 @@ export function TracksList({ navigate, role }: TracksListProps) {
         </div>
         {canCreate && (
           <button
-            onClick={() => navigate('track-create')}
+            onClick={() => navigate('/tracks/create')}
             className="flex items-center gap-2 px-6 py-3 rounded-lg text-white transition-all hover:shadow-lg"
             style={{ backgroundColor: '#C12D32' }}
           >
@@ -205,7 +206,7 @@ export function TracksList({ navigate, role }: TracksListProps) {
                 {/* Actions */}
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => navigate('track-detail', { selectedTrackId: track.id })}
+                    onClick={() => navigate(`/tracks/${track.id}`)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
@@ -215,7 +216,7 @@ export function TracksList({ navigate, role }: TracksListProps) {
                   {canEdit && (
                     <>
                       <button
-                        onClick={() => navigate('track-detail', { selectedTrackId: track.id })}
+                        onClick={() => navigate(`/tracks/${track.id}`)}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Edit"
                       >

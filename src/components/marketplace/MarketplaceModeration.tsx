@@ -2,16 +2,12 @@ import React from 'react';
 import { CheckCircle, XCircle, Star } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
-interface MarketplaceModerationProps {
-  navigate: (page: string) => void;
-}
-
 const items = [
   { id: '1', title: 'Specialized Road Bike', price: 'AED 4,500', seller: 'Ahmed Ali', image: 'https://images.unsplash.com/photo-1716738634956-1494117b349b?w=200', status: 'pending' },
   { id: '2', title: 'Cycling Helmet - Brand New', price: 'AED 350', seller: 'Sara Hassan', image: 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?w=200', status: 'pending' },
 ];
 
-export function MarketplaceModeration({ navigate }: MarketplaceModerationProps) {
+export function MarketplaceModeration() {
   const handleApprove = (itemId: string) => {
     toast.success('Item approved');
   };

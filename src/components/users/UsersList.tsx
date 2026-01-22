@@ -3,7 +3,6 @@ import { Search, Ban, UserCheck } from 'lucide-react';
 import { UserRole } from '../../App';
 
 interface UsersListProps {
-  navigate: (page: string) => void;
   role: UserRole;
 }
 
@@ -13,7 +12,7 @@ const users = [
   { id: '3', name: 'Mohammed Hassan', email: 'mohammed@example.com', status: 'Active', events: 15, joined: '2025-05-10' },
 ];
 
-export function UsersList({ navigate, role }: UsersListProps) {
+export function UsersList({ role }: UsersListProps) {
   return (
     <div className="space-y-6">
       <div>

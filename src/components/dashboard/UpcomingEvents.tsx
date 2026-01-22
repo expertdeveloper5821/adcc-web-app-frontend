@@ -1,9 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Star } from 'lucide-react';
-
-interface UpcomingEventsProps {
-  navigate: (page: string, params?: any) => void;
-}
 
 const events = [
   {
@@ -50,7 +47,7 @@ export function UpcomingEvents({ navigate }: UpcomingEventsProps) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl" style={{ color: '#333' }}>Upcoming Events</h2>
         <button
-          onClick={() => navigate('events')}
+          onClick={() => navigate('/events')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
         >
@@ -74,7 +71,7 @@ export function UpcomingEvents({ navigate }: UpcomingEventsProps) {
             {events.map((event) => (
               <tr
                 key={event.id}
-                onClick={() => navigate('event-detail', { selectedEventId: event.id })}
+                onClick={() => navigate(`/events/${event.id}`)}
                 className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <td className="py-3 px-2">

@@ -3,7 +3,6 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { UserRole } from '../../App';
 
 interface ReportsProps {
-  navigate: (page: string) => void;
   role: UserRole;
 }
 
@@ -17,7 +16,7 @@ const data = [
   { month: 'Jan', users: 2580, events: 35 },
 ];
 
-export function Reports({ navigate, role }: ReportsProps) {
+export function Reports({ role }: ReportsProps) {
   return (
     <div className="space-y-6">
       <div>

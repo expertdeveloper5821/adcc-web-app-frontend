@@ -1,10 +1,6 @@
 import React from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-interface RolesPermissionsProps {
-  navigate: (page: string) => void;
-}
-
 const permissions = [
   { name: 'View Dashboard', super: true, content: true, community: true, moderator: true },
   { name: 'Manage Events', super: true, content: true, community: true, moderator: false },
@@ -13,7 +9,7 @@ const permissions = [
   { name: 'App Configuration', super: true, content: false, community: false, moderator: false },
 ];
 
-export function RolesPermissions({ navigate }: RolesPermissionsProps) {
+export function RolesPermissions() {
   return (
     <div className="space-y-6">
       <div>

@@ -1,9 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Users, Star } from 'lucide-react';
-
-interface PopularTracksProps {
-  navigate: (page: string) => void;
-}
 
 const tracks = [
   { name: 'Al Wathba Circuit', city: 'Abu Dhabi', users: 1247, rating: 4.8, color: '#C12D32' },
@@ -12,13 +9,14 @@ const tracks = [
   { name: 'Desert Route 1', city: 'Al Ain', users: 645, rating: 4.6, color: '#ECC180' },
 ];
 
-export function PopularTracks({ navigate }: PopularTracksProps) {
+export function PopularTracks() {
+  const navigate = useNavigate();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl" style={{ color: '#333' }}>Popular Tracks</h2>
         <button
-          onClick={() => navigate('tracks')}
+          onClick={() => navigate('/tracks')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
         >
@@ -30,7 +28,7 @@ export function PopularTracks({ navigate }: PopularTracksProps) {
         {tracks.map((track, index) => (
           <button
             key={index}
-            onClick={() => navigate('tracks')}
+            onClick={() => navigate('/tracks')}
             className="w-full p-4 rounded-xl transition-all hover:shadow-md text-left"
             style={{ backgroundColor: '#FFF9EF' }}
           >

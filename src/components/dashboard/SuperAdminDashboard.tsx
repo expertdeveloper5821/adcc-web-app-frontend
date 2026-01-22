@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, UserCheck, Calendar, Building2, ShoppingBag, MapPin } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { UpcomingEvents } from './UpcomingEvents';
@@ -8,11 +9,8 @@ import { RecentActivity } from './RecentActivity';
 import { PushPerformance } from './PushPerformance';
 import { PopularTracks } from './PopularTracks';
 
-interface SuperAdminDashboardProps {
-  navigate: (page: string, params?: any) => void;
-}
-
-export function SuperAdminDashboard({ navigate }: SuperAdminDashboardProps) {
+export function SuperAdminDashboard() {
+  const navigate = useNavigate();
   return (
     <div className="space-y-6">
       <div>
@@ -27,50 +25,50 @@ export function SuperAdminDashboard({ navigate }: SuperAdminDashboardProps) {
           value="12,458"
           icon={<Users className="w-6 h-6" />}
           trend="+12%"
-          onClick={() => navigate('users')}
+          onClick={() => navigate('/users')}
         />
         <StatCard
           label="Active Users"
           value="8,234"
           icon={<UserCheck className="w-6 h-6" />}
           trend="+8%"
-          onClick={() => navigate('users')}
+          onClick={() => navigate('/users')}
         />
         <StatCard
           label="Events This Month"
           value="47"
           icon={<Calendar className="w-6 h-6" />}
           trend="+23%"
-          onClick={() => navigate('events')}
+          onClick={() => navigate('/events')}
         />
         <StatCard
           label="Active Tracks"
           value="24"
           icon={<MapPin className="w-6 h-6" />}
           trend="+4"
-          onClick={() => navigate('tracks')}
+          onClick={() => navigate('/tracks')}
         />
         <StatCard
           label="Communities"
           value="28"
           icon={<Building2 className="w-6 h-6" />}
           trend="+3"
-          onClick={() => navigate('communities')}
+          onClick={() => navigate('/communities')}
         />
       </div>
 
       {/* Row 2: Main Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <UpcomingEvents navigate={navigate} />
+          <UpcomingEvents />
         </div>
-        <PendingApprovals navigate={navigate} />
+        <PendingApprovals />
       </div>
 
       {/* Row 3: Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CommunityGrowth />
-        <PushPerformance navigate={navigate} />
+        <PushPerformance />
       </div>
 
       {/* Row 4: Additional Info */}
@@ -78,7 +76,7 @@ export function SuperAdminDashboard({ navigate }: SuperAdminDashboardProps) {
         <div className="lg:col-span-2">
           <RecentActivity />
         </div>
-        <PopularTracks navigate={navigate} />
+        <PopularTracks />
       </div>
     </div>
   );
