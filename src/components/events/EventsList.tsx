@@ -9,10 +9,12 @@ interface EventsListProps {
   role: UserRole;
 }
 
+// DEMO ONLY: sample tracks for UI - replace with API/event.track when available
+const DEMO_TRACKS = ['Al Wathba Circuit', 'Yas Marina Circuit', 'Desert Route 1', 'Corniche Road'];
+
 export function EventsList({ role }: EventsListProps) {
   const navigate = useNavigate();
- 
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -20,12 +22,46 @@ export function EventsList({ role }: EventsListProps) {
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [events, setEvents] = useState<EventApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
- 
+  // DEMO ONLY: temporary state for rating display - remove when real rating from API is available
+  const [demoRatings, setDemoRatings] = useState<Record<string, number>>({});
+  // DEMO ONLY: temporary state for track - remove when event.track or API is available
+  const [demoTracks, setDemoTracks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadEvents();
   }, [statusFilter]);
+
+  // DEMO ONLY: seed demo ratings when events load (deterministic from event id for stable display)
+  useEffect(() => {
+    if (events.length === 0) return;
+    setDemoRatings((prev) => {
+      const next = { ...prev };
+      events.forEach((e) => {
+        const id = e._id || e.id || '';
+        if (id && !(id in next)) {
+          const hash = (id).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+          next[id] = Math.min(5, Math.max(1, 3 + (hash % 20) / 10)); // 3.0–4.9, clamped 1–5
+        }
+      });
+      return next;
+    });
+  }, [events]);
+
+  // DEMO ONLY: seed demo tracks when events load (deterministic from event id) - replace with event.track when API has it
+  useEffect(() => {
+    if (events.length === 0) return;
+    setDemoTracks((prev) => {
+      const next = { ...prev };
+      events.forEach((e) => {
+        const id = e._id || e.id || '';
+        if (id && !(id in next)) {
+          const hash = (id).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+          next[id] = DEMO_TRACKS[hash % DEMO_TRACKS.length];
+        }
+      });
+      return next;
+    });
+  }, [events]);
 
   const loadEvents = async () => {
   
@@ -89,7 +125,7 @@ export function EventsList({ role }: EventsListProps) {
   };
 
   const handleDuplicate = (event: EventApiResponse) => {
-    toast.success('Event duplicated successfully');
+    // toast.success('Event duplicated successfully');
   };
 
   const canEdit = role === 'super-admin' || role === 'content-manager' || role === 'community-manager';
@@ -167,10 +203,11 @@ export function EventsList({ role }: EventsListProps) {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Event</th>
-                  <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Address</th>
+                  <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>city</th>
                   <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Date</th>
-                  <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Time</th>
-                  <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Max Participants</th>
+                  <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Track</th>
+                  <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Registrations</th>
+                  <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Rating</th>
                   <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Status</th>
                   <th className="text-left py-4 px-3 text-sm" style={{ color: '#666' }}>Actions</th>
                 </tr>
@@ -214,12 +251,30 @@ export function EventsList({ role }: EventsListProps) {
                           </span>
                         </div>
                       </td>
-                      <td className="py-4 px-3 text-sm" style={{ color: '#333' }}>{event.eventTime || '-'}</td>
+                      <td className="py-4 px-3">
+                        <span className="text-sm" style={{ color: '#334155' }}>
+                          {demoTracks[eventId] ?? (event as EventApiResponse & { track?: string }).track ?? '—'}
+                        </span>
+                      </td>
                       <td className="py-4 px-3">
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4" style={{ color: '#999' }} />
                           <span className="text-sm" style={{ color: '#333' }}>{event.maxParticipants}</span>
                         </div>
+                      </td>
+                      <td className="py-4 px-3">
+                        {(() => {
+                          // DEMO: use demoRatings; fallback to API rating when available
+                          const rating = demoRatings[eventId] ?? (event as EventApiResponse & { rating?: number }).rating;
+                          return typeof rating === 'number' ? (
+                            <div className="flex items-center gap-1.5">
+                              <Star className="w-4 h-4 fill-amber-400" style={{ color: '#EAB308' }} />
+                              <span className="text-sm" style={{ color: '#334155' }}>{rating.toFixed(1)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm" style={{ color: '#999' }}>—</span>
+                          );
+                        })()}
                       </td>
                       <td className="py-4 px-3">
                         <span
@@ -247,7 +302,7 @@ export function EventsList({ role }: EventsListProps) {
                           {canEdit && (
                             <>
                               <button
-                                onClick={() => navigate(`/events/${eventId}`)}
+                                onClick={() => navigate(`/events/${eventId}/edit`)}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Edit"
                               >

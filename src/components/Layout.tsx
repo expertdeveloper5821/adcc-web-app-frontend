@@ -10,9 +10,11 @@ import { ModeratorDashboard } from './dashboard/ModeratorDashboard';
 import { EventsList } from './events/EventsList';
 import { EventCreate } from './events/EventCreate';
 import { EventDetail } from './events/EventDetail';
+import { EventEdit } from './events/EventEdit';
 import { CommunitiesList } from './communities/CommunitiesList';
 import { CommunityCreate } from './communities/CommunityCreate';
 import { CommunityDetail } from './communities/CommunityDetail';
+import { CommunityEdit } from './communities/CommunityEdit';
 import { TracksList } from './tracks/TracksList';
 import { TrackCreate } from './tracks/TrackCreate';
 import { TrackDetail } from './tracks/TrackDetail';
@@ -69,11 +71,13 @@ export function Layout() {
             {/* Events Routes */}
             <Route path="/events" element={<EventsList role={currentRole} />} />
             <Route path="/events/create" element={<EventCreate />} />
+            <Route path="/events/:id/edit" element={<EventEdit role={currentRole} />} />
             <Route path="/events/:id" element={<EventDetail role={currentRole} />} />
             
             {/* Communities Routes */}
             <Route path="/communities" element={<CommunitiesList role={currentRole} />} />
             <Route path="/communities/create" element={<CommunityCreate />} />
+            <Route path="/communities/:id/edit" element={<CommunityEdit />} />
             <Route path="/communities/:id" element={<CommunityDetail />} />
             
             {/* Tracks Routes */}

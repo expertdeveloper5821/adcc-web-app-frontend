@@ -354,10 +354,7 @@ export function CommunitiesList({  role }: CommunitiesListProps) {
                 {canEdit && (
                   <>
                     <button
-                      onClick={() => {
-                        // Fetch community data for editing
-                        navigate('/communities/create', { state: { communityId: community.id } });
-                      }}
+                      onClick={() => navigate(`/communities/${community.id}/edit`)}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                       title="Edit"
                     >

@@ -491,8 +491,9 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('/communities')}
+          onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Back"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
@@ -951,7 +952,7 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
               </button>
               <button
                 type="button"
-                onClick={() => navigate('communities')}
+                onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
                 className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                 style={{ color: '#666' }}
               >
