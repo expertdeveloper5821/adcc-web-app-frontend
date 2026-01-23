@@ -89,7 +89,7 @@ export function CommunityDetail() {
           <div className="flex items-end gap-4">
             {community.image && (
               <img
-                src={community.image}
+                src={community.logo}
                 alt={community.title}
                 className="w-24 h-24 rounded-2xl border-4 border-white object-cover"
               />

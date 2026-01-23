@@ -9,10 +9,13 @@ export interface CommunityApiResponse {
   category: string[];
   location: string;
   image?: string;
+  logo?: string;
   trackName?: string;
   distance?: number;
   terrain?: string;
   isActive: boolean;
+  isPublic?: boolean;
+  isFeatured?: boolean;
   createdAt?: string;
   updatedAt?: string;
   associatedTeams?: string[];
@@ -30,10 +33,13 @@ export interface CreateCommunityRequest {
   category: string[];
   location: string;
   image?: string;
+  logo?: string;
   trackName?: string;
   distance?: number;
   terrain?: string;
   isActive: boolean;
+  isPublic?: boolean;
+  isFeatured?: boolean;
 }
 
 // Get community by ID

@@ -21,7 +21,6 @@ interface CommunityCreateProps {
 interface FormData extends CreateCommunityRequest {
   imageFile?: File | null;
   city?: string;
-  isFeatured?: boolean;
 }
 
 export function CommunityCreate({ editingCommunity: propEditingCommunity, communityId: propCommunityId }: CommunityCreateProps = {}) {
@@ -34,6 +33,8 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
   const [isLoading, setIsLoading] = useState(false);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isCompressingLogo, setIsCompressingLogo] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [communityId, setCommunityId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -57,10 +58,12 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
       location: 'Abu Dhabi',
       city: 'Abu Dhabi',
       image: '',
+      logo: '',
       trackName: '',
       distance: undefined,
       terrain: 'Paved Road',
       isActive: true,
+      isPublic: false,
       isFeatured: false,
     },
   });
@@ -113,15 +116,20 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
         category: categoryArray,
         location: currentEditingCommunity.location || 'Abu Dhabi',
         image: currentEditingCommunity.image || '',
+        logo: currentEditingCommunity.logo || '',
         trackName: currentEditingCommunity.trackName || '',
         distance: currentEditingCommunity.distance || undefined,
         terrain: currentEditingCommunity.terrain || 'Paved Road',
         isActive: currentEditingCommunity.isActive !== undefined ? currentEditingCommunity.isActive : true,
-        isFeatured: (currentEditingCommunity as any).isFeatured !== undefined ? (currentEditingCommunity as any).isFeatured : false,
+        isPublic: currentEditingCommunity.isPublic !== undefined ? currentEditingCommunity.isPublic : false,
+        isFeatured: currentEditingCommunity.isFeatured !== undefined ? currentEditingCommunity.isFeatured : false,
       });
 
       if (currentEditingCommunity.image) {
         setImagePreview(currentEditingCommunity.image);
+      }
+      if (currentEditingCommunity.logo) {
+        setLogoPreview(currentEditingCommunity.logo);
       }
     } else {
       // Create mode: reset form to default values
@@ -129,6 +137,7 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
       setCommunityId(null);
       setSelectedCategories([]);
       setImagePreview(null);
+      setLogoPreview(null);
       setValidationErrors({});
       setCategorySearchTerm('');
       
@@ -141,10 +150,12 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
         location: 'Abu Dhabi',
         city: 'Abu Dhabi',
         image: '',
+        logo: '',
         trackName: '',
         distance: undefined,
         terrain: 'Paved Road',
         isActive: true,
+        isPublic: false,
         isFeatured: false,
       });
     }
@@ -312,7 +323,7 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
 
       try {
         setIsCompressingImage(true);
-        const compressedBase64 = await compressImage(file);
+        const compressedBase64 = await compressImage(file, 1600, 900, 0.7);
         
       // Check final size (max 500KB base64 string to prevent payload errors)
       const base64Size = compressedBase64.length * 0.75; // Approximate byte size
@@ -336,6 +347,43 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
         setValidationErrors(prev => ({ ...prev, image: error.message || 'Failed to process image' }));
       } finally {
         setIsCompressingImage(false);
+      }
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setValidationErrors(prev => ({ ...prev, logo: 'Please select a valid image file' }));
+        return;
+      }
+      const maxFileSize = 10 * 1024 * 1024;
+      if (file.size > maxFileSize) {
+        setValidationErrors(prev => ({ ...prev, logo: 'Image file is too large. Maximum size is 10MB.' }));
+        return;
+      }
+      try {
+        setIsCompressingLogo(true);
+        const compressedBase64 = await compressImage(file, 800, 800, 0.7);
+        const base64Size = compressedBase64.length * 0.75;
+        if (base64Size > 500 * 1024) {
+          setValidationErrors(prev => ({ ...prev, logo: 'Image is too large after compression. Please use a smaller image.' }));
+          setIsCompressingLogo(false);
+          return;
+        }
+        setLogoPreview(compressedBase64);
+        setValue('logo', compressedBase64);
+        setValidationErrors(prev => {
+          const next = { ...prev };
+          delete next.logo;
+          return next;
+        });
+      } catch (error: any) {
+        console.error('Error compressing logo:', error);
+        setValidationErrors(prev => ({ ...prev, logo: error.message || 'Failed to process logo' }));
+      } finally {
+        setIsCompressingLogo(false);
       }
     }
   };
@@ -376,17 +424,19 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
 
     setIsLoading(true);
     try {
-      // Get isFeatured from form data
+      // Get isFeatured and isPublic from form data
       const isFeatured = formData.isFeatured !== undefined ? formData.isFeatured : (currentValues.isFeatured !== undefined ? currentValues.isFeatured : false);
+      const isPublic = formData.isPublic !== undefined ? formData.isPublic : (currentValues.isPublic !== undefined ? currentValues.isPublic : false);
       
       // Build the request payload
-      const communityData: CreateCommunityRequest & { isFeatured?: boolean } = {
+      const communityData: CreateCommunityRequest = {
         title,
         description,
         type,
         category,
         location,
         isActive: formData.isActive !== undefined ? formData.isActive : (currentValues.isActive !== undefined ? currentValues.isActive : true),
+        isPublic: isPublic,
         isFeatured: isFeatured,
       };
 
@@ -398,7 +448,7 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
 
       // Check image size before sending (max 500KB base64 to prevent payload errors)
       if (image) {
-        const base64Size = image.length * 0.75; // Approximate byte size
+        const base64Size = image.length * 0.75;
         if (base64Size > 500 * 1024) {
           setValidationErrors(prev => ({ ...prev, image: 'Image is too large. Maximum size is 500KB after compression.' }));
           setIsLoading(false);
@@ -406,6 +456,18 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
           return;
         }
         communityData.image = image;
+      }
+
+      const logo = (formData.logo || currentValues.logo || '').toString().trim();
+      if (logo) {
+        const base64Size = logo.length * 0.75;
+        if (base64Size > 500 * 1024) {
+          setValidationErrors(prev => ({ ...prev, logo: 'Logo is too large. Maximum size is 500KB after compression.' }));
+          setIsLoading(false);
+          toast.error('Logo is too large. Please use a smaller image (max 500KB).');
+          return;
+        }
+        communityData.logo = logo;
       }
       
       if (trackName) {
@@ -840,48 +902,90 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
               </div>
             </div> */}
 
-            {/* Image Upload */}
+            {/* Community Images — matches design: white card, light orange dashed borders */}
             <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h2 className="text-xl mb-6" style={{ color: '#333' }}>Community Image</h2>
+              <h2 className="text-lg font-medium mb-5" style={{ color: '#4a4a4a' }}>
+                Community Images
+              </h2>
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  Image
-                </label>
-                <div className="space-y-4">
-                  {imagePreview && (
-                    <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-200">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
+              <div className="space-y-5">
+                {/* Logo */}
+                <div>
+                  <span className="block text-sm mb-2.5 font-normal" style={{ color: '#4a4a4a' }}>
+                    Logo
+                  </span>
+                  {logoPreview && (
+                    <div className="mb-3 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                      <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
                     </div>
                   )}
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors ${
-                      hasError('image') ? 'border-red-500' : 'border-[#ECC180]'
-                    }`}
+                  <input
+                    type="file"
+                    id="logo-upload"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleLogoUpload}
+                    hidden
+                  />
+                  <label
+                    htmlFor="logo-upload"
+                    className={`upload-btn block border-2 border-dashed rounded-lg bg-white text-center cursor-pointer transition-colors hover:bg-gray-50/50 ${hasError('logo') ? 'border-red-500' : ''}`}
+                    style={{
+                      borderColor: hasError('logo') ? undefined : '#E8A55C',
+                      padding: '2rem 1.5rem',
+                    }}
                   >
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      <Upload className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                      <p className="text-sm" style={{ color: '#666' }}>
-                        {isCompressingImage ? 'Compressing image...' : imagePreview ? 'Change image' : 'Upload community image'}
+                    <span className="items-center justify-center">
+                     
+                      <p className="text-sm flex items-center justify-center gap-2 font-normal mb-1 " style={{ color: '#4a4a4a' }}>
+                      
+                      <Upload className="w-7 h-7 " style={{ color: '#4a4a4a' }} />  {isCompressingLogo ? 'Compressing...' : logoPreview ? 'Change logo' : 'Upload community logo'}
                       </p>
-                      <p className="text-xs mt-1" style={{ color: '#999' }}>
-                        PNG, JPG - Max 10MB (will be compressed to max 500KB)
+                      <p className="text-xs font-normal" style={{ color: '#9ca3af' }}>
+                        PNG, JPG - Square format recommended
                       </p>
-                    </label>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </div>
+                    </span>
+                  </label>
+                  {hasError('logo') && (
+                    <p className="mt-1.5 text-sm text-red-600">{getFieldError('logo')}</p>
+                  )}
+                </div>
+
+                {/* Cover Image */}
+                <div>
+                  <span className="block text-sm mb-2.5 font-normal " style={{ color: '#4a4a4a' }}>
+                    Cover Image
+                  </span>
+                  {imagePreview && (
+                    <div className="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-200">
+                      <img src={imagePreview} alt="Cover preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    id="image-upload"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleImageUpload}
+                    hidden
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className={`upload-btn block border-2 border-dashed rounded-lg bg-white text-center cursor-pointer transition-colors hover:bg-gray-50/50 ${hasError('image') ? 'border-red-500' : ''}`}
+                    style={{
+                      borderColor: hasError('image') ? undefined : '#E8A55C',
+                      padding: '2rem 1.5rem',
+                    }}
+                  >
+                    <span className=" items-center justify-center">
+                        <p className="text-sm font-normal mb-1 flex items-center justify-center gap-2 " style={{ color: '#4a4a4a' }}>
+                        <Upload className="w-7 h-7 " style={{ color: '#4a4a4a' }} />  {isCompressingImage ? 'Compressing...' : imagePreview ? 'Change cover image' : 'Upload cover image'}
+                      </p>
+                      <p className="text-xs font-normal" style={{ color: '#9ca3af' }}>
+                        PNG, JPG - Wide format 16:9
+                      </p>
+                    </span>
+                  </label>
                   {hasError('image') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('image')}</p>
+                    <p className="mt-1.5 text-sm text-red-600">{getFieldError('image')}</p>
                   )}
                 </div>
               </div>
@@ -898,6 +1002,26 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Controller
                     name="isActive"
+                    control={control}
+                    render={({ field }) => (
+                      <input
+                        type="checkbox"
+                        checked={field.value || false}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        className="w-4 h-4"
+                        style={{ accentColor: '#C12D32' }}
+                      />
+                    )}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>
+                    Active Community
+                  </span>
+                </label>
+              </div>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Controller
+                    name="isPublic"
                     control={control}
                     render={({ field }) => (
                       <input

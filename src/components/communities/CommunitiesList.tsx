@@ -46,7 +46,7 @@ export function CommunitiesList({  role }: CommunitiesListProps) {
       type: apiCommunity.type || '',
       description: apiCommunity.description || '',
       status: apiCommunity.isActive ? 'Active' : 'Draft',
-      logo: apiCommunity.image || 'https://images.unsplash.com/photo-1584981401957-03158e43750d?w=200',
+      logo: apiCommunity.logo || 'https://images.unsplash.com/photo-1584981401957-03158e43750d?w=200',
       coverImage: apiCommunity.image || 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?w=800',
       membersCount: 0, // Default value, API doesn't provide this
       eventsCount: 0, // Default value, API doesn't provide this
