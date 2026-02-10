@@ -18,6 +18,7 @@ import { CommunityEdit } from './communities/CommunityEdit';
 import { TracksList } from './tracks/TracksList';
 import { TrackCreate } from './tracks/TrackCreate';
 import { TrackDetail } from './tracks/TrackDetail';
+import { TrackEdit } from './tracks/TrackEdit';
 import { FeedModeration } from './feed/FeedModeration';
 import { MarketplaceModeration } from './marketplace/MarketplaceModeration';
 import { CMS } from './cms/CMS';
@@ -83,8 +84,8 @@ export function Layout() {
             {/* Tracks Routes */}
             <Route path="/tracks" element={<TracksList role={currentRole} />} />
             <Route path="/tracks/create" element={<TrackCreate />} />
-            <Route path="/tracks/:id" element={<TrackDetail role={currentRole} />} />
-            
+            <Route path="/tracks/:trackId" element={<TrackDetail role={currentRole} />} />
+            <Route path="/tracks/:trackId" element={<TrackEdit role={currentRole} />} />
             {/* Other Routes */}
             <Route path="/feed" element={<FeedModeration />} />
             <Route path="/marketplace" element={<MarketplaceModeration />} />

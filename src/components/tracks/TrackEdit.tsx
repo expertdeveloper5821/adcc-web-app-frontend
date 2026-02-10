@@ -1,33 +1,35 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload, MapPin, Activity, Shield } from 'lucide-react';
-import { addTrack, Track } from '../../data/tracksData';
+import { updateTrack, Track, getTrack } from '../../data/tracksData';
 import { toast } from 'sonner';
 
-export function TrackCreate() {
+export function TrackEdit() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    city: 'Abu Dhabi',
-    area: '',
-    shortDescription: '',
-    distance: 10,
-    elevation: 0,
-    difficulty: 'Medium' as 'Easy' | 'Medium' | 'Hard',
-    surfaceType: 'Road' as 'Road' | 'Mixed' | 'Off-road',
-    hasLighting: false,
-    trafficLevel: 'Medium' as 'Low' | 'Medium' | 'High',
-    safetyLevel: 'Medium' as 'Low' | 'Medium' | 'High',
-    helmetRequired: true,
-    nightRidingAllowed: false,
-    safetyNotes: '',
-  });
-
+  const { id } = useParams<{ id: string }>();
+  const [formData, setFormData] = useState<Track | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load track data on component mount
+  useEffect(() => {
+    if (id) {
+      const track = getTrack(id);
+      if (track) {
+        setFormData(track);
+        setIsLoading(false);
+      } else {
+        toast.error('✗ Track not found');
+        setTimeout(() => navigate('/tracks'), 1000);
+      }
+    }
+  }, [id, navigate]);
 
   // Validation function
   const validateForm = (): boolean => {
+    if (!formData) return false;
+
     const newErrors: { [key: string]: string } = {};
 
     // Required field validations
@@ -66,45 +68,61 @@ export function TrackCreate() {
   };
 
   const handleSubmit = async (status: 'Active' | 'Draft') => {
+    if (!formData) return;
+
     // Validate form
     if (!validateForm()) {
-      toast.error('Please check the highlighted fields and try again');
+      toast.error('✗ Please check the highlighted fields and try again');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const newTrack: Track = {
-        id: Date.now().toString(),
+      const updatedTrack: Track = {
         ...formData,
-        eventsCount: 0,
         status,
-        image: 'https://images.unsplash.com/photo-1553547358-e8a4ee2dcfeb?w=800',
-        mapPreview: 'https://images.unsplash.com/photo-1757860150436-faf5d20b8893?w=400',
-        createdAt: new Date().toISOString(),
       };
 
-      addTrack(newTrack);
-      
+      updateTrack(formData.id, updatedTrack);
+
       // Success message based on status
       if (status === 'Active') {
-        toast.success('✓ Track published successfully!');
+        toast.success('✓ Track updated and published successfully!');
       } else {
         toast.success('✓ Track saved as draft successfully!');
       }
 
       // Navigate to track detail after short delay
       setTimeout(() => {
-        navigate(`/tracks/${newTrack.id}`);
+        navigate(`/tracks/${formData.id}`);
       }, 500);
     } catch (error) {
-      console.error('Error submitting track:', error);
-      toast.error('✗ Failed to save track. Please try again.');
+      console.error('Error updating track:', error);
+      toast.error('✗ Failed to update track. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderColor: '#C12D32' }}></div>
+          <p className="mt-4" style={{ color: '#666' }}>Loading track...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!formData) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p style={{ color: '#666' }}>Track not found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -116,8 +134,8 @@ export function TrackCreate() {
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Create Track</h1>
-          <p style={{ color: '#666' }}>Add a new cycling track</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Edit Track</h1>
+          <p style={{ color: '#666' }}>Update track information and settings</p>
         </div>
       </div>
 
@@ -309,7 +327,7 @@ export function TrackCreate() {
           {/* Map Location */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
             <h2 className="text-xl mb-6" style={{ color: '#333' }}>Map Location</h2>
-            
+
             <div className="space-y-4">
               <div
                 className="w-full h-64 rounded-lg border-2 border-dashed flex items-center justify-center"
@@ -400,7 +418,7 @@ export function TrackCreate() {
           {/* Media */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
             <h2 className="text-xl mb-6" style={{ color: '#333' }}>Media</h2>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Cover Image</label>
@@ -429,7 +447,7 @@ export function TrackCreate() {
               }`}
               style={{ backgroundColor: '#C12D32' }}
             >
-              {isSubmitting ? 'Publishing...' : 'Publish Track'}
+              {isSubmitting ? 'Updating...' : 'Update & Publish'}
             </button>
             <button
               onClick={() => handleSubmit('Draft')}
@@ -484,3 +502,4 @@ export function TrackCreate() {
     </div>
   );
 }
+

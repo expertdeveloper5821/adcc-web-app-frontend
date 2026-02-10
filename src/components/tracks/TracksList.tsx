@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, MapPin, Users, AlertCircle, Edit, Trash2, Eye } from 'lucide-react';
 import { UserRole } from '../../App';
-import { getAllTracks, deleteTrack } from '../../data/tracksData';
 import { toast } from 'sonner@2.0.3';
+// import { getAllTracks, deleteTrack } from '../../data/tracksData';
+import { getAllTracks, deleteTrack, Track } from '../../services/trackService';
 
 interface TracksListProps {
   role: UserRole;
@@ -11,22 +12,65 @@ interface TracksListProps {
 
 export function TracksList({ role }: TracksListProps) {
   const navigate = useNavigate();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const tracks = getAllTracks();
+  const fetchTracks = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-  const filteredTracks = tracks.filter(track => {
-    const matchesSearch = track.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCity = cityFilter === 'all' || track.city === cityFilter;
-    const matchesDifficulty = difficultyFilter === 'all' || track.difficulty === difficultyFilter;
-    const matchesStatus = statusFilter === 'all' || track.status === statusFilter;
-    return matchesSearch && matchesCity && matchesDifficulty && matchesStatus;
-  });
+    const res = await getAllTracks();
+
+    const list =
+      Array.isArray(res)
+        ? res
+        : res?.tracks || res?.data?.tracks || res?.data || [];
+
+    setTracks(Array.isArray(list) ? list : []);
+  } catch (err) {
+    console.error(err);
+    setTracks([]);
+    setError('Failed to load tracks. Please try again later.');
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+
+  useEffect(() => {
+    fetchTracks();
+  }, [fetchTracks]);
+
+  const filteredTracks = useMemo(() => {
+    return tracks.filter(track => {
+      const trackId = (track.id ?? track._id ?? '' ).toString();
+      const name = (track.name ?? track.title ?? '').toString();
+      const search = (searchTerm ?? '').toString().toLowerCase();
+      const matchesSearch = name.toLowerCase().includes(search);
+
+      const city = (track.city ?? '').toString();
+      const matchesCity = cityFilter === 'all' || city === cityFilter;
+
+      const difficulty = (track.difficulty ?? '').toString();
+      const matchesDifficulty = difficultyFilter === 'all' || difficulty === difficultyFilter;
+
+      const status = (track.status ?? '').toString();
+      const matchesStatus = statusFilter === 'all' || status === statusFilter;
+
+      return matchesSearch && matchesCity && matchesDifficulty && matchesStatus;
+    });
+  }, [tracks, searchTerm, cityFilter, difficultyFilter, statusFilter]);
 
   const canEdit = role === 'super-admin';
   const canCreate = role === 'super-admin';
@@ -36,14 +80,30 @@ export function TracksList({ role }: TracksListProps) {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (trackToDelete) {
-      deleteTrack(trackToDelete);
-      toast.success('Track deleted successfully');
-      setShowDeleteModal(false);
-      setTrackToDelete(null);
+      try {
+        await deleteTrack(trackToDelete);
+        toast.success('Track deleted successfully');
+        setShowDeleteModal(false);
+        setTrackToDelete(null);
+        await fetchTracks();
+      } catch (error) {
+        console.error('Error deleting track:', error);
+        toast.error('Failed to delete track. Please try again.');
+      }
     }
   };
+  
+  const handleViewClick = (id) => {
+    console.log('view trackId',id);
+    navigate(`/tracks/${id}`);
+  }
+
+  const handleEditClick = (id) => {
+    console.log('Edit trackId',id);
+    navigate(`/tracks/${id}`);
+  }
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -62,6 +122,9 @@ export function TracksList({ role }: TracksListProps) {
       default: return '#999';
     }
   };
+
+  
+
 
   return (
     <div className="space-y-6">
@@ -137,7 +200,7 @@ export function TracksList({ role }: TracksListProps) {
       <div className="space-y-4">
         {filteredTracks.map((track) => (
           <div
-            key={track.id}
+            key={track.trackId}
             className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all"
           >
             <div className="flex items-center gap-6">
@@ -145,7 +208,7 @@ export function TracksList({ role }: TracksListProps) {
               <div className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden">
                 <img
                   src={track.image}
-                  alt={track.name}
+                  alt={track.title}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -154,8 +217,9 @@ export function TracksList({ role }: TracksListProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="text-xl mb-1" style={{ color: '#333' }}>{track.name}</h3>
-                    <p className="text-sm" style={{ color: '#666' }}>{track.shortDescription}</p>
+                    <h3 className="text-xl mb-1" style={{ color: '#333' }}>{track.title}</h3>
+                    <p className="text-sm" style={{ color: '#666' }}>{track.description.length > 30 
+    ? `${track.description.substring(0, 30)}...` : track.description}</p>
                   </div>
                   <span
                     className="px-3 py-1 rounded-full text-xs text-white"
@@ -183,7 +247,7 @@ export function TracksList({ role }: TracksListProps) {
                       className="px-2 py-1 rounded text-xs text-white"
                       style={{ backgroundColor: getDifficultyColor(track.difficulty) }}
                     >
-                      {track.difficulty}
+                      {track.pace}
                     </span>
                   </div>
                   <div>
@@ -206,7 +270,7 @@ export function TracksList({ role }: TracksListProps) {
                 {/* Actions */}
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => navigate(`/tracks/${track.id}`)}
+                    onClick={() => handleViewClick(track._id)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
@@ -216,14 +280,14 @@ export function TracksList({ role }: TracksListProps) {
                   {canEdit && (
                     <>
                       <button
-                        onClick={() => navigate(`/tracks/${track.id}`)}
+                        onClick={() => handleEditClick(track._id) }
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" style={{ color: '#666' }} />
                       </button>
                       <button
-                        onClick={() => handleDelete(track.id)}
+                        onClick={() => handleDelete(track._id)}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Delete"
                       >

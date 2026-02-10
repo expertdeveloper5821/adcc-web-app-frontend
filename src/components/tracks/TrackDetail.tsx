@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, MapPin, Activity, Shield, Calendar, AlertCircle } from 'lucide-react';
 import { UserRole } from '../../App';
-import { getTrack, updateTrack } from '../../data/tracksData';
+import { getTrackById, updateTrack, Track } from '../../services/trackService';
 import { toast } from 'sonner@2.0.3';
 
 interface TrackDetailProps {
@@ -12,30 +12,61 @@ interface TrackDetailProps {
 type TabType = 'overview' | 'events' | 'safety' | 'media';
 
 export function TrackDetail({ role }: TrackDetailProps) {
-  const { id } = useParams<{ id: string }>();
+  const { trackId } = useParams<{ trackId: string }>();
   const navigate = useNavigate();
-  const trackId = id || '';
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const track = getTrack(trackId);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ track, setTrack ] = useState<Track[]>([]);
 
-  if (!track) {
-    return <div>Track not found</div>;
-  }
 
-  const canEdit = role === 'super-admin';
+    const canEdit = role === 'super-admin';
+    const canCreate = role === 'super-admin';
 
-  const handleUnpublish = () => {
-    if (confirm('Are you sure you want to unpublish this track?')) {
-      updateTrack(trackId, { status: 'Draft' });
-      toast.success('Track unpublished successfully');
+  useEffect(() => {
+  if (!trackId) return;
+
+  const fetchTrack = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await getTrackById(trackId);
+
+      // 🔑 normalize API → UI shape (NO design change)
+      const apiTrack = response.data ?? response;
+
+      setTrack({
+        id: apiTrack._id,
+        title: apiTrack.title,
+        description: apiTrack.description,
+        city: apiTrack.city,
+        area: apiTrack.area,
+        distance: apiTrack.distance,
+        elevation: apiTrack.elevation,
+        difficulty: apiTrack.difficulty,
+        surfaceType: apiTrack.surfaceType,
+        hasLighting: apiTrack.hasLighting,
+        nightRidingAllowed: apiTrack.nightRidingAllowed,
+        helmetRequired: apiTrack.helmetRequired,
+        trafficLevel: apiTrack.trafficLevel,
+        safetyLevel: apiTrack.safetyLevel,
+        safetyNotes: apiTrack.safetyNotes,
+        status: apiTrack.status,
+        image: apiTrack.image || '/placeholder.jpg',
+        mapPreview: apiTrack.mapPreview,
+        eventsCount: apiTrack.eventsCount ?? 0,
+      });
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load track details');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const eventsUsingTrack = [
-    { id: '1', name: 'Al Wathba Morning Ride', date: '2026-01-15', registrations: 124 },
-    { id: '2', name: 'Weekend Challenge', date: '2026-01-22', registrations: 89 },
-    { id: '3', name: 'Sunset Ride', date: '2026-01-29', registrations: 67 },
-  ];
+  fetchTrack();
+}, [trackId]);
 
   return (
     <div className="space-y-6">
@@ -48,8 +79,8 @@ export function TrackDetail({ role }: TrackDetailProps) {
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{track.name}</h1>
-          <p style={{ color: '#666' }}>{track.shortDescription}</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{track.title}</h1>
+          <p style={{ color: '#666' }}>{track.description}</p>
         </div>
       </div>
 
@@ -79,7 +110,7 @@ export function TrackDetail({ role }: TrackDetailProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Cover Image */}
             <div className="rounded-2xl overflow-hidden">
-              <img src={track.image} alt={track.name} className="w-full h-80 object-cover" />
+              <img src={track.image} alt={track.title} className="w-full h-80 object-cover" />
             </div>
 
             {/* Track Info */}
@@ -94,7 +125,7 @@ export function TrackDetail({ role }: TrackDetailProps) {
                 {track.elevation && (
                   <div>
                     <div className="text-sm mb-1" style={{ color: '#999' }}>Elevation</div>
-                    <div className="text-2xl" style={{ color: '#333' }}>{track.elevation} m</div>
+                    <div className="text-2xl" style={{ color: '#333' }}>{track.elevation}</div>
                   </div>
                 )}
                 <div>
