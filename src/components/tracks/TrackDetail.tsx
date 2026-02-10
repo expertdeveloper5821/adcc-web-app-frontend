@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, MapPin, Activity, Shield, Calendar, AlertCircle } from 'lucide-react';
 import { UserRole } from '../../App';
-import { getTrackById, updateTrack, Track } from '../../services/trackService';
+import { getTrackById, getTrackResults, Track } from '../../services/trackService';
 import { toast } from 'sonner@2.0.3';
 
 interface TrackDetailProps {
@@ -18,6 +18,7 @@ export function TrackDetail({ role }: TrackDetailProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ track, setTrack ] = useState<Track[]>([]);
+  const [ eventResults, setEventResults ] = useState<Track[]>([]);
 
 
     const canEdit = role === 'super-admin';
@@ -67,6 +68,28 @@ export function TrackDetail({ role }: TrackDetailProps) {
 
   fetchTrack();
 }, [trackId]);
+
+useEffect(() => {
+  const fetchEvent = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await getTrackResults(trackId);
+      console.log('EventResult',data);
+      setEventResults(data);
+    } catch (err) {
+      setEventResults([]);
+      setError('Failed to load tracks. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (trackId) fetchEvent();
+}, [trackId]);
+
+  
 
   return (
     <div className="space-y-6">

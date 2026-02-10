@@ -112,3 +112,18 @@ export const deleteTrack = async (id: string): Promise<void> => {
 }
 
 
+/**
+ * Track related Events
+ */
+
+export const getTrackResults = async (id: string): Promise<any[]> => {
+  try {
+    const response = await api.get(`/v1/tracks/${id}/events/results`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching track events:', error);
+    throw error;
+  }
+};
+
+
