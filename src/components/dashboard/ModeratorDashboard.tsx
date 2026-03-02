@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { MessageSquare, ShoppingBag, AlertCircle, UserX, Flag } from 'lucide-react';
 import { StatCard } from './StatCard';
 
+interface ModeratorDashboardProps {
+  navigate: (page: string, params?: any) => void;
+}
+
 export function ModeratorDashboard() {
   const navigate = useNavigate();
   const queue = [

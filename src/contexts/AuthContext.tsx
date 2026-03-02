@@ -151,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Get ID token and verify with backend
       const idToken = await userCredential.user.getIdToken();
-      console.log('🔑 Got ID token for verification' , idToken);
+      // console.log('🔑 Got ID token for verification' , idToken);
       
       // Verify with backend
       const verifyResponse = await verifyFirebaseAuth(idToken);

@@ -1,22 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, MapPin, Activity, Shield, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Users, Calendar, Trophy, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { UserRole } from '../../App';
 import { getTrack, updateTrack } from '../../data/tracksData';
 import { toast } from 'sonner@2.0.3';
+import { getTrackById, getTrackResults, trackCommunityResults } from '../../services/trackService';
+import { any } from 'zod';
+
 
 interface TrackDetailProps {
+  navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
 
 type TabType = 'overview' | 'events' | 'safety' | 'media';
 
-export function TrackDetail({ role }: TrackDetailProps) {
-  const { id } = useParams<{ id: string }>();
+export function TrackDetail({  role }: TrackDetailProps) {
   const navigate = useNavigate();
-  const trackId = id || '';
+  const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const track = getTrack(trackId);
+  const trackId = id;
+  // console.log('eventId', track);
+  const [linkedEvents, setLinkedEvents] = useState<any[]>([]);
+  const linkedCommunities = trackCommunityResults(trackId);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [ track, setTrack ] = useState<any>(null);
+  // const [ deleteTrack, setDeleteTrack ] = useState<any[]>([]);
+  // const track = getTrackById(id);
+
+  useEffect(() => {
+    if(!trackId) return;
+
+    const track = async () => {
+    try {
+      const result = await getTrackById(id);
+      setTrack(result);
+    } catch (error) {
+      console.error(error);
+    }finally {
+      setLoading(false);
+    }
+  }
+  track();
+},[id]);
+// console.log('trackData',track);
+
+  useEffect(() => {
+    if(!trackId) return;
+
+    const fetchEvent = async () => {
+      try{
+        const data = await getTrackResults(trackId);
+        setLinkedEvents(data || [])
+      }catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvent();
+  },[trackId])
+
 
   if (!track) {
     return <div>Track not found</div>;
@@ -31,19 +76,43 @@ export function TrackDetail({ role }: TrackDetailProps) {
     }
   };
 
-  const eventsUsingTrack = [
-    { id: '1', name: 'Al Wathba Morning Ride', date: '2026-01-15', registrations: 124 },
-    { id: '2', name: 'Weekend Challenge', date: '2026-01-22', registrations: 89 },
-    { id: '3', name: 'Sunset Ride', date: '2026-01-29', registrations: 67 },
-  ];
+    if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-4">
+          <button
+            onClick={() => navigate('/tracks')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors mt-1"
+          >
+            <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
+          </button>
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl" style={{ color: '#333' }}>{track.title}</h1>
+              <span
+                className="px-3 py-1 rounded-full text-xs capitalize text-white"
+                style={{
+                  backgroundColor:
+                    track.status === 'Open' ? '#10B981' :
+                    track.status === 'Closed' ? '#EF4444' : '#F59E0B'
+                }}
+              >
+                {track.status}
+              </span>
+            </div>
+            <p style={{ color: '#666' }}>{track.city}, {track.area}</p>
+          </div>
+        </div>
+
         <button
-          onClick={() => navigate('/tracks')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          onClick={() => navigate(`/tracks/${track._id}/edit` )}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl text-white transition-all hover:shadow-lg"
+          style={{ backgroundColor: '#C12D32' }}
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
@@ -78,8 +147,8 @@ export function TrackDetail({ role }: TrackDetailProps) {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Cover Image */}
-            <div className="rounded-2xl overflow-hidden">
-              <img src={track.image} alt={track.name} className="w-full h-80 object-cover" />
+            <div className="rounded-2xl overflow-hidden shadow-sm">
+              <img src={track.image} alt={track.title} className="w-full h-64 object-cover" />
             </div>
 
             {/* Track Info */}
@@ -156,6 +225,25 @@ export function TrackDetail({ role }: TrackDetailProps) {
                 </div>
               </div>
             )}
+
+            {/* Facilities */}
+            <div className="p-6 rounded-2xl bg-white shadow-sm">
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Available Facilities</h3>
+              <div className="flex flex-wrap gap-2">
+                {track.facilities?.length ? track.facilities.map((facility: string) => (
+                  <span
+                    key={facility}
+                    className="px-3 py-2 rounded-lg text-sm"
+                    style={{ backgroundColor: '#ECC180', color: '#333' }}
+                  >
+                    {facility}
+                  </span>
+                )) : (<p className="text-sm" style={{ color: '#999' }}>No facilities listed</p>)}
+                {track.facilities.length === 0 && (
+                  <p className="text-sm" style={{ color: '#999' }}>No facilities listed</p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -308,12 +396,153 @@ export function TrackDetail({ role }: TrackDetailProps) {
         </div>
       )}
 
-      {activeTab === 'media' && (
-        <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Track Media</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="aspect-video rounded-lg overflow-hidden">
-              <img src={track.image} alt="Track" className="w-full h-full object-cover" />
+      {/* Upcoming Events Tab */}
+      {activeTab === 'events' && (
+        <div className="p-6 rounded-2xl bg-white shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg" style={{ color: '#333' }}>Upcoming Events on this Track</h3>
+          </div>
+
+          {upcomingEvents.length > 0 ? (
+            <div className="space-y-4">
+              {upcomingEvents.map((event: any) => (
+                <div
+                  key={event.id}
+                  className="p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="text-lg mb-2" style={{ color: '#333' }}>{event.name}</h4>
+                      <div className="flex items-center gap-4 mb-2">
+                        <span
+                          className="px-2 py-1 rounded-full text-xs text-white"
+                          style={{
+                            backgroundColor:
+                              event.category === 'Race' ? '#C12D32' :
+                              event.category === 'Community Ride' ? '#10B981' : '#3B82F6'
+                          }}
+                        >
+                          {event.category}
+                        </span>
+                        <span className="text-sm" style={{ color: '#666' }}>{event.communityName}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" style={{ color: '#999' }} />
+                          <span className="text-sm" style={{ color: '#666' }}>
+                            {new Date(event.eventDate).toLocaleDateString('en-US', { 
+                              day: 'numeric', 
+                              month: 'short', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                        </div>
+                        <span
+                          className="px-2 py-1 rounded-full text-xs capitalize text-white"
+                          style={{
+                            backgroundColor:
+                              event.status === 'Open' ? '#10B981' :
+                              event.status === 'Full' ? '#F59E0B' : '#3B82F6'
+                          }}
+                        >
+                          {event.status}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/events/${ event._id }`)}
+                      className="px-4 py-2 rounded-lg transition-all hover:shadow-md"
+                      style={{ backgroundColor: '#ECC180', color: '#333' }}
+                    >
+                      View Event
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+              <p className="text-lg mb-2" style={{ color: '#666' }}>No upcoming events</p>
+              <p className="text-sm" style={{ color: '#999' }}>This track has no scheduled events</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Communities Tab */}
+      {activeTab === 'communities' && (
+        <div className="p-6 rounded-2xl bg-white shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg" style={{ color: '#333' }}>Communities Using this Track</h3>
+          </div>
+
+          {linkedCommunities.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {linkedCommunities.map((community: any) => (
+                <div
+                  key={community.id}
+                  className="p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => navigate('community-detail', { selectedCommunityId: community.id })}
+                >
+                  <div className="flex items-start gap-3">
+                    <img src={community.logo} alt={community.name} className="w-12 h-12 rounded-lg object-cover" />
+                    <div className="flex-1">
+                      <h4 className="mb-1" style={{ color: '#333' }}>{community.name}</h4>
+                      <p className="text-sm mb-2" style={{ color: '#666' }}>{community.city}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" style={{ color: '#999' }} />
+                          <span className="text-xs" style={{ color: '#666' }}>{community.stats.members} members</span>
+                        </div>
+                        <span
+                          className="px-2 py-0.5 rounded-full text-xs capitalize"
+                          style={{ backgroundColor: '#ECC180', color: '#333' }}
+                        >
+                          {community.communityType}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+              <p className="text-lg mb-2" style={{ color: '#666' }}>No communities linked</p>
+              <p className="text-sm" style={{ color: '#999' }}>No communities have selected this as a primary track</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="w-6 h-6" style={{ color: '#EF4444' }} />
+              <h3 className="text-xl" style={{ color: '#333' }}>Delete Track?</h3>
+            </div>
+            <p className="mb-6" style={{ color: '#666' }}>
+              This will permanently delete "{track.name}". This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
+                style={{ backgroundColor: '#EF4444' }}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
+                style={{ color: '#666' }}
+              >
+                Cancel
+              </button>
             </div>
             {track.mapPreview && (
               <div className="aspect-video rounded-lg overflow-hidden">

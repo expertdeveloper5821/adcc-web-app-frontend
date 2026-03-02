@@ -5,7 +5,9 @@ import {
   LayoutDashboard, 
   Calendar, 
   Users, 
-  MapPin, 
+  MapPin,
+  Trophy, 
+  Award, 
   MessageSquare, 
   ShoppingBag,
   FileText,
@@ -40,6 +42,8 @@ const menuItems: MenuItemWithPath[] = [
   { id: 'events', label: 'Events', icon: <Calendar className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager'], path: '/events' },
   { id: 'communities', label: 'Communities', icon: <Users className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager'], path: '/communities' },
   { id: 'tracks', label: 'Tracks', icon: <MapPin className="w-5 h-5" />, roles: ['super-admin', 'community-manager'], path: '/tracks' },
+  { id: 'challenges', label: 'Challenges', icon: <Trophy className="w-5 h-5" />, roles: ['super-admin', 'community-manager'], path: '/challenges' },
+  { id: 'badges', label: 'Badges & Rewards', icon: <Award className="w-5 h-5" />, roles: ['super-admin', 'community-manager'], path: '/badges' },
   { id: 'feed', label: 'Feed Moderation', icon: <MessageSquare className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'moderator'], path: '/feed' },
   { id: 'marketplace', label: 'Marketplace', icon: <ShoppingBag className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'moderator'], path: '/marketplace' },
   { id: 'cms', label: 'Content Manager', icon: <FileText className="w-5 h-5" />, roles: ['super-admin', 'content-manager'], path: '/cms' },
@@ -48,6 +52,7 @@ const menuItems: MenuItemWithPath[] = [
   { id: 'users', label: 'Users', icon: <UserCog className="w-5 h-5" />, roles: ['super-admin', 'moderator'], path: '/users' },
   { id: 'reports', label: 'Reports & Analytics', icon: <BarChart3 className="w-5 h-5" />, roles: ['super-admin', 'content-manager', 'community-manager', 'moderator'], path: '/reports' },
   { id: 'config', label: 'App Configuration', icon: <Settings className="w-5 h-5" />, roles: ['super-admin'], path: '/config' },
+  { id: 'languages', label: 'Languages', icon: <Globe className="w-5 h-5" />, roles: ['super-admin'], path: '/languages' },
   { id: 'roles', label: 'Roles & Permissions', icon: <Shield className="w-5 h-5" />, roles: ['super-admin'], path: '/roles' },
 ];
 

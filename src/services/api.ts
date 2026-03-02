@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig, AxiosError } from 'axios';
 import { refreshAccessToken } from './authApi';
 
 // Create axios instance with base configuration
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 // console.log('🔧 API Configuration:', {
 //   baseURL: BASE_URL,
 //   timestamp: new Date().toISOString(),

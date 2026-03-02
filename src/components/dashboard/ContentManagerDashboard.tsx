@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, MessageSquare, ShoppingBag, TrendingUp, Image } from 'lucide-react';
 import { StatCard } from './StatCard';
 
+interface ContentManagerDashboardProps {
+  navigate: (page: string, params?: any) => void;
+}
+
 export function ContentManagerDashboard() {
   const navigate = useNavigate();
   const banners = [

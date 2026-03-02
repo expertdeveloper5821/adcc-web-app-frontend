@@ -11,6 +11,7 @@ export function CommunityManagerDashboard() {
     { name: 'Al Ain Chapter', members: 1240, growth: '+15%', events: 9 },
   ];
 
+
   return (
     <div className="space-y-6">
       <div>

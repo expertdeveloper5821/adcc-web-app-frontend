@@ -1,561 +1,153 @@
-import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Upload, Search } from 'lucide-react';
-import { createCommunity, updateCommunity, getCommunityById, CreateCommunityRequest, CommunityApiResponse } from '../../services/communitiesApi';
+import { ArrowLeft, Users, Tag, Settings, Shield, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { Input } from '../ui/input';
 
-const availableCategories = [
-  'City Communities',
-  'Group Communities',
-  'Awareness & special communities',
-];
+import { useCommunityForm } from '../hooks/useCommunityForm';
+import { createCommunity, updateCommunity, getCommunityById, CommunityApiResponse } from '../../services/communitiesApi';
+import { FormField } from './form/FormField';
+import { CategorySelector } from './form/CategorySelector';
+import { ImageUploader } from './form/ImageUploader';
+import { TrackSelector } from './form/TrackSelector';
+import { gccCountries } from '../../data/gccLocations';
+import { availableCategories } from '../../constants/communityConstants';
 
 interface CommunityCreateProps {
-  navigate?: (page: string, params?: any) => void;
-  editingCommunity?: any;
   communityId?: string;
 }
 
-interface FormData extends CreateCommunityRequest {
-  imageFile?: File | null;
-  city?: string;
-}
-
-export function CommunityCreate({ editingCommunity: propEditingCommunity, communityId: propCommunityId }: CommunityCreateProps = {}) {
-  const location = useLocation();
-  // Get editing data from location state (React Router v6 way)
-  const locationState = location.state as { editingCommunity?: CommunityApiResponse; communityId?: string } | null;
-  const [fetchedCommunity, setFetchedCommunity] = useState<CommunityApiResponse | null>(null);
-  const editingCommunity = propEditingCommunity || locationState?.editingCommunity || fetchedCommunity;
-  const stateCommunityId = propCommunityId || locationState?.communityId;
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCompressingImage, setIsCompressingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [isCompressingLogo, setIsCompressingLogo] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [communityId, setCommunityId] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [categorySearchTerm, setCategorySearchTerm] = useState('');
+export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: propCommunityId }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as { editingCommunity?: CommunityApiResponse; communityId?: string } | null;
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchedCommunity, setFetchedCommunity] = useState<CommunityApiResponse | null>(null);
+
+  const stateCommunityId = propCommunityId || locationState?.communityId;
+  const editingCommunity = locationState?.editingCommunity || fetchedCommunity;
+  const isEditMode = !!editingCommunity && !!stateCommunityId;
+
   const {
-    register,
-    handleSubmit,
-    control,
-    setValue,
-    watch,
-    getValues,
-    reset,
-  } = useForm<FormData>({
-    defaultValues: {
-      title: '',
-      description: '',
-      type: 'city',
-      category: [],
-      location: 'Abu Dhabi',
-      city: 'Abu Dhabi',
-      image: '',
-      logo: '',
-      trackName: '',
-      distance: undefined,
-      terrain: 'Paved Road',
-      isActive: true,
-      isPublic: false,
-      isFeatured: false,
-    },
+    form,
+    selectedCountry,
+    setSelectedCountry,
+    selectedCity,
+    setSelectedCity,
+    selectedCategories,
+    selectedTrackIds,
+    imagePreview,
+    isCompressing,
+    communityType,
+    availableCities,
+    tracks,
+    toggleCategory,
+    toggleTrack,
+    handleImageUpload,
+    clearImage,
+  } = useCommunityForm({
+    initialData: editingCommunity,
+    isEditMode,
   });
 
-  // Fetch community data if only ID is provided (from CommunitiesList edit button)
+  const { register, handleSubmit, setValue, formState: { errors } } = form;
+
+  // Fetch community data if ID is provided
   useEffect(() => {
-    const fetchCommunityData = async () => {
-      if (stateCommunityId && !propEditingCommunity && !locationState?.editingCommunity && !fetchedCommunity) {
+    const fetchCommunity = async () => {
+      if (stateCommunityId && !editingCommunity) {
         try {
-          setIsLoading(true);
-          const communityData = await getCommunityById(stateCommunityId);
-          setFetchedCommunity(communityData);
-        } catch (error: any) {
+          setIsFetching(true);
+          const data = await getCommunityById(stateCommunityId);
+          setFetchedCommunity(data);
+        } catch (error) {
           console.error('Error fetching community:', error);
-          toast.error(error?.response?.data?.message || 'Failed to load community data');
+          toast.error('Failed to load community data');
           navigate('/communities');
         } finally {
-          setIsLoading(false);
+          setIsFetching(false);
         }
       }
     };
 
-    fetchCommunityData();
-  }, [stateCommunityId, propEditingCommunity, locationState, fetchedCommunity, navigate]);
+    fetchCommunity();
+  }, [stateCommunityId, editingCommunity, navigate]);
 
-  // Check if we're in edit mode and load community data, or reset to create mode
-  useEffect(() => {
-    const currentEditingCommunity = propEditingCommunity || locationState?.editingCommunity || fetchedCommunity;
-    const currentCommunityId = propCommunityId || locationState?.communityId || stateCommunityId;
-
-    if (currentEditingCommunity && currentCommunityId) {
-      // Edit mode: populate form with existing data
-      setIsEditMode(true);
-      setCommunityId(currentCommunityId);
-      
-      // Handle categories if category contains comma-separated values or is an array
-      let categoryArray: string[] = [];
-      if (currentEditingCommunity.category) {
-        categoryArray = Array.isArray(currentEditingCommunity.category) 
-          ? currentEditingCommunity.category 
-          : currentEditingCommunity.category.split(',').map((c: string) => c.trim()).filter(Boolean);
-        setSelectedCategories(categoryArray);
-      }
-
-      // Populate form with existing data
-      reset({
-        title: currentEditingCommunity.title || '',
-        description: currentEditingCommunity.description || '',
-        type: currentEditingCommunity.type || 'city',
-        category: categoryArray,
-        location: currentEditingCommunity.location || 'Abu Dhabi',
-        image: currentEditingCommunity.image || '',
-        logo: currentEditingCommunity.logo || '',
-        trackName: currentEditingCommunity.trackName || '',
-        distance: currentEditingCommunity.distance || undefined,
-        terrain: currentEditingCommunity.terrain || 'Paved Road',
-        isActive: currentEditingCommunity.isActive !== undefined ? currentEditingCommunity.isActive : true,
-        isPublic: currentEditingCommunity.isPublic !== undefined ? currentEditingCommunity.isPublic : false,
-        isFeatured: currentEditingCommunity.isFeatured !== undefined ? currentEditingCommunity.isFeatured : false,
-      });
-
-      if (currentEditingCommunity.image) {
-        setImagePreview(currentEditingCommunity.image);
-      }
-      if (currentEditingCommunity.logo) {
-        setLogoPreview(currentEditingCommunity.logo);
-      }
-    } else {
-      // Create mode: reset form to default values
-      setIsEditMode(false);
-      setCommunityId(null);
-      setSelectedCategories([]);
-      setImagePreview(null);
-      setLogoPreview(null);
-      setValidationErrors({});
-      setCategorySearchTerm('');
-      
-      // Reset form to default values
-      reset({
-        title: '',
-        description: '',
-        type: 'city',
-        category: [],
-        location: 'Abu Dhabi',
-        city: 'Abu Dhabi',
-        image: '',
-        logo: '',
-        trackName: '',
-        distance: undefined,
-        terrain: 'Paved Road',
-        isActive: true,
-        isPublic: false,
-        isFeatured: false,
-      });
-    }
-  }, [propEditingCommunity, locationState, fetchedCommunity, propCommunityId, stateCommunityId, reset]);
-
-  const validateForm = (formData: FormData): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Get current form values
-    const currentValues = watch();
-    // Explicitly get location from form state to ensure correct city value
-    const locationValue = getValues('location');
-    
-    const title = (formData.title || currentValues.title || '').toString().trim();
-    const description = (formData.description || currentValues.description || '').toString().trim();
-    const location = (locationValue || currentValues.location || 'Abu Dhabi').toString().trim();
-    const type = (formData.type || currentValues.type || '').toString().trim();
-    // Category should be an array - use selectedCategories
-    const category = selectedCategories.length > 0 
-      ? selectedCategories 
-      : (Array.isArray(formData.category) ? formData.category : []);
-    const distance = formData.distance !== undefined ? formData.distance : (currentValues.distance !== undefined ? currentValues.distance : undefined);
-
-    // Validate title
-    if (!title) {
-      newErrors.title = 'Title is required';
-    } else if (title.length < 3) {
-      newErrors.title = 'Title must be at least 3 characters';
-    }
-
-    // Validate description
-    if (!description) {
-      newErrors.description = 'Description is required';
-    } else if (description.length < 10) {
-      newErrors.description = 'Description must be at least 10 characters';
-    }
-
-    // Validate categories - category is now an array
-    const categories = selectedCategories.length > 0 
-      ? selectedCategories 
-      : (Array.isArray(category) ? category : []);
-    
-    if (categories.length === 0) {
-      newErrors.category = 'At least one category is required';
-    }
-
-    // Validate location (city)
-    if (!location) {
-      newErrors.location = 'City is required';
-    }
-
-    // Validate type
-    if (!type) {
-      newErrors.type = 'Type is required';
-    }
-
-    // Validate distance (if provided)
-    if (distance !== undefined && distance !== null) {
-      const distanceNum = Number(distance);
-      if (isNaN(distanceNum) || distanceNum < 0) {
-        newErrors.distance = 'Distance must be a positive number';
-      }
-    }
-
-    setValidationErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const compressImage = (file: File, maxWidth: number = 1200, maxHeight: number = 1200, quality: number = 0.7): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      // Check file size first (max 10MB before compression)
-      const maxFileSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxFileSize) {
-        reject(new Error('Image file is too large. Maximum size is 10MB.'));
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-
-          // Calculate new dimensions - reduced max size to prevent large payloads
-          if (width > height) {
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width;
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = (width * maxHeight) / height;
-              height = maxHeight;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Failed to get canvas context'));
-            return;
-          }
-
-          // Draw and compress
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Target max base64 size: 500KB (to stay well under typical 1MB limits)
-          const maxBase64Size = 500 * 1024; // 500KB
-          let currentQuality = quality;
-          let base64String = canvas.toDataURL('image/jpeg', currentQuality);
-          
-          // Iteratively reduce quality until we're under the size limit
-          let attempts = 0;
-          const maxAttempts = 5;
-          while (base64String.length > maxBase64Size && attempts < maxAttempts) {
-            currentQuality -= 0.1;
-            if (currentQuality < 0.3) {
-              currentQuality = 0.3; // Don't go below 30% quality
-              break;
-            }
-            base64String = canvas.toDataURL('image/jpeg', currentQuality);
-            attempts++;
-          }
-          
-          // Final check - if still too large, reduce dimensions
-          if (base64String.length > maxBase64Size) {
-            // Reduce dimensions by 20% and try again
-            width = Math.floor(width * 0.8);
-            height = Math.floor(height * 0.8);
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            base64String = canvas.toDataURL('image/jpeg', 0.5);
-          }
-          
-          resolve(base64String);
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setValidationErrors(prev => ({ ...prev, image: 'Please select a valid image file' }));
-        return;
-      }
-
-      // Validate file size (max 10MB before compression)
-      const maxFileSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxFileSize) {
-        setValidationErrors(prev => ({ ...prev, image: 'Image file is too large. Maximum size is 10MB.' }));
-        return;
-      }
-
-      try {
-        setIsCompressingImage(true);
-        const compressedBase64 = await compressImage(file, 1600, 900, 0.7);
-        
-      // Check final size (max 500KB base64 string to prevent payload errors)
-      const base64Size = compressedBase64.length * 0.75; // Approximate byte size
-      if (base64Size > 500 * 1024) {
-        setValidationErrors(prev => ({ ...prev, image: 'Image is too large even after compression. Please use a smaller image (max 500KB).' }));
-        setIsCompressingImage(false);
-        return;
-      }
-
-        setImagePreview(compressedBase64);
-        setValue('image', compressedBase64);
-        
-        // Clear any previous image errors
-        setValidationErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.image;
-          return newErrors;
-        });
-      } catch (error: any) {
-        console.error('Error compressing image:', error);
-        setValidationErrors(prev => ({ ...prev, image: error.message || 'Failed to process image' }));
-      } finally {
-        setIsCompressingImage(false);
-      }
-    }
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        setValidationErrors(prev => ({ ...prev, logo: 'Please select a valid image file' }));
-        return;
-      }
-      const maxFileSize = 10 * 1024 * 1024;
-      if (file.size > maxFileSize) {
-        setValidationErrors(prev => ({ ...prev, logo: 'Image file is too large. Maximum size is 10MB.' }));
-        return;
-      }
-      try {
-        setIsCompressingLogo(true);
-        const compressedBase64 = await compressImage(file, 800, 800, 0.7);
-        const base64Size = compressedBase64.length * 0.75;
-        if (base64Size > 500 * 1024) {
-          setValidationErrors(prev => ({ ...prev, logo: 'Image is too large after compression. Please use a smaller image.' }));
-          setIsCompressingLogo(false);
-          return;
-        }
-        setLogoPreview(compressedBase64);
-        setValue('logo', compressedBase64);
-        setValidationErrors(prev => {
-          const next = { ...prev };
-          delete next.logo;
-          return next;
-        });
-      } catch (error: any) {
-        console.error('Error compressing logo:', error);
-        setValidationErrors(prev => ({ ...prev, logo: error.message || 'Failed to process logo' }));
-      } finally {
-        setIsCompressingLogo(false);
-      }
-    }
-  };
-
-  const onSubmit = async (formData: FormData) => {
-    // Clear previous errors
-    setValidationErrors({});
-
-    // Get current form values to ensure we have the latest
-    const currentValues = watch();
-    // Explicitly get location from form state to ensure we get the correct city value
-    const locationValue = getValues('location');
-    
-    const title = (formData.title || currentValues.title || '').toString().trim();
-    const description = (formData.description || currentValues.description || '').toString().trim();
-    const type = (formData.type || currentValues.type || '').toString().trim();
-    // Use selectedCategories for category field - send as array
-    const category = selectedCategories.length > 0 
-      ? selectedCategories 
-      : (formData.category ? (Array.isArray(formData.category) ? formData.category : [formData.category]) : []);
-    // Location should be the city from the dropdown - use getValues to ensure correct value
-    const location = (locationValue || currentValues.location || 'Abu Dhabi').toString().trim();
-
-    // Validate form manually with actual values
-    const validationData: FormData = {
-      ...formData,
-      title,
-      description,
-      type,
-      category,
-      location,
-    };
-
-    if (!validateForm(validationData)) {
-      setIsLoading(false);
-      return;
-    }
-
+  const onSubmit = async (formData: any) => {
     setIsLoading(true);
+
     try {
-      // Get isFeatured and isPublic from form data
-      const isFeatured = formData.isFeatured !== undefined ? formData.isFeatured : (currentValues.isFeatured !== undefined ? currentValues.isFeatured : false);
-      const isPublic = formData.isPublic !== undefined ? formData.isPublic : (currentValues.isPublic !== undefined ? currentValues.isPublic : false);
-      
-      // Build the request payload
-      const communityData: CreateCommunityRequest = {
-        title,
-        description,
-        type,
-        category,
-        location,
-        isActive: formData.isActive !== undefined ? formData.isActive : (currentValues.isActive !== undefined ? currentValues.isActive : true),
-        isPublic: isPublic,
-        isFeatured: isFeatured,
+      // Transform form data to API format
+      const communityData = {
+        title: formData.title,
+        description: formData.description,
+        type: formData.communityType,
+        category: selectedCategories,
+        location: `${selectedCity}, ${selectedCountry}`,
+        isActive: formData.status === 'active',
+        isFeatured: formData.isFeatured,
+        area: formData.area,
+        country: selectedCountry,
+        city: selectedCity,
+        communityType: formData.communityType,
+        purposeType: formData.purposeType,
+        foundedYear: formData.foundedYear,
+        ridesThisMonth: formData.ridesThisMonth,
+        weeklyRides: formData.weeklyRides,
+        fundsRaised: formData.fundsRaised,
+        primaryTracks: selectedTrackIds,
+        managerName: formData.managerName,
+        visibility: formData.visibility,
+        joinMode: formData.joinMode,
+        displayPriority: formData.displayPriority,
+        allowPosts: formData.allowPosts,
+        allowGallery: formData.allowGallery,
+        status: formData.status,
+        image: formData.image,
       };
-
-      // Only add optional fields if they have values
-      const image = (formData.image || currentValues.image || '').toString().trim();
-      const trackName = (formData.trackName || currentValues.trackName || '').toString().trim();
-      const terrain = (formData.terrain || currentValues.terrain || '').toString().trim();
-      const distance = formData.distance !== undefined ? formData.distance : (currentValues.distance !== undefined ? currentValues.distance : undefined);
-
-      // Check image size before sending (max 500KB base64 to prevent payload errors)
-      if (image) {
-        const base64Size = image.length * 0.75;
-        if (base64Size > 500 * 1024) {
-          setValidationErrors(prev => ({ ...prev, image: 'Image is too large. Maximum size is 500KB after compression.' }));
-          setIsLoading(false);
-          toast.error('Image is too large. Please use a smaller image (max 500KB).');
-          return;
-        }
-        communityData.image = image;
-      }
-
-      const logo = (formData.logo || currentValues.logo || '').toString().trim();
-      if (logo) {
-        const base64Size = logo.length * 0.75;
-        if (base64Size > 500 * 1024) {
-          setValidationErrors(prev => ({ ...prev, logo: 'Logo is too large. Maximum size is 500KB after compression.' }));
-          setIsLoading(false);
-          toast.error('Logo is too large. Please use a smaller image (max 500KB).');
-          return;
-        }
-        communityData.logo = logo;
-      }
-      
-      if (trackName) {
-        communityData.trackName = trackName;
-      }
-      
-      if (distance !== undefined && distance !== null) {
-        const distanceNum = Number(distance);
-        if (!isNaN(distanceNum) && distanceNum >= 0) {
-          communityData.distance = distanceNum;
-        }
-      }
-      
-      if (terrain) {
-        communityData.terrain = terrain;
-      }
-
-      
 
       let result: CommunityApiResponse;
-      if (isEditMode && communityId) {
-        result = await updateCommunity(communityId, communityData);
+      
+      if (isEditMode && stateCommunityId) {
+        result = await updateCommunity(stateCommunityId, communityData);
         toast.success('Community updated successfully');
-        navigate(`/communities/${communityId}`);
+        navigate(`/communities/${stateCommunityId}`);
       } else {
         result = await createCommunity(communityData);
         toast.success('Community created successfully');
-      }
-
-      const id = result._id || result.id || communityId;
-      if (id) {
-        navigate(`/communities/${id}`);
-      } else {
-        navigate('/communities');
+        const id = result._id || result.id;
+        navigate(id ? `/communities/${id}` : '/communities');
       }
     } catch (error: any) {
       console.error('Error saving community:', error);
       
-      // Handle payload too large error specifically
-      if (error?.response?.status === 413 || error?.message?.includes('PayloadTooLargeError') || error?.message?.includes('request entity too large')) {
-        setValidationErrors(prev => ({ ...prev, image: 'Image is too large. Please use a smaller image or contact support.' }));
-        toast.error('Image file is too large. Please use a smaller image (under 500KB).');
-        setIsLoading(false);
-        return;
-      }
+      const errorMessage = error?.response?.status === 413
+        ? 'Image file is too large. Please use a smaller image.'
+        : error?.response?.data?.message || 'Failed to save community';
       
-      // Handle validation errors from API
-      if (error?.response?.status === 400 || error?.response?.status === 422) {
-        const errorData = error.response.data;
-        const apiErrors: Record<string, string> = {};
-        
-        // Set field-level errors from API response
-        if (errorData.errors) {
-          Object.keys(errorData.errors).forEach((field) => {
-            const fieldName = field as keyof FormData;
-            apiErrors[field] = Array.isArray(errorData.errors[field]) 
-              ? errorData.errors[field][0] 
-              : errorData.errors[field];
-          });
-          setValidationErrors(apiErrors);
-        }
-        
-        // Show general error message
-        const errorMessage = errorData.message || 'Validation failed. Please check the form fields.';
-        toast.error(errorMessage);
-      } else {
-        toast.error(error?.response?.data?.message || 'Failed to save community');
-      }
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getFieldError = (fieldName: keyof FormData): string | undefined => {
-    return validationErrors[fieldName];
-  };
-
-  const hasError = (fieldName: keyof FormData): boolean => {
-    return !!validationErrors[fieldName];
-  };
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#C12D32' }}></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
+          onClick={() => navigate(isEditMode ? -1 : '/communities')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Back"
+          aria-label="Back"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
@@ -563,529 +155,363 @@ export function CommunityCreate({ editingCommunity: propEditingCommunity, commun
           <h1 className="text-3xl mb-2" style={{ color: '#333' }}>
             {isEditMode ? 'Edit Community' : 'Create Community'}
           </h1>
-          <p style={{ color: '#666' }}>Add a new cycling community</p>
+          <p style={{ color: '#666' }}>
+            {isEditMode ? 'Edit community details' : 'Create a new cycling community'}
+          </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Basic Information */}
-            <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h2 className="text-xl mb-6" style={{ color: '#333' }}>Basic Information</h2>
-
-              <div className="space-y-4">
-                {/* Title */}
-                <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                    Title *
-                  </label>
-                  <Input
-                    {...register('title', {
-                      onChange: () => {
-                        if (validationErrors.title) {
-                          setValidationErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.title;
-                            return newErrors;
-                          });
-                        }
-                      },
-                    })}
-                    placeholder="e.g., Abu Dhabi Community"
-                    aria-invalid={hasError('title')}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      hasError('title')
-                        ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-200 focus:ring-2 focus:ring-[#C12D32]'
-                    } focus:outline-none`}
-                  />
-                  {hasError('title') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('title')}</p>
-                  )}
-                </div>
-
-                
-
-                {/* Type and Category */}
-                <div className="grid grid-cols-2 gap-4">
-
-                <div>
-                    <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                    City *
-                    </label>
-                    <Controller
-                      name="location"
-                      control={control}
-                      render={({ field }) => (
-                        <>
-                          <select
-                            {...field}
-                            value={field.value || 'Abu Dhabi'}
-                            onChange={(e) => {
-                              const selectedCity = e.target.value;
-                              field.onChange(selectedCity);
-                              setValue('location', selectedCity, { shouldValidate: true });
-                              if (validationErrors.location) {
-                                setValidationErrors(prev => {
-                                  const newErrors = { ...prev };
-                                  delete newErrors.location;
-                                  return newErrors;
-                                });
-                              }
-                            }}
-                            aria-invalid={hasError('location')}
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                              hasError('location')
-                                ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                                : 'border-gray-200 focus:ring-2 focus:ring-[#C12D32]'
-                            } focus:outline-none`}
-                          >
-                            <option value="Abu Dhabi">Abu Dhabi</option>
-                            <option value="Dubai">Dubai</option>
-                            <option value="Sharjah">Sharjah</option>
-                            <option value="Al Ain">Al Ain</option>
-                            
-                          </select>
-                          {hasError('location') && (
-                            <p className="mt-1 text-sm text-red-600">{getFieldError('location')}</p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                      Type *
-                    </label>
-                    <Controller
-                      name="type"
-                      control={control}
-                      render={({ field }) => (
-                        <>
-                          <select
-                            {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              if (validationErrors.type) {
-                                setValidationErrors(prev => {
-                                  const newErrors = { ...prev };
-                                  delete newErrors.type;
-                                  return newErrors;
-                                });
-                              }
-                            }}
-                            aria-invalid={hasError('type')}
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                              hasError('type')
-                                ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                                : 'border-gray-200 focus:ring-2 focus:ring-[#C12D32]'
-                            } focus:outline-none`}
-                          >
-                            <option value="city">City</option>
-                            <option value="Club">Club</option>
-                            <option value="Shop">Shop</option>
-                            <option value="Women">Women</option>
-                            <option value="Youth">Youth</option>
-                            <option value="Family">Family</option>
-                            <option value="Corporate">Corporate</option>
-                          </select>
-                          {hasError('type') && (
-                            <p className="mt-1 text-sm text-red-600">{getFieldError('type')}</p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-
-                  
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                    Description *
-                  </label>
-                  <textarea
-                    {...register('description', {
-                      onChange: () => {
-                        if (validationErrors.description) {
-                          setValidationErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.description;
-                            return newErrors;
-                          });
-                        }
-                      },
-                    })}
-                    placeholder="A community for cyclists in Abu Dhabi"
-                    rows={4}
-                    aria-invalid={hasError('description')}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      hasError('description')
-                        ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-200 focus:ring-2 focus:ring-[#C12D32]'
-                    } focus:outline-none`}
-                  />
-                  {hasError('description') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('description')}</p>
-                  )}
-                </div>
-
-                {/* Category Multi-Select */}
-                <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                    Category *
-                  </label>
-                  
-                  {/* Search */}
-                  <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
-                    <input
-                      type="text"
-                      placeholder="Search categories..."
-                      value={categorySearchTerm}
-                      onChange={(e) => setCategorySearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
-                    />
-                  </div>
-
-                  {/* Category Pills */}
-                  <div className="flex flex-wrap gap-2">
-                    {availableCategories
-                      .filter(category =>
-                        category.toLowerCase().includes(categorySearchTerm.toLowerCase())
-                      )
-                      .map((category) => {
-                        const isSelected = selectedCategories.includes(category);
-                        return (
-                          <button
-                            key={category}
-                            type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                const newCategories = selectedCategories.filter(c => c !== category);
-                                setSelectedCategories(newCategories);
-                                setValue('category', newCategories);
-                              } else {
-                                const newCategories = [...selectedCategories, category];
-                                setSelectedCategories(newCategories);
-                                setValue('category', newCategories);
-                              }
-                              
-                              // Clear error when selecting
-                              if (validationErrors.category) {
-                                setValidationErrors(prev => {
-                                  const newErrors = { ...prev };
-                                  delete newErrors.category;
-                                  return newErrors;
-                                });
-                              }
-                            }}
-                            className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:shadow-md"
-                            style={{
-                              backgroundColor: isSelected ? '#C12D32' : '#ECC180',
-                              color: isSelected ? '#fff' : '#333',
-                            }}
-                          >
-                            {category}
-                          </button>
-                        );
-                      })}
-                  </div>
-
-                  {/* Selected Categories Count */}
-                  {selectedCategories.length > 0 && (
-                    <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
-                      <div className="text-sm" style={{ color: '#666' }}>
-                        Selected: <span style={{ color: '#C12D32' }}>{selectedCategories.length} categor{selectedCategories.length !== 1 ? 'ies' : 'y'}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {hasError('category') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('category')}</p>
-                  )}
-                </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Form - 2 columns */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Basic Information */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Users className="w-5 h-5" />
               </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
             </div>
 
-            {/* Track Information */}
-            {/* <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h2 className="text-xl mb-6" style={{ color: '#333' }}>Track Information</h2>
+            <div className="space-y-4">
+              <FormField
+                label="Community Name"
+                name="title"
+                register={register}
+                error={errors.title}
+                required
+                placeholder="Abu Dhabi Road Racers"
+              />
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                    Track Name
-                  </label>
-                  <Input
-                    {...register('trackName')}
-                    placeholder="e.g., Corniche Track"
-                    aria-invalid={hasError('trackName')}
-                    className={`w-full px-4 py-2 rounded-lg border ${
-                      hasError('trackName')
-                        ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-200 focus:ring-2 focus:ring-[#C12D32]'
-                    } focus:outline-none`}
-                  />
-                  {hasError('trackName') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('trackName')}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                      Distance (km)
-                    </label>
-                    <Input
-                      type="number"
-                      {...register('distance', {
-                        valueAsNumber: true,
-                        onChange: () => {
-                          if (validationErrors.distance) {
-                            setValidationErrors(prev => {
-                              const newErrors = { ...prev };
-                              delete newErrors.distance;
-                              return newErrors;
-                            });
-                          }
-                        },
-                      })}
-                      placeholder="15"
-                      aria-invalid={hasError('distance')}
-                      className={`w-full px-4 py-2 rounded-lg border ${
-                        hasError('distance')
-                          ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                          : 'border-gray-200 focus:ring-2 focus:ring-[#C12D32]'
-                      } focus:outline-none`}
-                    />
-                    {hasError('distance') && (
-                      <p className="mt-1 text-sm text-red-600">{getFieldError('distance')}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                      Terrain
-                    </label>
-                    <Controller
-                      name="terrain"
-                      control={control}
-                      render={({ field }) => (
-                        <>
-                          <select
-                            {...field}
-                            aria-invalid={hasError('terrain')}
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                              hasError('terrain')
-                                ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                                : 'border-gray-200 focus:ring-2 focus:ring-[#C12D32]'
-                            } focus:outline-none`}
-                          >
-                            <option value="Paved Road">Paved Road</option>
-                            <option value="Mountain">Mountain</option>
-                            <option value="Trail">Trail</option>
-                            <option value="Mixed">Mixed</option>
-                          </select>
-                          {hasError('terrain') && (
-                            <p className="mt-1 text-sm text-red-600">{getFieldError('terrain')}</p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug (auto-generated)</label>
+                <input
+                  type="text"
+                  value={form.watch('title')?.toLowerCase().replace(/\s+/g, '-') || ''}
+                  readOnly
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
+                  style={{ color: '#999' }}
+                />
               </div>
-            </div> */}
 
-            {/* Community Images — matches design: white card, light orange dashed borders */}
-            <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h2 className="text-lg font-medium mb-5" style={{ color: '#4a4a4a' }}>
-                Community Images
-              </h2>
+              <FormField
+                label="Description"
+                name="description"
+                register={register}
+                error={errors.description}
+                required
+                as="textarea"
+                rows={4}
+                placeholder="Describe the community..."
+              />
 
-              <div className="space-y-5">
-                {/* Logo */}
-                <div>
-                  <span className="block text-sm mb-2.5 font-normal" style={{ color: '#4a4a4a' }}>
-                    Logo
-                  </span>
-                  {logoPreview && (
-                    <div className="mb-3 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-                      <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    id="logo-upload"
-                    accept="image/png,image/jpeg,image/jpg"
-                    onChange={handleLogoUpload}
-                    hidden
-                  />
-                  <label
-                    htmlFor="logo-upload"
-                    className={`upload-btn block border-2 border-dashed rounded-lg bg-white text-center cursor-pointer transition-colors hover:bg-gray-50/50 ${hasError('logo') ? 'border-red-500' : ''}`}
-                    style={{
-                      borderColor: hasError('logo') ? undefined : '#E8A55C',
-                      padding: '2rem 1.5rem',
-                    }}
-                  >
-                    <span className="items-center justify-center">
-                     
-                      <p className="text-sm flex items-center justify-center gap-2 font-normal mb-1 " style={{ color: '#4a4a4a' }}>
-                      
-                      <Upload className="w-7 h-7 " style={{ color: '#4a4a4a' }} />  {isCompressingLogo ? 'Compressing...' : logoPreview ? 'Change logo' : 'Upload community logo'}
-                      </p>
-                      <p className="text-xs font-normal" style={{ color: '#9ca3af' }}>
-                        PNG, JPG - Square format recommended
-                      </p>
-                    </span>
-                  </label>
-                  {hasError('logo') && (
-                    <p className="mt-1.5 text-sm text-red-600">{getFieldError('logo')}</p>
-                  )}
-                </div>
-
-                {/* Cover Image */}
-                <div>
-                  <span className="block text-sm mb-2.5 font-normal " style={{ color: '#4a4a4a' }}>
-                    Cover Image
-                  </span>
-                  {imagePreview && (
-                    <div className="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-200">
-                      <img src={imagePreview} alt="Cover preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    id="image-upload"
-                    accept="image/png,image/jpeg,image/jpg"
-                    onChange={handleImageUpload}
-                    hidden
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className={`upload-btn block border-2 border-dashed rounded-lg bg-white text-center cursor-pointer transition-colors hover:bg-gray-50/50 ${hasError('image') ? 'border-red-500' : ''}`}
-                    style={{
-                      borderColor: hasError('image') ? undefined : '#E8A55C',
-                      padding: '2rem 1.5rem',
-                    }}
-                  >
-                    <span className=" items-center justify-center">
-                        <p className="text-sm font-normal mb-1 flex items-center justify-center gap-2 " style={{ color: '#4a4a4a' }}>
-                        <Upload className="w-7 h-7 " style={{ color: '#4a4a4a' }} />  {isCompressingImage ? 'Compressing...' : imagePreview ? 'Change cover image' : 'Upload cover image'}
-                      </p>
-                      <p className="text-xs font-normal" style={{ color: '#9ca3af' }}>
-                        PNG, JPG - Wide format 16:9
-                      </p>
-                    </span>
-                  </label>
-                  {hasError('image') && (
-                    <p className="mt-1.5 text-sm text-red-600">{getFieldError('image')}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Status */}
-            <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Status</h3>
-
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Controller
-                    name="isActive"
-                    control={control}
-                    render={({ field }) => (
-                      <input
-                        type="checkbox"
-                        checked={field.value || false}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        className="w-4 h-4"
-                        style={{ accentColor: '#C12D32' }}
-                      />
-                    )}
-                  />
-                  <span className="text-sm" style={{ color: '#666' }}>
-                    Active Community
-                  </span>
-                </label>
-              </div>
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Controller
-                    name="isPublic"
-                    control={control}
-                    render={({ field }) => (
-                      <input
-                        type="checkbox"
-                        checked={field.value || false}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        className="w-4 h-4"
-                        style={{ accentColor: '#C12D32' }}
-                      />
-                    )}
-                  />
-                  <span className="text-sm" style={{ color: '#666' }}>
-                    Public Community
-                  </span>
-                </label>
-              </div>
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Controller
-                    name="isFeatured"
-                    control={control}
-                    render={({ field }) => (
-                      <input
-                        type="checkbox"
-                        checked={field.value || false}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        className="w-4 h-4"
-                        style={{ accentColor: '#C12D32' }}
-                      />
-                    )}
-                  />
-                  <span className="text-sm" style={{ color: '#666' }}>
-                    Featured Community
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: '#C12D32' }}
+              <FormField
+                label="Country"
+                name="country"
+                register={register}
+                as="select"
+                value={selectedCountry}
+                onChange={(e) => setSelectedCountry(e.target.value as any)}
               >
-                {isLoading
-                  ? 'Saving...'
-                  : isEditMode
-                  ? 'Update Community'
-                  : 'Create Community'}
-              </button>
-              <button
-                type="button"
-                onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
-                style={{ color: '#666' }}
+                {gccCountries.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </FormField>
+
+              <FormField
+                label="City"
+                name="city"
+                register={register}
+                as="select"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                error={errors.city}
+                required
               >
-                Cancel
-              </button>
+                {availableCities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </FormField>
+
+              <FormField
+                label="Area (optional)"
+                name="area"
+                register={register}
+                placeholder="e.g., Yas Island, Corniche, Marina..."
+              />
             </div>
-          </div>
+          </section>
+
+          {/* Community Classification */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Tag className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>2. Community Classification</h2>
+            </div>
+
+            <div className="space-y-4">
+              <FormField
+                label="Community Type"
+                name="communityType"
+                register={register}
+                as="select"
+              >
+                <option value="city">City Community</option>
+                <option value="type">Interest / Type Community</option>
+                <option value="purpose-based">Special Purpose Community</option>
+              </FormField>
+
+              <CategorySelector
+                selectedCategories={selectedCategories}
+                onToggle={toggleCategory}
+                error={errors.categories?.message}
+                availableCategories={availableCategories}
+              />
+
+              {communityType === 'purpose-based' && (
+                <FormField
+                  label="Special Purpose Type"
+                  name="purposeType"
+                  register={register}
+                  as="select"
+                >
+                  <option value="">Select special type...</option>
+                  <option value="Awareness">Awareness</option>
+                  <option value="Charity">Charity</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="Education">Education</option>
+                  <option value="Health">Health</option>
+                  <option value="National">National Events</option>
+                </FormField>
+              )}
+            </div>
+          </section>
+
+          {/* Tracks Mapping */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white">
+            <TrackSelector
+              tracks={tracks}
+              selectedTrackIds={selectedTrackIds}
+              onToggle={toggleTrack}
+              city={selectedCity}
+              country={selectedCountry}
+            />
+          </section>
+
+          {/* Community Stats */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Settings className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>4. Community Stats Setup</h2>
+            </div>
+
+            <div className="space-y-4">
+              <FormField
+                label="Founded Year"
+                name="foundedYear"
+                register={register}
+                type="number"
+                placeholder="2019"
+                min={2000}
+                max={new Date().getFullYear()}
+              />
+
+              {communityType === 'city' && (
+                <FormField
+                  label="Rides This Month"
+                  name="ridesThisMonth"
+                  register={register}
+                  type="number"
+                  placeholder="24"
+                  min={0}
+                />
+              )}
+
+              {communityType === 'type' && (
+                <FormField
+                  label="Weekly Rides"
+                  name="weeklyRides"
+                  register={register}
+                  type="number"
+                  placeholder="6"
+                  min={0}
+                />
+              )}
+
+              {communityType === 'purpose-based' && (
+                <FormField
+                  label="Funds Raised (AED)"
+                  name="fundsRaised"
+                  register={register}
+                  type="number"
+                  placeholder="125000"
+                  min={0}
+                />
+              )}
+            </div>
+          </section>
+
+          {/* Media */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Settings className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>5. Media</h2>
+            </div>
+
+            <ImageUploader
+              imagePreview={imagePreview}
+              isUploading={isCompressing}
+              onUpload={handleImageUpload}
+              onClear={clearImage}
+              error={errors.image?.message}
+            />
+          </section>
+
+          {/* Admin Assignment */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Shield className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>7. Admin Assignment</h2>
+            </div>
+
+            <FormField
+              label="Community Manager"
+              name="managerName"
+              register={register}
+              placeholder="Manager name"
+            />
+
+            <div className="mt-4">
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>Moderators (multi-select)</label>
+              <p className="text-xs" style={{ color: '#999' }}>Feature coming soon</p>
+            </div>
+          </section>
+        </div>
+
+        {/* Sidebar - 1 column */}
+        <div className="space-y-6">
+          {/* Visibility & Rules */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white">
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>6. Visibility & Rules</h3>
+
+            <div className="space-y-4">
+              <FormField
+                label="Status"
+                name="status"
+                register={register}
+                as="select"
+              >
+                <option value="inactive">Draft</option>
+                <option value="active">Active</option>
+              </FormField>
+
+              <FormField
+                label="Visibility"
+                name="visibility"
+                register={register}
+                as="select"
+              >
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </FormField>
+
+              <FormField
+                label="Join Mode"
+                name="joinMode"
+                register={register}
+                as="select"
+              >
+                <option value="open">Open</option>
+                <option value="approval">Approval Required</option>
+                <option value="invite">Invite Only</option>
+              </FormField>
+
+              <FormField
+                label="Display Priority"
+                name="displayPriority"
+                register={register}
+                type="number"
+                placeholder="0"
+                min={0}
+              />
+              <p className="text-xs mt-1" style={{ color: '#999' }}>Higher numbers appear first</p>
+
+              <div className="pt-4 border-t border-gray-200 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...register('isFeatured')}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>Featured on Homepage</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...register('allowPosts')}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>Allow Posts</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...register('allowGallery')}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>Allow Gallery Uploads</span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          {/* Actions */}
+          <section className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>8. Actions</h3>
+
+            <button
+              type="submit"
+              disabled={isLoading || isCompressing}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#C12D32' }}
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  {isEditMode ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  {isEditMode ? 'Update Community' : 'Create & Publish'}
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate(isEditMode ? -1 : '/communities')}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
+              style={{ color: '#666' }}
+            >
+              Cancel
+            </button>
+          </section>
         </div>
       </form>
     </div>
   );
-}
+};

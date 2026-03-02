@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Users, MapPin, Calendar, Edit, Trash2, Eye, Ban } from 'lucide-react';
+import { Plus, Search, Users, MapPin, Calendar, Star, Filter } from 'lucide-react';
 import { UserRole } from '../../App';
-import { getAllCommunities as getAllCommunitiesApi, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { toast } from 'sonner';
+import { getAllCommunities as getAllCommunitiesApi, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
+import { availableCities, availableCategories } from '../../data/communitiesData';
 
 interface CommunitiesListProps {
   role: UserRole;
@@ -15,21 +16,28 @@ interface Community {
   id: string;
   name: string;
   city: string;
-  type: string;
+  communityType?: string; // primary community type (city/type/purpose-based)
+  type?: string[]; // additional type tags (e.g. 'Club', 'Training & Clinics')
   description: string;
   status: 'Active' | 'Draft' | 'Disabled';
   logo: string;
   coverImage: string;
+  memberCount?: string;
+  upcomingEventCount?: string;
+  isFeatured?: boolean;
+  isActive?: boolean;
   membersCount: number;
   eventsCount: number;
 }
 
-export function CommunitiesList({  role }: CommunitiesListProps) {
+export function CommunitiesList({ role }: CommunitiesListProps) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [communityTypeFilter, setCommunityTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [featuredFilter, setFeaturedFilter] = useState('all');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [communityToDelete, setCommunityToDelete] = useState<string | null>(null);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -39,17 +47,30 @@ export function CommunitiesList({  role }: CommunitiesListProps) {
 
   // Map API response to component format
   const mapApiResponseToCommunity = (apiCommunity: CommunityApiResponse): Community => {
+    const normalizeToArray = (v: any): string[] => {
+      if (!v && v !== 0) return [];
+      if (Array.isArray(v)) return v.map(String).map(s => s.trim()).filter(Boolean);
+      if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean);
+      return [String(v)];
+    };
+
     return {
       id: apiCommunity._id || apiCommunity.id || '',
-      name: apiCommunity.title || '',
-      city: apiCommunity.location || '',
-      type: apiCommunity.type || '',
+      name: apiCommunity.title || apiCommunity.name || '',
+      city: apiCommunity.location || apiCommunity.city || '',
+      memberCount: apiCommunity.memberCount !== undefined ? String(apiCommunity.memberCount) : (apiCommunity.membersCount !== undefined ? String(apiCommunity.membersCount) : '0'),
+      upcomingEventCount: apiCommunity.upcomingEventCount !== undefined ? String(apiCommunity.upcomingEventCount) : (apiCommunity.eventsCount !== undefined ? String(apiCommunity.eventsCount) : '0'),
+      // Primary community category comes from `category` in the API (values like 'city', 'type', 'special')
+      communityType: apiCommunity.category || apiCommunity.communityType || '',
+      // Secondary type tags come from `type` (array or comma-separated string)
+      type: normalizeToArray(apiCommunity.type || apiCommunity.types || apiCommunity.tags),
       description: apiCommunity.description || '',
-      status: apiCommunity.isActive ? 'Active' : 'Draft',
-      logo: apiCommunity.logo || 'https://images.unsplash.com/photo-1584981401957-03158e43750d?w=200',
+      isActive: apiCommunity.isActive ?? false,
+      isFeatured: apiCommunity.isFeatured ?? false,
+      logo: apiCommunity.image || 'https://images.unsplash.com/photo-1584981401957-03158e43750d?w=200',
       coverImage: apiCommunity.image || 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?w=800',
-      membersCount: 0, // Default value, API doesn't provide this
-      eventsCount: 0, // Default value, API doesn't provide this
+      membersCount: parseInt(String(apiCommunity.memberCount || apiCommunity.membersCount || 0)) || 0,
+      eventsCount: parseInt(String(apiCommunity.upcomingEventCount || apiCommunity.eventsCount || 0)) || 0,
     };
   };
 
@@ -134,11 +155,14 @@ export function CommunitiesList({  role }: CommunitiesListProps) {
   }, []);
 
   const filteredCommunities = communities.filter(community => {
-    const matchesSearch = community.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = !q || community.name.toLowerCase().includes(q) || community.description.toLowerCase().includes(q);
     const matchesCity = cityFilter === 'all' || community.city === cityFilter;
-    const matchesType = typeFilter === 'all' || community.type === typeFilter;
-    const matchesStatus = statusFilter === 'all' || community.status === statusFilter;
-    return matchesSearch && matchesCity && matchesType && matchesStatus;
+    const matchesCommunityType = communityTypeFilter === 'all' || community.communityType === communityTypeFilter;
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? community.isActive : !community.isActive);
+    const matchesCategory = categoryFilter.length === 0 || (community.type || []).some(cat => categoryFilter.includes(cat));
+    const matchesFeatured = featuredFilter === 'all' || (featuredFilter === 'yes' ? community.isFeatured : !community.isFeatured);
+    return matchesSearch && matchesCity && matchesCommunityType && matchesStatus && matchesCategory && matchesFeatured;
   });
 
   const canEdit = role === 'super-admin' || role === 'community-manager';
@@ -167,36 +191,39 @@ export function CommunitiesList({  role }: CommunitiesListProps) {
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getCommunityTypeColor = (type?: string) => {
     switch (type) {
-      case 'Club': return '#C12D32';
-      case 'Shop': return '#CF9F0C';
-      case 'Women': return '#B95E82';
-      case 'Youth': return '#E1C06E';
-      case 'Family': return '#ECC180';
-      case 'Corporate': return '#999';
+      case 'city': return '#C12D32';
+      case 'type': return '#3B82F6';
+      case 'purpose-based': return '#8B5CF6';
       default: return '#999';
     }
   };
 
-  // Get unique cities and types from communities for filter options
-  const uniqueCities = Array.from(new Set(communities.map(c => c.city).filter(Boolean)));
-  const uniqueTypes = Array.from(new Set(communities.map(c => c.type).filter(Boolean)));
+  const formatCommunityType = (type?: string) => {
+    switch (type) {
+      case 'city': return 'City Community';
+      case 'type': return 'Type Community';
+      case 'special': return 'Purpose-Based Community';
+      default: return type || '';
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg" style={{ color: '#666' }}>Loading communities...</div>
-      </div>
-    );
-  }
+  const toggleCategory = (category: string) => {
+    if (categoryFilter.includes(category)) {
+      setCategoryFilter(categoryFilter.filter(c => c !== category));
+    } else {
+      setCategoryFilter([...categoryFilter, category]);
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Communities / Cycling Teams</h1>
-          <p style={{ color: '#666' }}>Manage cycling communities and teams</p>
+          <p style={{ color: '#666' }}>Manage cycling communities and teams across the UAE</p>
         </div>
         {canCreate && (
           <button
@@ -210,194 +237,249 @@ export function CommunitiesList({  role }: CommunitiesListProps) {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="p-6 rounded-2xl shadow-sm bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
-              <input
-                type="text"
-                placeholder="Search communities..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                style={{ focusRing: '#C12D32' }}
-              />
-            </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-6 rounded-2xl shadow-sm" style={{ backgroundColor: '#ECC180' }}>
+          <div className="flex items-center gap-3 mb-2">
+            <Users className="w-5 h-5" style={{ color: '#C12D32' }} />
+            <span className="text-sm" style={{ color: '#666' }}>Total Communities</span>
           </div>
+          <p className="text-3xl" style={{ color: '#333' }}>{communities.length}</p>
+        </div>
+
+        <div className="p-6 rounded-2xl shadow-sm bg-white">
+          <div className="flex items-center gap-3 mb-2">
+            <Star className="w-5 h-5" style={{ color: '#C12D32' }} />
+            <span className="text-sm" style={{ color: '#666' }}>Featured</span>
+          </div>
+          <p className="text-3xl" style={{ color: '#333' }}>{communities.filter(c => c.isFeatured == true).length}</p>
+        </div>
+
+        <div className="p-6 rounded-2xl shadow-sm bg-white">
+          <div className="flex items-center gap-3 mb-2">
+            <Users className="w-5 h-5" style={{ color: '#C12D32' }} />
+            <span className="text-sm" style={{ color: '#666' }}>Total Members</span>
+          </div>
+          <p className="text-3xl" style={{ color: '#333' }}>
+            {communities.reduce((sum, c) => sum + (parseInt(c.memberCount as string) || 0), 0).toLocaleString()}
+          </p>
+        </div>
+
+        <div className="p-6 rounded-2xl shadow-sm bg-white">
+          <div className="flex items-center gap-3 mb-2">
+            <Calendar className="w-5 h-5" style={{ color: '#C12D32' }} />
+            <span className="text-sm" style={{ color: '#666' }}>Upcoming Events</span>
+          </div>
+          <p className="text-3xl" style={{ color: '#333' }}>
+            {communities.reduce((sum, c) => sum + (parseInt(c.upcomingEventCount as string) || 0), 0)}
+          </p>
+        </div>
+      </div>
+
+      {/* Filters Bar */}
+      <div className="p-6 rounded-2xl shadow-sm bg-white space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-5 h-5" style={{ color: '#666' }} />
+          <h3 className="text-lg" style={{ color: '#333' }}>Filters</h3>
+        </div>
+
+        {/* Row 1: Search, City, Community Type */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
+            <input
+              type="text"
+              placeholder="Search communities..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+            />
+          </div>
+
           <select
             value={cityFilter}
             onChange={(e) => setCityFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-            style={{ focusRing: '#C12D32' }}
+            className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="all">All Cities</option>
-            {uniqueCities.map(city => (
+            {availableCities.map(city => (
               <option key={city} value={city}>{city}</option>
             ))}
           </select>
+
           <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-            style={{ focusRing: '#C12D32' }}
+            value={communityTypeFilter}
+            onChange={(e) => setCommunityTypeFilter(e.target.value)}
+            className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           >
-            <option value="all">All Types</option>
-            {uniqueTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
+            <option value="all">All Community Types</option>
+            <option value="city">City Community</option>
+            <option value="type">Interest / Type Community</option>
+            <option value="purpose-based">Special Purpose Community</option>
           </select>
+        </div>
+
+        {/* Row 2: Status, Featured */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-            style={{ focusRing: '#C12D32' }}
+            className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="all">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Draft">Draft</option>
-            <option value="Disabled">Disabled</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
           </select>
+
+          <select
+            value={featuredFilter}
+            onChange={(e) => setFeaturedFilter(e.target.value)}
+            className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+          >
+            <option value="all">All Featured Status</option>
+            <option value="yes">Featured Only</option>
+            <option value="no">Not Featured</option>
+          </select>
+        </div>
+
+        {/* Row 3: Category Multi-Select */}
+        <div>
+          <label className="block text-sm mb-2" style={{ color: '#666' }}>Categories</label>
+          <div className="flex flex-wrap gap-2">
+            {availableCategories.map(category => (
+              <button
+                key={category}
+                onClick={() => toggleCategory(category)}
+                className="px-3 py-1 rounded-full text-sm transition-all"
+                style={{
+                  backgroundColor: categoryFilter.includes(category) ? '#C12D32' : '#F3F4F6',
+                  color: categoryFilter.includes(category) ? '#fff' : '#666',
+                }}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Communities Grid */}
-      {filteredCommunities.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-lg" style={{ color: '#666' }}>No communities found</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCommunities.map((community) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredCommunities.map((community) => (
           <div
             key={community.id}
-            className="rounded-2xl shadow-sm bg-white hover:shadow-md transition-all overflow-hidden"
+            onClick={() => navigate(`/communities/${community.id}`)}
+            className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all cursor-pointer relative"
           >
-            {/* Cover Image */}
-            <div className="relative h-40 overflow-hidden">
-              <img
-                src={community.coverImage}
-                alt={community.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              
-              {/* Logo */}
-              <div className="absolute bottom-4 left-4">
-                <img
-                  src={community.logo}
-                  alt={community.name}
-                  className="w-16 h-16 rounded-lg border-2 border-white object-cover"
-                />
+            {/* Featured Badge */}
+            {community.isFeatured && (
+              <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: '#C12D32' }}>
+                <Star className="w-3 h-3" />
+                Featured
+              </div>
+            )}
+
+            {/* Community Logo */}
+            <img
+              src={community.logo}
+              alt={community.name}
+              className="w-16 h-16 rounded-full object-cover mb-4"
+            />
+
+            {/* Community Info */}
+            <h3 className="text-lg font-medium mb-2" style={{ color: '#333' }}>
+              {community.name}
+            </h3>
+
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-sm" style={{ color: '#666' }}>
+                <MapPin className="w-4 h-4" />
+                {community.city}
               </div>
 
-              {/* Status Badge */}
-              <div className="absolute top-4 right-4">
-                <span
-                  className="px-3 py-1 rounded-full text-xs text-white"
-                  style={{
-                    backgroundColor:
-                      community.status === 'Active' ? '#CF9F0C' :
-                      community.status === 'Draft' ? '#999' : '#C12D32'
-                  }}
-                >
-                  {community.status}
-                </span>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <h3 className="text-lg mb-2" style={{ color: '#333' }}>{community.name}</h3>
-              
-              <div className="flex items-center gap-2 mb-3">
-                <span
-                  className="px-3 py-1 rounded-full text-xs text-white"
-                  style={{ backgroundColor: getTypeColor(community.type) }}
-                >
-                  {community.type}
-                </span>
-                <div className="flex items-center gap-1 text-xs" style={{ color: '#666' }}>
-                  <MapPin className="w-3 h-3" />
-                  <span>{community.city}</span>
-                </div>
-              </div>
-
-              <p className="text-sm mb-4 line-clamp-2" style={{ color: '#666' }}>
-                {community.description}
-              </p>
-
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
-                  <Users className="w-5 h-5 mx-auto mb-1" style={{ color: '#C12D32' }} />
-                  <div className="text-lg" style={{ color: '#333' }}>{community.membersCount.toLocaleString()}</div>
-                  <div className="text-xs" style={{ color: '#666' }}>Members</div>
-                </div>
-                <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
-                  <Calendar className="w-5 h-5 mx-auto mb-1" style={{ color: '#C12D32' }} />
-                  <div className="text-lg" style={{ color: '#333' }}>{community.eventsCount}</div>
-                  <div className="text-xs" style={{ color: '#666' }}>Events</div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigate(`/communities/${community.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all hover:shadow-md"
-                  style={{ backgroundColor: '#ECC180', color: '#333' }}
-                >
-                  <Eye className="w-4 h-4" />
-                  <span className="text-sm">View</span>
-                </button>
-                {canEdit && (
-                  <>
-                    <button
-                      onClick={() => navigate(`/communities/${community.id}/edit`)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" style={{ color: '#666' }} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(community.id)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" style={{ color: '#C12D32' }} />
-                    </button>
-                  </>
+              <div className="flex flex-wrap gap-2">
+                {community.communityType && (
+                  <span
+                    className="px-3 py-1 rounded-full text-xs text-white"
+                    style={{ backgroundColor: getCommunityTypeColor(community.communityType) }}
+                  >
+                    {formatCommunityType(community.communityType)}
+                  </span>
                 )}
               </div>
+              <div className="flex flex-wrap gap-1">
+                {(community.type || []).map((cat, i) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1 rounded-full text-xs"
+                    style={{ backgroundColor: '#ECC180', color: '#333' }}
+                  >
+                    {cat}
+                  </span>
+                ))}
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+              <div>
+                <p className="text-xs mb-1" style={{ color: '#999' }}>Members</p>
+                <p className="text-lg" style={{ color: '#333' }}>{community.memberCount || 0}</p>
+              </div>
+              <div>
+                <p className="text-xs mb-1" style={{ color: '#999' }}>Upcoming Events</p>
+                <p className="text-lg" style={{ color: '#333' }}>{community.upcomingEventCount || 0}</p>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="mt-4 flex items-center justify-between">
+              <span
+                className="px-3 py-1 rounded-full text-xs text-white"
+                style={{ backgroundColor: community.isActive ? '#10B981' : '#6B7280' }}
+              >
+                {community.isActive ? 'Active' : 'Inactive'}
+              </span>
             </div>
           </div>
-          ))}
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredCommunities.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#ECC180' }} />
+          <h3 className="text-xl mb-2" style={{ color: '#333' }}>No communities found</h3>
+          <p style={{ color: '#666' }}>
+            {searchTerm || cityFilter !== 'all' || communityTypeFilter !== 'all' || statusFilter !== 'all' || categoryFilter.length > 0 || featuredFilter !== 'all'
+              ? 'Try adjusting your filters'
+              : 'Create your first community to get started'}
+          </p>
         </div>
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Delete Community</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Delete Community?</h3>
             <p className="mb-6" style={{ color: '#666' }}>
               Are you sure you want to delete this community? This action cannot be undone.
             </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 rounded-lg"
-                style={{ backgroundColor: '#ECC180', color: '#333' }}
-              >
-                Cancel
-              </button>
+            <div className="flex gap-3">
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 rounded-lg text-white"
+                className="flex-1 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
                 style={{ backgroundColor: '#C12D32' }}
               >
                 Delete
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
+                style={{ color: '#666' }}
+              >
+                Cancel
               </button>
             </div>
           </div>

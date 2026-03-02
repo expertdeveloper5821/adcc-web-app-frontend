@@ -1,144 +1,468 @@
 export interface Event {
   id: string;
   name: string;
-  shortDescription: string;
-  fullDescription: string;
+  slug: string;
+  category: 'Race' | 'Community Ride' | 'Training & Clinics' | 'Awareness Rides' | 'Family & Kids' | 'Corporate Events' | 'National Events';
+  communityId: string;
+  communityName: string;
+  trackId: string;
+  trackName: string;
   city: string;
-  track: string;
-  date: string;
+  country: string;
+  
+  // Purpose-Based Event
+  isPurposeBased: boolean;
+  purposeType?: 'Awareness' | 'Charity' | 'Education' | 'Corporate' | 'Health' | 'National';
+  
+  description: string;
+  
+  eventDate: string;
   startTime: string;
   endTime: string;
-  capacity: number;
-  registrations: number;
-  rating: number;
-  status: 'Draft' | 'Published' | 'Cancelled';
-  featured: boolean;
-  allowRating: boolean;
-  allowSharing: boolean;
-  registrationOpen: boolean;
-  image: string;
-  views: number;
-  shares: number;
+  
+  distance: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  maxParticipants: number;
+  currentParticipants: number;
+  registrationFee: 'FREE';
+  
+  schedule: { time: string; activity: string }[];
+  amenities: string[];
+  
+  eligibility: {
+    ageRequirement: string;
+    bikeType: string;
+    experienceLevel: string;
+  };
+  
+  rewards: {
+    points: number;
+    badgeName: string;
+    badgeImage?: string;
+  };
+  
+  coverImage: string;
+  galleryImages: string[];
+  
+  status: 'Draft' | 'Open' | 'Full' | 'Completed' | 'Archived';
+  isFeatured: boolean;
+  allowCancellation: boolean;
+  
+  stats?: {
+    registered: number;
+    checkedIn: number;
+    completed: number;
+  };
+  
   createdAt: string;
+  updatedAt: string;
 }
 
-export const eventsData: Event[] = [
+export interface EventParticipant {
+  id: string;
+  eventId: string;
+  userId: string;
+  userName: string;
+  userCommunity: string;
+  status: 'registered' | 'checked-in' | 'completed' | 'no-show';
+  registeredAt: string;
+  checkedInAt?: string;
+  rank?: number;
+  time?: string;
+  points?: number;
+}
+
+let events: Event[] = [
   {
     id: '1',
-    name: 'Al Wathba Morning Ride',
-    shortDescription: 'Join us for a scenic morning ride around the Al Wathba Circuit',
-    fullDescription: 'Experience the thrill of cycling on one of Abu Dhabi\'s premier tracks. This morning ride is perfect for intermediate cyclists looking to improve their skills while enjoying the beautiful desert landscape. We\'ll cover approximately 25km at a comfortable pace with scheduled water breaks.',
+    name: 'Abu Dhabi Night Race Series – Round 3',
+    slug: 'abu-dhabi-night-race-series-round-3',
+    category: 'Race',
+    communityId: '1',
+    communityName: 'Abu Dhabi Road Racers',
+    trackId: '1',
+    trackName: 'Yas Marina Circuit',
     city: 'Abu Dhabi',
-    track: 'Al Wathba Circuit',
-    date: '2026-01-15',
-    startTime: '06:00',
+    country: 'UAE',
+    
+    // Purpose-Based Event
+    isPurposeBased: false,
+    purposeType: undefined,
+    
+    description: 'Join us for the third round of the exciting Abu Dhabi Night Race Series. Experience the thrill of racing under the stars on the world-famous Yas Marina Circuit.',
+    eventDate: '2026-07-18',
+    startTime: '05:30',
     endTime: '08:00',
-    capacity: 150,
-    registrations: 124,
-    rating: 4.8,
-    status: 'Published',
-    featured: true,
-    allowRating: true,
-    allowSharing: true,
-    registrationOpen: true,
-    image: 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjeWNsaW5nJTIwZ3JvdXAlMjByb2FkfGVufDF8fHx8MTc2ODEzNjQzNXww&ixlib=rb-4.1.0&q=80&w=1080',
-    views: 3420,
-    shares: 89,
-    createdAt: '2026-01-05',
+    distance: 42,
+    difficulty: 'Hard',
+    maxParticipants: 150,
+    currentParticipants: 96,
+    registrationFee: 'FREE',
+    schedule: [
+      { time: '05:00', activity: 'Rider check-in' },
+      { time: '05:20', activity: 'Safety briefing' },
+      { time: '05:30', activity: 'Race start' },
+      { time: '07:30', activity: 'Award ceremony' },
+    ],
+    amenities: ['Water', 'Toilets', 'Parking', 'Lighting', 'Medical support', 'Bike service'],
+    eligibility: {
+      ageRequirement: '18+',
+      bikeType: 'Road bike',
+      experienceLevel: 'Advanced',
+    },
+    rewards: {
+      points: 300,
+      badgeName: 'Night Racer Champion',
+    },
+    coverImage: 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=800',
+    galleryImages: [],
+    status: 'Open',
+    isFeatured: true,
+    allowCancellation: true,
+    stats: {
+      registered: 96,
+      checkedIn: 0,
+      completed: 0,
+    },
+    createdAt: '2026-01-15',
+    updatedAt: '2026-01-20',
   },
   {
     id: '2',
-    name: 'Yas Island Sprint Challenge',
-    shortDescription: 'High-intensity sprint event at Yas Marina Circuit',
-    fullDescription: 'Test your speed and endurance at the world-famous Yas Marina Circuit. This competitive event features timed sprints and is ideal for experienced cyclists. Professional timing equipment and safety marshals will be present throughout the event.',
-    city: 'Abu Dhabi',
-    track: 'Yas Marina Circuit',
-    date: '2026-01-18',
-    startTime: '07:00',
-    endTime: '10:00',
-    capacity: 100,
-    registrations: 89,
-    rating: 4.9,
-    status: 'Published',
-    featured: true,
-    allowRating: true,
-    allowSharing: true,
-    registrationOpen: true,
-    image: 'https://images.unsplash.com/photo-1716738634956-1494117b349b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaWtlJTIwcmFjZSUyMHRyYWNrfGVufDF8fHx8MTc2ODEzNjQzNXww&ixlib=rb-4.1.0&q=80&w=1080',
-    views: 2890,
-    shares: 67,
-    createdAt: '2026-01-03',
+    name: 'Al Ain Morning Community Ride',
+    slug: 'al-ain-morning-community-ride',
+    category: 'Community Ride',
+    communityId: '2',
+    communityName: 'Al Ain Cycling Hub',
+    trackId: '4',
+    trackName: 'Al Ain Oasis Loop',
+    city: 'Al Ain',
+    country: 'UAE',
+    
+    // Purpose-Based Event
+    isPurposeBased: false,
+    purposeType: undefined,
+    
+    description: 'A relaxed morning ride through the beautiful Al Ain Oasis. Perfect for all skill levels.',
+    eventDate: '2026-02-05',
+    startTime: '06:00',
+    endTime: '08:30',
+    distance: 25,
+    difficulty: 'Easy',
+    maxParticipants: 80,
+    currentParticipants: 45,
+    registrationFee: 'FREE',
+    schedule: [
+      { time: '06:00', activity: 'Group meeting at Oasis entrance' },
+      { time: '06:15', activity: 'Ride begins' },
+      { time: '08:00', activity: 'Coffee break' },
+    ],
+    amenities: ['Water', 'Toilets', 'Parking'],
+    eligibility: {
+      ageRequirement: '16+',
+      bikeType: 'Any',
+      experienceLevel: 'Beginner',
+    },
+    rewards: {
+      points: 50,
+      badgeName: 'Oasis Explorer',
+    },
+    coverImage: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800',
+    galleryImages: [],
+    status: 'Open',
+    isFeatured: false,
+    allowCancellation: true,
+    stats: {
+      registered: 45,
+      checkedIn: 0,
+      completed: 0,
+    },
+    createdAt: '2026-01-10',
+    updatedAt: '2026-01-18',
   },
   {
     id: '3',
-    name: 'Desert Adventure Ride',
-    shortDescription: 'Explore the stunning desert landscape on two wheels',
-    fullDescription: 'Join us for an unforgettable journey through the desert. This leisurely ride is suitable for all skill levels and offers breathtaking views of the dunes and native wildlife. We provide support vehicles, refreshments, and professional guides.',
-    city: 'Al Ain',
-    track: 'Desert Route 1',
-    date: '2026-01-22',
-    startTime: '06:30',
-    endTime: '09:30',
-    capacity: 80,
-    registrations: 67,
-    rating: 4.7,
-    status: 'Published',
-    featured: false,
-    allowRating: true,
-    allowSharing: true,
-    registrationOpen: true,
-    image: 'https://images.unsplash.com/photo-1718527192815-bb68dd23ce74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkZXNlcnQlMjBjeWNsaW5nJTIwdWFlfGVufDF8fHx8MTc2ODEzNjQzNnww&ixlib=rb-4.1.0&q=80&w=1080',
-    views: 2340,
-    shares: 45,
-    createdAt: '2026-01-02',
+    name: 'Dubai Fitness Challenge Training Camp',
+    slug: 'dubai-fitness-challenge-training-camp',
+    category: 'Training & Clinics',
+    communityId: '3',
+    communityName: 'Dubai Cycling Club',
+    trackId: '2',
+    trackName: 'Dubai Autodrome',
+    city: 'Dubai',
+    country: 'UAE',
+    
+    // Purpose-Based Event
+    isPurposeBased: false,
+    purposeType: undefined,
+    
+    description: 'Intensive training camp to prepare for the Dubai Fitness Challenge. Professional coaching included.',
+    eventDate: '2026-02-12',
+    startTime: '07:00',
+    endTime: '11:00',
+    distance: 35,
+    difficulty: 'Medium',
+    maxParticipants: 60,
+    currentParticipants: 60,
+    registrationFee: 'FREE',
+    schedule: [
+      { time: '07:00', activity: 'Warm-up session' },
+      { time: '07:30', activity: 'Technique drills' },
+      { time: '09:00', activity: 'Endurance ride' },
+      { time: '10:30', activity: 'Cool down and Q&A' },
+    ],
+    amenities: ['Water', 'Toilets', 'Parking', 'Medical support', 'Bike service'],
+    eligibility: {
+      ageRequirement: '18+',
+      bikeType: 'Road bike',
+      experienceLevel: 'Intermediate',
+    },
+    rewards: {
+      points: 150,
+      badgeName: 'Training Champion',
+    },
+    coverImage: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
+    galleryImages: [],
+    status: 'Full',
+    isFeatured: true,
+    allowCancellation: false,
+    stats: {
+      registered: 60,
+      checkedIn: 0,
+      completed: 0,
+    },
+    createdAt: '2026-01-05',
+    updatedAt: '2026-01-25',
   },
   {
     id: '4',
-    name: 'Corniche Sunset Ride',
-    shortDescription: 'Enjoy the Abu Dhabi Corniche at sunset',
-    fullDescription: 'Ride along the beautiful Abu Dhabi Corniche as the sun sets over the Arabian Gulf. This social ride is perfect for beginners and families, with a relaxed pace and plenty of photo opportunities.',
+    name: 'Pink Ride for Breast Cancer Awareness',
+    slug: 'pink-ride-breast-cancer-awareness',
+    category: 'Awareness Rides',
+    communityId: '5',
+    communityName: 'Pink Pedalers',
+    trackId: '1',
+    trackName: 'Yas Marina Circuit',
     city: 'Abu Dhabi',
-    track: 'Corniche Road',
-    date: '2026-01-25',
-    startTime: '17:00',
-    endTime: '19:00',
-    capacity: 120,
-    registrations: 45,
-    rating: 4.6,
-    status: 'Published',
-    featured: false,
-    allowRating: true,
-    allowSharing: true,
-    registrationOpen: true,
-    image: 'https://images.unsplash.com/photo-1758608906924-57a6ca140153?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjeWNsaW5nJTIwY29tbXVuaXR5JTIwZXZlbnR8ZW58MXx8fHwxNzY4MTM2NDM1fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    views: 1890,
-    shares: 34,
-    createdAt: '2026-01-01',
+    country: 'UAE',
+    
+    // Purpose-Based Event
+    isPurposeBased: true,
+    purposeType: 'Awareness',
+    
+    description: 'Annual breast cancer awareness ride. All proceeds support cancer research and patient care. Wear pink and ride for a cause!',
+    eventDate: '2026-03-08',
+    startTime: '06:30',
+    endTime: '09:00',
+    distance: 20,
+    difficulty: 'Easy',
+    maxParticipants: 200,
+    currentParticipants: 134,
+    registrationFee: 'FREE',
+    schedule: [
+      { time: '06:00', activity: 'Registration and jersey collection' },
+      { time: '06:30', activity: 'Opening ceremony' },
+      { time: '07:00', activity: 'Ride begins' },
+      { time: '08:30', activity: 'Closing ceremony' },
+    ],
+    amenities: ['Water', 'Toilets', 'Parking', 'Medical support'],
+    eligibility: {
+      ageRequirement: 'All ages',
+      bikeType: 'Any',
+      experienceLevel: 'Beginner',
+    },
+    rewards: {
+      points: 100,
+      badgeName: 'Pink Warrior',
+    },
+    coverImage: 'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=800',
+    galleryImages: [],
+    status: 'Open',
+    isFeatured: true,
+    allowCancellation: true,
+    stats: {
+      registered: 134,
+      checkedIn: 0,
+      completed: 0,
+    },
+    createdAt: '2025-12-20',
+    updatedAt: '2026-01-28',
+  },
+  {
+    id: '5',
+    name: 'UAE National Day Celebration Ride',
+    slug: 'uae-national-day-celebration-ride',
+    category: 'National Events',
+    communityId: '4',
+    communityName: 'Sharjah Speed Riders',
+    trackId: '3',
+    trackName: 'Sharjah Waterfront Track',
+    city: 'Sharjah',
+    country: 'UAE',
+    
+    // Purpose-Based Event
+    isPurposeBased: true,
+    purposeType: 'National',
+    
+    description: 'Celebrate UAE National Day with a scenic coastal ride. Join fellow cyclists to honor our nation\'s heritage and unity.',
+    eventDate: '2026-01-22',
+    startTime: '05:00',
+    endTime: '07:00',
+    distance: 15,
+    difficulty: 'Hard',
+    maxParticipants: 100,
+    currentParticipants: 100,
+    registrationFee: 'FREE',
+    schedule: [
+      { time: '04:30', activity: 'Rider check-in' },
+      { time: '04:50', activity: 'Race briefing' },
+      { time: '05:00', activity: 'Sprint start' },
+      { time: '06:30', activity: 'Award ceremony' },
+    ],
+    amenities: ['Water', 'Toilets', 'Parking', 'Lighting', 'Medical support'],
+    eligibility: {
+      ageRequirement: '18+',
+      bikeType: 'Road bike',
+      experienceLevel: 'Advanced',
+    },
+    rewards: {
+      points: 500,
+      badgeName: 'Sprint Master',
+    },
+    coverImage: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800',
+    galleryImages: [],
+    status: 'Completed',
+    isFeatured: false,
+    allowCancellation: false,
+    stats: {
+      registered: 100,
+      checkedIn: 98,
+      completed: 95,
+    },
+    createdAt: '2025-12-01',
+    updatedAt: '2026-01-22',
   },
 ];
 
-// In-memory store for new events
-export let events = [...eventsData];
+let participants: EventParticipant[] = [
+  {
+    id: '1',
+    eventId: '1',
+    userId: 'u1',
+    userName: 'Ahmed Al Mansouri',
+    userCommunity: 'Abu Dhabi Road Racers',
+    status: 'registered',
+    registeredAt: '2026-01-16',
+  },
+  {
+    id: '2',
+    eventId: '1',
+    userId: 'u2',
+    userName: 'Sara Thompson',
+    userCommunity: 'Abu Dhabi Road Racers',
+    status: 'registered',
+    registeredAt: '2026-01-17',
+  },
+  {
+    id: '3',
+    eventId: '5',
+    userId: 'u3',
+    userName: 'Mohammed Hassan',
+    userCommunity: 'Sharjah Speed Riders',
+    status: 'completed',
+    registeredAt: '2026-01-05',
+    checkedInAt: '2026-01-22',
+    rank: 1,
+    time: '00:23:45',
+    points: 500,
+  },
+  {
+    id: '4',
+    eventId: '5',
+    userId: 'u4',
+    userName: 'John Peterson',
+    userCommunity: 'Dubai Cycling Club',
+    status: 'completed',
+    registeredAt: '2026-01-06',
+    checkedInAt: '2026-01-22',
+    rank: 2,
+    time: '00:24:12',
+    points: 300,
+  },
+  {
+    id: '5',
+    eventId: '5',
+    userId: 'u5',
+    userName: 'Fatima Al Zaabi',
+    userCommunity: 'Sharjah Speed Riders',
+    status: 'completed',
+    registeredAt: '2026-01-07',
+    checkedInAt: '2026-01-22',
+    rank: 3,
+    time: '00:24:58',
+    points: 200,
+  },
+];
 
-export function addEvent(event: Event) {
-  events.push(event);
-}
+export const availableCategories = [
+  'Race',
+  'Community Ride',
+  'Training & Clinics',
+  'Awareness Rides',
+  'Family & Kids',
+  'Corporate Events',
+  'National Events',
+];
 
-export function updateEvent(id: string, updates: Partial<Event>) {
-  const index = events.findIndex(e => e.id === id);
-  if (index !== -1) {
-    events[index] = { ...events[index], ...updates };
-  }
-}
+export const availableCities = [
+  'Abu Dhabi',
+  'Dubai',
+  'Sharjah',
+  'Ajman',
+  'Umm Al Quwain',
+  'Ras Al Khaimah',
+  'Fujairah',
+  'Al Ain',
+];
 
-export function deleteEvent(id: string) {
-  events = events.filter(e => e.id !== id);
+export function getAllEvents(): Event[] {
+  return events;
 }
 
 export function getEvent(id: string): Event | undefined {
   return events.find(e => e.id === id);
 }
 
-export function getAllEvents(): Event[] {
-  return events;
+export function addEvent(event: Event): void {
+  events.push(event);
+}
+
+export function updateEvent(id: string, updates: Partial<Event>): void {
+  const index = events.findIndex(e => e.id === id);
+  if (index !== -1) {
+    events[index] = { ...events[index], ...updates };
+  }
+}
+
+export function deleteEvent(id: string): void {
+  events = events.filter(e => e.id !== id);
+}
+
+export function getEventParticipants(eventId: string): EventParticipant[] {
+  return participants.filter(p => p.eventId === eventId);
+}
+
+export function addParticipant(participant: EventParticipant): void {
+  participants.push(participant);
+}
+
+export function updateParticipant(id: string, updates: Partial<EventParticipant>): void {
+  const index = participants.findIndex(p => p.id === id);
+  if (index !== -1) {
+    participants[index] = { ...participants[index], ...updates };
+  }
+}
+
+export function removeParticipant(id: string): void {
+  participants = participants.filter(p => p.id !== id);
 }

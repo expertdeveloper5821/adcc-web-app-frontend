@@ -1,25 +1,203 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Calendar, MapPin, Clock, Users, Image as ImageIcon, FileText } from 'lucide-react';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X } from 'lucide-react';
+import { addEvent, Event, availableCategories } from '../../data/eventsData';
+import { getTracksByCountryAndCity } from '../../data/tracksData';
+import { toast } from 'sonner@2.0.3';
+import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { createEvent, EventApiResponse } from '../../services/eventsApi';
+import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
+import { Input } from '../ui/input';
+import { UserRole } from '../../App';
+import { useNavigate, useParams } from 'react-router-dom';
 
-export function EventCreate() {
+interface EventCreateProps {
+  navigate: (page: string, params?: any) => void;
+  role: UserRole;
+}
+
+export function EventCreate({ role }: EventCreateProps) {
+  
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  
+  const [thumbnailImage, setThumbnailImage] = useState<File | null>(null);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [galleryImages, setGalleryImages] = useState<File[]>([]);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [communities, setCommunities] = useState<any[]>([]);
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files?.[0]) {
+    setThumbnailImage(e.target.files[0]);
+  }
+};
+
+const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files?.[0]) {
+    const file = e.target.files[0];
+    setCoverImage(file);
+    setCoverPreview(URL.createObjectURL(file));
+  }
+};
+
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const files = Array.from(e.target.files);
+
+    // Optional: limit max images (10)
+    if (galleryImages.length + files.length > 10) {
+      alert("Maximum 10 images allowed");
+      return;
+    }
+
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+
+    setGalleryImages(prev => [...prev, ...files]);
+    setGalleryPreviews(prev => [...prev, ...newPreviews]);
+
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  };
+
+
+  const removeGalleryImage = (index: number) => {
+    const updatedImages = [...galleryImages];
+    const updatedPreviews = [...galleryPreviews];
+
+    // Clean memory
+    URL.revokeObjectURL(updatedPreviews[index]);
+
+    updatedImages.splice(index, 1);
+    updatedPreviews.splice(index, 1);
+
+    setGalleryImages(updatedImages);
+    setGalleryPreviews(updatedPreviews);
+  };
+
+  const [formData, setFormData] = useState<{
+    title: string;
+    slug: string;
+    category: string;
+    communityId: string;
+    description: string;
+    country: string;
+    city: string;
+    trackId: string;
+    eventDate: string;
+    eventTime: string;
+    endTime: string;
+    distance: number;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    maxParticipants: number;
+    schedule: { time: string; title: string }[];
+    amenities: string[];
+    eligibilityAge: string;
+    eligibilityBike: string;
+    eligibilityExperience: string;
+    rewardPoints: number;
+    rewardBadge: string;
+    status: 'Draft' | 'Open';
+    isFeatured: boolean;
+    allowCancellation: boolean;
+  }>({
     title: '',
+    slug: '',
+    category: 'Community Ride',
+    communityId: '',
     description: '',
-    mainImage: '',
-    eventImage: '',
+    country: 'UAE',
+    city: 'Abu Dhabi',
+    trackId: '',
     eventDate: '',
-    eventTime: '',
-    address: '',
-    maxParticipants: 500,
-    minAge: 16,
-    maxAge: 70,
-    youtubeLink: '',
+    eventTime: '06:00',
+    endTime: '08:00',
+    distance: 25,
+    difficulty: 'Medium',
+    maxParticipants: 100,
+    schedule: [{ time: '06:00', title: '' }],
+    amenities: [],
+    eligibilityAge: 18,
+    eligibilityBike: 'Any',
+    eligibilityExperience: 'Beginner',
+    rewardPoints: 50,
+    rewardBadge: '',
+    status: 'Draft',
+    isFeatured: false,
+    allowCancellation: true,
   });
+
+  const [customAmenityInput, setCustomAmenityInput] = useState('');
+
+  // const tracks = getTracksByCountryAndCity(formData.country, formData.city);
+  // const selectedCommunity = communities.find(c => c.id === formData.communityId);
+
+  // Community records 
+    useEffect(() => {
+      const fetchMetaData = async () => {
+        try {
+          const [communityData, trackData] = await Promise.all([
+            getAllCommunities(),
+            getAllTracks(),
+          ]);
+  
+          setCommunities(communityData.communities);
+          setTracks(trackData.tracks);
+        } catch (error) {
+          toast.error('Failed to load communities or tracks');
+        }
+      };
+  
+      fetchMetaData();
+    }, []);
+
+  // Predefined amenities that appear as checkboxes
+  const predefinedAmenities = ['water', 'toilets', 'parking', 'lighting', 'medical support', 'bike service'];
+  
+  // Custom amenities (those not in the predefined list)
+  const customAmenities = formData.amenities.filter(a => !predefinedAmenities.includes(a));
+
+  const handleNameChange = (title: string) => {
+    setFormData(prev => ({
+      ...prev,
+      title,
+      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+    }));
+  };
+
+  const toggleAmenity = (amenity: string) => {
+    setFormData(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter(a => a !== amenity)
+        : [...prev.amenities, amenity],
+    }));
+  };
+
+  const addScheduleRow = () => {
+    setFormData(prev => ({
+      ...prev,
+      schedule: [...prev.schedule, { time: '', title: '' }],
+    }));
+  };
+
+  const removeScheduleRow = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      schedule: prev.schedule.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateScheduleRow = (index: number, field: 'time' | 'title', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      schedule: prev.schedule.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  };
 
   // Helper function to compress and resize image before converting to base64
   // More aggressive compression to prevent payload too large errors
@@ -117,142 +295,145 @@ export function EventCreate() {
     });
   };
 
-  const handleImageUpload = async (field: 'mainImage' | 'eventImage', file: File) => {
-    try {
-      // Compress and convert to base64
-      const base64String = await compressImage(file);
-      
-      // Update form data with base64 string
-      setFormData((prev) => ({ ...prev, [field]: base64String }));
-      toast.success('Image converted to base64 successfully');
-    } catch (error: any) {
-      console.error('Error processing image:', error);
-      toast.error(error.message || 'Failed to process image. Please try a smaller image.');
-    }
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {};
+    if (!formData.title.trim()) errors.title = 'Event title is required';
+    if (!formData.description.trim()) errors.description = 'Event description is required';
+    if (!formData.eventDate) errors.eventDate = 'Invalid event date';
+    return errors;
   };
 
-  const handleSubmit = async (status: 'Draft' | 'Published') => {
-    if (!formData.title || !formData.eventDate || !formData.address) {
-      toast.error('Please fill in all required fields (Title, Date, Address)');
+  const handleSubmit = async (action: 'draft' | 'publish') => {
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error('Please fill all required fields');
       return;
+    } else {
+      setFormErrors({});
     }
-
-    // Validate image sizes before submitting (max 500KB per image in base64)
-    const maxImageSize = 500 * 1024; // 500KB
-    if (formData.mainImage) {
-      const mainImageSize = (formData.mainImage.length * 3) / 4; // Approximate actual size
-      if (mainImageSize > maxImageSize) {
-        toast.error(`Main image is too large (${Math.round(mainImageSize / 1024)}KB). Please use a smaller image.`);
-        return;
-      }
-    }
-    if (formData.eventImage) {
-      const eventImageSize = (formData.eventImage.length * 3) / 4; // Approximate actual size
-      if (eventImageSize > maxImageSize) {
-        toast.error(`Event image is too large (${Math.round(eventImageSize / 1024)}KB). Please use a smaller image.`);
-        return;
-      }
-    }
-
-    // Check total payload size (max 1MB for both images combined)
-    const totalImageSize = 
-      (formData.mainImage ? (formData.mainImage.length * 3) / 4 : 0) +
-      (formData.eventImage ? (formData.eventImage.length * 3) / 4 : 0);
-    
-    if (totalImageSize > 1024 * 1024) { // 1MB total
-      toast.error('Combined image size is too large. Please reduce image sizes or remove one image.');
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      // Map status to API format
-      const apiStatus = status === 'Published' ? 'upcoming' : 'upcoming'; // API uses: upcoming, ongoing, completed, cancelled
-      
-      // Prepare event data with base64 images
-      const eventData: Partial<EventApiResponse> = {
+      // Convert images to base64
+      let coverBase64 = '';
+      let galleryBase64: string[] = [];
+
+      if (coverImage) {
+        coverBase64 = await compressImage(coverImage);
+      }
+      if (galleryImages.length > 0) {
+        galleryBase64 = await Promise.all(galleryImages.map(img => compressImage(img)));
+      }
+
+      // Prepare payload with correct types and only allowed fields
+      const payload: Partial<EventApiResponse> = {
         title: formData.title,
+        slug: formData.slug,
+        category: formData.category,
+        communityId: formData.communityId,
         description: formData.description,
-        mainImage: formData.mainImage ? formData.mainImage : undefined,
-        eventImage: formData.eventImage ? formData.eventImage : undefined,
+        address: `${formData.city}, ${formData.country}`,
+        trackId: formData.trackId,
         eventDate: formData.eventDate,
         eventTime: formData.eventTime,
-        address: formData.address,
-        maxParticipants: formData.maxParticipants,
-        minAge: formData.minAge,
-        maxAge: formData.maxAge,
-        youtubeLink: formData.youtubeLink || undefined,
-        status: apiStatus,
+        endTime: formData.endTime,
+        distance: Number(formData.distance),
+        difficulty: formData.difficulty,
+        maxParticipants: Number(formData.maxParticipants),
+        schedule: Array.isArray(formData.schedule) ? formData.schedule : [],
+        amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
+        mainImage: coverBase64 || undefined,
+        galleryImages: galleryBase64,
+        status: action === 'draft' ? 'Draft' : 'Open',
+        isFeatured: !!formData.isFeatured,
+        allowCancellation: !!formData.allowCancellation,
       };
 
-      // Log image sizes and base64 URLs for debugging
-      if (eventData.mainImage) {
-        const mainImageSize = Math.round(((eventData.mainImage.length * 3) / 4) / 1024);
-       
-      }
-      if (eventData.eventImage) {
-        const eventImageSize = Math.round(((eventData.eventImage.length * 3) / 4) / 1024);
-        
-      }
-
-     
-
-      const createdEvent = await createEvent(eventData);
-      toast.success(`Event ${status === 'Published' ? 'published' : 'saved as draft'} successfully`);
-      navigate(`/events/${createdEvent._id || createdEvent.id}`);
-    } catch (error: any) {
-      console.error('Error creating event:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to create event. Please try again.';
-      
-      // Check for payload too large error
-      if (errorMessage.includes('too large') || errorMessage.includes('PayloadTooLarge')) {
-        toast.error('Image size is too large. Please use smaller images. Maximum recommended size is 500KB per image.');
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setIsLoading(false);
+      await createEvent(payload);
+      toast.success('Event created successfully');
+      navigate('/events');
+    } catch (error) {
+      toast.error('Failed to create event');
     }
   };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('/events')}
+          onClick={() => navigate(`/events`)}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div>
           <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Create Event</h1>
-          <p style={{ color: '#666' }}>Set up a new cycling event</p>
+          <p style={{ color: '#666' }}>Create a new cycling event or race</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Event Info */}
+          {/* SECTION A - Basic Information */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <FileText className="w-5 h-5" />
+                <Calendar className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Event Information</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>A. Basic Information</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Title *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Name *</label>
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g., Abu Dhabi Cycling Challenge 2025"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="Abu Dhabi Night Race Series – Round 3"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
+                {formErrors.title && <div className="text-xs text-red-600 mt-1">{formErrors.title}</div>}
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug (auto-generated)</label>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  readOnly
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
+                  style={{ color: '#999' }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Category *</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  {availableCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community * (mandatory)</label>
+                <select
+                  value={formData.communityId}
+                  onChange={(e) => setFormData({ ...formData, communityId: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="">Select community...</option>
+                  {communities.map(community => (
+                    <option key={community.id || community._id} value={community.id || community._id}>{community.title || community.name}</option>
+                  ))}
+                </select>
+                {formErrors.communityId && <div className="text-xs text-red-600 mt-1">{formErrors.communityId}</div>}
               </div>
 
               <div>
@@ -260,153 +441,440 @@ export function EventCreate() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Detailed event description"
-                  rows={5}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
+                  placeholder="Describe the event..."
+                  rows={4}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>YouTube Link</label>
-                <input
-                  type="url"
-                  value={formData.youtubeLink}
-                  onChange={(e) => setFormData({ ...formData, youtubeLink: e.target.value })}
-                  placeholder="https://www.youtube.com/watch?v=example"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
-                />
+                {formErrors.description && <div className="text-xs text-red-600 mt-1">{formErrors.description}</div>}
               </div>
             </div>
           </div>
 
-          {/* Schedule */}
-          <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Clock className="w-5 h-5" />
-              </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Schedule</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Date *</label>
-                <input
-                  type="date"
-                  value={formData.eventDate}
-                  onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Time *</label>
-                <input
-                  type="time"
-                  value={formData.eventTime}
-                  onChange={(e) => setFormData({ ...formData, eventTime: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Location */}
+          {/* SECTION B - Location & Track */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <MapPin className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Location</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>B. Location & Track</h2>
             </div>
 
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#666' }}>Address *</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="e.g., Yas Marina Circuit, Abu Dhabi"
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                style={{ focusRing: '#C12D32' }}
-              />
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>Track *</label>
+              <select
+                value={formData.trackId}
+                onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+              >
+                <option value="">Select track...</option>
+                {tracks.map(track => (
+                  <option key={track.id || track._id} value={track.id || track._id}>{track.title}</option>
+                ))}
+                
+              </select>
             </div>
           </div>
 
-          {/* Media */}
+          {/* SECTION C - Date & Time */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Calendar className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>C. Date & Time</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Date *</label>
+                <input
+                  type="date"
+                  value={formData.eventDate}
+                  onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+                
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Start Time *</label>
+                <input
+                  type="time"
+                  value={formData.eventTime}
+                  onChange={(e) => setFormData({ ...formData, eventTime: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>End Time *</label>
+                <input
+                  type="time"
+                  value={formData.endTime}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION D - Ride Details */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Settings className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>D. Ride Details</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Distance (km)</label>
+                  <input
+                    type="number"
+                    value={formData.distance}
+                    onChange={(e) => setFormData({ ...formData, distance: parseInt(e.target.value) || 0 })}
+                    placeholder="25"
+                    min="1"
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Difficulty</label>
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as any })}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  >
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Max Participants *</label>
+                  <input
+                    type="number"
+                    value={formData.maxParticipants}
+                    onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) || 0 })}
+                    placeholder="100"
+                    min="1"
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Registration Fee</label>
+                  <input
+                    type="text"
+                    value="FREE"
+                    readOnly
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
+                    style={{ color: '#999' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION E - Event Schedule */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Calendar className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>E. Event Schedule</h2>
+            </div>
+
+            <div className="space-y-3">
+              {formData.schedule.map((item, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <input
+                    type="time"
+                    value={item.time}
+                    onChange={(e) => updateScheduleRow(index, 'time', e.target.value)}
+                    placeholder="05:00"
+                    className="w-32 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                  <input
+                    type="text"
+                    value={item.title}
+                    onChange={(e) => updateScheduleRow(index, 'title', e.target.value)}
+                    placeholder="Activity title"
+                    className="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                  {formData.schedule.length > 1 && (
+                    <button
+                      onClick={() => removeScheduleRow(index)}
+                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <X className="w-5 h-5" style={{ color: '#999' }} />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                onClick={addScheduleRow}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
+                style={{ backgroundColor: '#ECC180', color: '#333' }}
+              >
+                <Plus className="w-4 h-4" />
+                Add schedule row
+              </button>
+            </div>
+          </div>
+
+          {/* SECTION F - Amenities */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Settings className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>F. Amenities</h2>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {predefinedAmenities.map(amenity => (
+                <label key={amenity} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.includes(amenity)}
+                    onChange={() => toggleAmenity(amenity)}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>{amenity}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-4">
+              <input
+                type="text"
+                value={customAmenityInput}
+                onChange={(e) => setCustomAmenityInput(e.target.value)}
+                placeholder="Add custom amenity"
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+              />
+              <button
+                onClick={() => {
+                  if (customAmenityInput.trim()) {
+                    toggleAmenity(customAmenityInput.trim());
+                    setCustomAmenityInput('');
+                  }
+                }}
+                className="mt-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
+                style={{ backgroundColor: '#ECC180', color: '#333' }}
+              >
+                Add
+              </button>
+            </div>
+
+            {customAmenities.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-bold" style={{ color: '#333' }}>Custom Amenities:</h3>
+                <div className="space-y-2">
+                  {customAmenities.map((amenity, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-sm" style={{ color: '#666' }}>{amenity}</span>
+                      <button
+                        onClick={() => toggleAmenity(amenity)}
+                        className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <X className="w-4 h-4" style={{ color: '#999' }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SECTION G - Eligibility */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Users className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>G. Eligibility</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Age Requirement</label>
+                <input
+                  type="text"
+                  value={formData.eligibilityAge}
+                  onChange={(e) => setFormData({ ...formData, eligibilityAge: Number(e.target.value) })}
+                  placeholder="18+"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Bike Type</label>
+                <input
+                  type="text"
+                  value={formData.eligibilityBike}
+                  onChange={(e) => setFormData({ ...formData, eligibilityBike: e.target.value })}
+                  placeholder="Road bike, Mountain bike, Any..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Experience Level</label>
+                <select
+                  value={formData.eligibilityExperience}
+                  onChange={(e) => setFormData({ ...formData, eligibilityExperience: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION H - Rewards & Badges */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Award className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>H. Rewards & Badges</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Points Reward</label>
+                <input
+                  type="number"
+                  value={formData.rewardPoints}
+                  onChange={(e) => setFormData({ ...formData, rewardPoints: Number(e.target.value) || 0 })}
+                  placeholder="50"
+                  min="0"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Badge Name</label>
+                <input
+                  type="text"
+                  value={formData.rewardBadge}
+                  onChange={(e) => setFormData({ ...formData, rewardBadge: e.target.value })}
+                  placeholder="Night Racer Champion"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Badge Image</label>
+                <div
+                  className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{ borderColor: '#ECC180' }}
+                >
+                  <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
+                  <p className="text-sm" style={{ color: '#666' }}>Upload badge image</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, SVG - Square format recommended</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION I - Media */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <ImageIcon className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Media</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>I. Media</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Main Image</label>
-                <input
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Cover Image</label>
+                <label
+                  htmlFor="coverUpload"
+                  className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors block"
+                  style={{ borderColor: '#ECC180' }}
+                >
+                  <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
+                  <p className="text-sm" style={{ color: '#666' }}>Upload cover image</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 16:9 format recommended</p>
+
+                  <input
+                  id="coverUpload"
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload('mainImage', file);
-                  }}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
-                />
-                {formData.mainImage && (() => {
-                  const imageSize = Math.round(((formData.mainImage.length * 3) / 4) / 1024);
-                  const isTooLarge = imageSize > 500;
-                  return (
-                    <div className="mt-3">
-                      <p className={`text-xs mb-2 ${isTooLarge ? 'text-red-600 font-semibold' : ''}`} style={isTooLarge ? {} : { color: '#999' }}>
-                        Image converted to base64 (size: ~{imageSize}KB)
-                        {isTooLarge && ' - WARNING: Image is too large! Please use a smaller image.'}
-                      </p>
-                      <img 
-                        src={formData.mainImage} 
-                        alt="Main image preview" 
-                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                      />
-                    </div>
-                  );
-                })()}
+                  hidden
+                  onChange={handleCoverChange}
+                  />
+                </label>
+                
+                  {coverPreview && (
+                    <img
+                      src={coverPreview}
+                      alt="Preview"
+                      className="mt-4 rounded-lg w-full h-48 object-cover"
+                    />
+                  )}
+
+                
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Image</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Gallery Images (optional)</label>
+                <label 
+                htmlFor="galleryUpload" 
+                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors block"
+                style={{ borderColor: '#ECC180' }}
+                >
+                  <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
+                  <p className="text-sm" style={{ color: '#666' }}>Upload gallery images</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>Multiple images supported</p>
+                </label>
+
                 <input
+                  id="galleryUpload"
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload('eventImage', file);
-                  }}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
+                  multiple
+                  hidden
+                  onChange={handleGalleryChange}
                 />
-                {formData.eventImage && (() => {
-                  const imageSize = Math.round(((formData.eventImage.length * 3) / 4) / 1024);
-                  const isTooLarge = imageSize > 500;
-                  return (
-                    <div className="mt-3">
-                      <p className={`text-xs mb-2 ${isTooLarge ? 'text-red-600 font-semibold' : ''}`} style={isTooLarge ? {} : { color: '#999' }}>
-                        Image converted to base64 (size: ~{imageSize}KB)
-                        {isTooLarge && ' - WARNING: Image is too large! Please use a smaller image.'}
-                      </p>
-                      <img 
-                        src={formData.eventImage} 
-                        alt="Event image preview" 
-                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                      />
-                    </div>
-                  );
-                })()}
+
+                {/* Preview Grid */}
+                {galleryPreviews.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    {galleryPreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt="Gallery Preview"
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+
+                        {/* Remove Button */}
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="absolute top-2 right-2 bg-black bg-opacity-60 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -414,74 +882,73 @@ export function EventCreate() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Registration */}
+          {/* SECTION J - Visibility & Rules */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Users className="w-5 h-5" />
-              </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Registration</h2>
-            </div>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>J. Visibility & Rules</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Max Participants</label>
-                <input
-                  type="number"
-                  value={formData.maxParticipants}
-                  onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) || 500 })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
-                />
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="Draft">Draft</option>
+                  <option value="Open">Open</option>
+                </select>
               </div>
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Min Age</label>
-                <input
-                  type="number"
-                  value={formData.minAge}
-                  onChange={(e) => setFormData({ ...formData, minAge: parseInt(e.target.value) || 16 })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
-                />
-              </div>
+              <div className="pt-4 border-t border-gray-200 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isFeatured}
+                    onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>Featured Event</span>
+                </label>
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Max Age</label>
-                <input
-                  type="number"
-                  value={formData.maxAge}
-                  onChange={(e) => setFormData({ ...formData, maxAge: parseInt(e.target.value) || 70 })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                  style={{ focusRing: '#C12D32' }}
-                />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowCancellation}
+                    onChange={(e) => setFormData({ ...formData, allowCancellation: e.target.checked })}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>Allow Cancellation</span>
+                </label>
               </div>
             </div>
           </div>
 
-
-          {/* Actions */}
+          {/* SECTION K - Save Actions */}
           <div className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>K. Save Actions</h3>
+
             <button
-              onClick={() => handleSubmit('Published')}
-              disabled={isLoading}
-              className="w-full px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => handleSubmit('publish')}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg"
               style={{ backgroundColor: '#C12D32' }}
             >
-              {isLoading ? 'Creating...' : 'Publish Event'}
+              <Save className="w-5 h-5" />
+              Publish Event
             </button>
+
             <button
-              onClick={() => handleSubmit('Draft')}
-              disabled={isLoading}
-              className="w-full px-4 py-3 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => handleSubmit('draft')}
+              className="w-full px-4 py-3 rounded-lg transition-all hover:shadow-md"
               style={{ backgroundColor: '#ECC180', color: '#333' }}
             >
-              {isLoading ? 'Saving...' : 'Save as Draft'}
+              Save as Draft
             </button>
+
             <button
               onClick={() => navigate('/events')}
-              disabled={isLoading}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50 disabled:opacity-50"
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >
               Cancel

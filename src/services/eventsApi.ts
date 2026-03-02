@@ -1,5 +1,4 @@
 import api from './api';
-
 export interface EventApiResponse {
   _id?: string;
   id?: string;
@@ -9,24 +8,39 @@ export interface EventApiResponse {
   eventImage?: string;
   eventDate: string;
   eventTime: string;
+  endTime: string;
   address: string;
   maxParticipants: number;
   minAge?: number;
   maxAge?: number;
   youtubeLink?: string;
-  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'Draft' | 'Published' | 'Cancelled';
+  status: 'draft' | 'open' | 'full' | 'completed' | 'archived' |  'cancelled' | 'reoprn' | 'disable';
   createdAt?: string;
   updatedAt?: string;
   views?: number;
   registrations?: number;
   rating?: number;
   shares?: number;
+  difficulty?: string;
   featured?: boolean;
+  amenities?: [];
   registrationOpen?: boolean;
+  categories?: 'race' | 'community Ride' | 'Training & Clinics' | 'Awareness Rides' | 'Family & Kids' | 'Corporate Events' | 'National Events';
+  rewards: {
+    points: number;
+    badgeName: string;
+    badgeImage?: string;
+  };
+  slug?: string;
+  communityId?: string;
+  trackId?: string;
+  isFeatured?: boolean;
+  allowCancellation?: boolean;
+  galleryImages: string[];
 }
 
 export interface GetEventsParams {
-  status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  status?: 'draft' | 'open' | 'full' | 'completed' | 'archived';
   page?: number;
   limit?: number;
 }
@@ -45,6 +59,16 @@ export interface GetEventsResponse {
   };
 }
 
+export const availableCategories = [
+  'Race',
+  'Community Ride',
+  'Training & Clinics',
+  'Awareness Rides',
+  'Family & Kids',
+  'Corporate Events',
+  'National Events',
+];
+
 // Get all events with optional filtering and pagination
 export const getAllEvents = async (params?: GetEventsParams): Promise<EventApiResponse[]> => {
   console.log('📋 getAllEvents called with params:', params);
@@ -60,7 +84,6 @@ export const getAllEvents = async (params?: GetEventsParams): Promise<EventApiRe
       params: requestParams,
     });
     
-    console.log('📥 Raw API response:', response);
     console.log('📥 Response data:', response.data);
     console.log('📥 Response data type:', Array.isArray(response.data) ? 'Array' : 'Object');
     
@@ -102,8 +125,8 @@ export const getAllEvents = async (params?: GetEventsParams): Promise<EventApiRe
 // Get event by ID
 export const getEventById = async (id: string): Promise<EventApiResponse> => {
   try {
-    console.log('📋 getEventById called with id:', id);
     const response = await api.get<any>(`/v1/events/${id}`);
+    // console.log('📋 getEventById called with id:', id);
     console.log('📥 getEventById response:', response.data);
     
     // Handle nested response structure
@@ -177,6 +200,20 @@ export const deleteEvent = async (id: string): Promise<void> => {
     await api.delete(`/v1/events/${id}`);
   } catch (error) {
     console.error('Error deleting event:', error);
+    throw error;
+  }
+};
+
+// Get event results/participants
+export const getEventResults = async (id: string): Promise<any[]> => {
+  try {
+    const eventId = id;
+    const response = await api.get(`/v1/events/${eventId}/results`);
+    // Handle nested response structure
+    const data = response.data?.data || response.data || [];
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error getting event results:', error);
     throw error;
   }
 };
