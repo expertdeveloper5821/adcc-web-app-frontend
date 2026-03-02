@@ -4,7 +4,7 @@
 /vite.config.ts
 
 #build
-/build
+build/
 
 # tsconfig
 /tsconfig.json
