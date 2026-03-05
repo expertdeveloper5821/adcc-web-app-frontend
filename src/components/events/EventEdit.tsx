@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, AlertTriangle, Archive, Ban, FileText, Clock } from 'lucide-react';
-import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getEventById, updateEvent as updateEventApi, deleteEvent as deleteEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
-import { formatToInputDate } from '../../utils/date';
+import { formastToInputDate } from '../../utils/date';
 
 interface EventEditProps {
   navigate: (page: string, params?: any) => void;
@@ -60,8 +59,14 @@ export function EventEdit({ role }: EventEditProps) {
           getAllCommunities(),
           getAllTracks(),
         ]);
+<<<<<<< HEAD
         setCommunities(Array.isArray(communitiesList) ? communitiesList : []);
         setTracks(Array.isArray(tracksList) ? tracksList : []);
+=======
+
+        setCommunities(Array.isArray(communityData) ? communityData : []);
+        setTracks(Array.isArray(trackData) ? trackData : []);
+>>>>>>> 6877678 (Refactor community and track components for improved data handling and localization support)
       } catch (error) {
         toast.error('Failed to load communities or tracks');
       }
@@ -206,6 +211,7 @@ export function EventEdit({ role }: EventEditProps) {
     // country: '',
     city: '',
     trackId: '',
+    eventImage: '',
     eventDate: '',
     eventTime: '07:00',
     endTime: '08:00',

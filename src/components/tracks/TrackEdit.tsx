@@ -346,12 +346,12 @@ const handleGalleryUpload = (
     }
 
     try {
-      // Build cleaned payload to match backend expectations
+      // Build cleaned payload to match backend: trackType 'coastal' -> 'costal', galleryImages always array
       const payload: any = {
         title: formData.title,
         slug: formData.slug,
         description: formData.description,
-        trackType: formData.trackType,
+        trackType: formData.trackType === 'coastal' ? 'costal' : formData.trackType,
         country: formData.country,
         city: formData.city,
         area: formData.area,
@@ -368,7 +368,7 @@ const handleGalleryUpload = (
         status: formData.status,
         image: formData.thumbnailImage,
         coverImage: formData.coverImage,
-        galleryImages: formData.galleryImages,
+        galleryImages: Array.isArray(formData.galleryImages) ? formData.galleryImages : [],
         visibility: formData.visibility,
         displayPriority: Number(formData.displayPriority) || 0,
       };

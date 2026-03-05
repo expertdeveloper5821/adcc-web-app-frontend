@@ -16,6 +16,7 @@ interface TrackSelectorProps {
   onToggle: (trackId: string) => void;
   city: string;
   country: string;
+  loading?: boolean;
 }
 
 export const TrackSelector: React.FC<TrackSelectorProps> = ({
@@ -24,6 +25,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
   onToggle,
   city,
   country,
+  loading = false,
 }) => {
   return (
     <div>
@@ -50,7 +52,11 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
         </p>
       </div>
 
-      {tracks.length > 0 ? (
+      {loading ? (
+        <div className="p-8 rounded-lg text-center" style={{ backgroundColor: '#F3F4F6' }}>
+          <p className="text-sm" style={{ color: '#666' }}>Loading tracks…</p>
+        </div>
+      ) : tracks.length > 0 ? (
         <div className="space-y-3">
           {tracks.map(track => (
             <label

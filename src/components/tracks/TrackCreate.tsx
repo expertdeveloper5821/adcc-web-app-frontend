@@ -263,7 +263,7 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
       coverImage: coverBase64 || undefined,
     };
 
-    const response = await createTrack(payload);
+    const track = await createTrack(payload);
 
     if (response && (response.success !== false)) {
       toast.success((response as any).message || 'Track created successfully');
@@ -274,11 +274,11 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
 
   } catch (error: any) {
     console.error('Create Track Error:', error);
-
-    toast.error(
+    const message =
       error?.response?.data?.message ||
-      'Something went wrong while creating track'
-    );
+      error?.message ||
+      'Something went wrong while creating track';
+    toast.error(typeof message === 'string' ? message : 'Failed to create track');
   } finally {
     setLoading(false);
   }

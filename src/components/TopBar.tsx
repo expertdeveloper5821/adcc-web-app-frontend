@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../App';
 import { Search, Bell, ChevronDown, LogOut, User } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocale } from '../contexts/LocaleContext';
 
 interface TopBarProps {
   currentRole: UserRole;
@@ -23,6 +24,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { userProfile, logout } = useAuth();
+  const { locale, setLocale, isRtl } = useLocale();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,6 +66,8 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
           <input
             type="text"
             placeholder="Search..."
+            dir={isRtl ? 'rtl' : 'ltr'}
+            lang={locale}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
             style={{ focusRing: '#C12D32' }}
           />
@@ -71,6 +75,26 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-6">
+        {/* Language toggle */}
+        <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setLocale('en')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${locale === 'en' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+            style={{ color: locale === 'en' ? '#333' : '#666' }}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocale('ar')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${locale === 'ar' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+            style={{ color: locale === 'ar' ? '#333' : '#666' }}
+          >
+            AR
+          </button>
+        </div>
+
         {/* Role Switcher */}
         <div className="relative" ref={dropdownRef}>
           <button

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Users, Tag, Settings, Shield, Save, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-
 import { useCommunityForm } from '../hooks/useCommunityForm';
 import { createCommunity, updateCommunity, getCommunityById, CommunityApiResponse, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
 import { FormField } from './form/FormField';
@@ -77,6 +76,12 @@ console.log('errorss',errors);
     fetchCommunity();
   }, [stateCommunityId, editingCommunity, navigate]);
 
+  // Backend accepts only these fields (createCommunitySchema/updateCommunitySchema are strict)
+  const ALLOWED_LOCATIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'] as const;
+
+  const isValidMongoId = (val: string | undefined): boolean =>
+    !!val && /^[a-fA-F0-9]{24}$/.test(val);
+
   const onSubmit = async (formData: any) => {
     setIsLoading(true);
 
@@ -109,7 +114,7 @@ console.log('errorss',errors);
       };
 
       let result: CommunityApiResponse;
-      
+
       if (isEditMode && stateCommunityId) {
         result = await updateCommunity(stateCommunityId, communityData);
         toast.success('Community updated successfully');
@@ -122,11 +127,12 @@ console.log('errorss',errors);
       }
     } catch (error: any) {
       console.error('Error saving community:', error);
-      
-      const errorMessage = error?.response?.status === 413
-        ? 'Image file is too large. Please use a smaller image.'
-        : error?.response?.data?.message || 'Failed to save community';
-      
+
+      const errorMessage =
+        error?.response?.status === 413
+          ? 'Image file is too large. Please use a smaller image.'
+          : error?.response?.data?.message || 'Failed to save community';
+
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -146,7 +152,7 @@ console.log('errorss',errors);
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate(isEditMode ? -1 : '/communities')}
+          onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           aria-label="Back"
         >
@@ -188,7 +194,7 @@ console.log('errorss',errors);
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug (auto-generated)</label>
                 <input
                   type="text"
-                  value={form.watch('title')?.toLowerCase().replace(/\s+/g, '-') || ''}
+                  value={String(form.watch('title') ?? '').toLowerCase().replace(/\s+/g, '-')}
                   readOnly
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
                   style={{ color: '#999' }}
@@ -616,7 +622,7 @@ console.log('errorss',errors);
 
             <button
               type="button"
-              onClick={() => navigate(isEditMode ? -1 : '/communities')}
+              onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >

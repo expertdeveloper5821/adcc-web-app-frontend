@@ -242,16 +242,22 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
-    
-    console.log('🚀 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`,
-      params: config.params,
-      hasAuth: !!config.headers.Authorization,
-    });
-    
+
+    // Multi-language: backend uses Accept-Language (languageMiddleware) to set req.lang and return translated messages
+    const locale = localStorage.getItem('locale') || 'en';
+    config.headers['Accept-Language'] = locale === 'ar' ? 'ar' : 'en';
+
+    if (import.meta.env.DEV) {
+      console.log('🚀 API Request:', {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL}${config.url}`,
+        params: config.params,
+        hasAuth: !!config.headers.Authorization,
+      });
+    }
+
     return config;
   },
   (error) => {
@@ -263,11 +269,13 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.config.url,
-    });
+    if (import.meta.env.DEV) {
+      console.log('✅ API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.config.url,
+      });
+    }
     return response;
   },
   async (error: AxiosError) => {

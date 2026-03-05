@@ -231,7 +231,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Activity className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#C12D32' }} />
+                 <Activity className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#C12D32' }} /> 
                   <div>
                     <div className="text-sm mb-1" style={{ color: '#666' }}>Track Type</div>
                     <div className="flex items-center gap-3">
@@ -398,6 +398,54 @@ export function TrackDetail({  role }: TrackDetailProps) {
               <div className="p-8 text-center" style={{ color: '#666' }}>
                 <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>No events using this track</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'media' && (
+        <div className="p-6 rounded-2xl shadow-sm bg-white">
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Media</h2>
+
+          {/* Cover / main image */}
+          {(track.coverImage || track.image) && (
+            <div className="mb-8">
+              <h3 className="text-sm font-medium mb-3" style={{ color: '#666' }}>Cover Image</h3>
+              <div className="rounded-xl overflow-hidden shadow-sm">
+                <img
+                  src={track.coverImage || track.image}
+                  alt={track.title || track.name}
+                  className="w-full h-72 object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Gallery images */}
+          <div>
+            <h3 className="text-sm font-medium mb-3" style={{ color: '#666' }}>
+              Gallery ({track.galleryImages?.length ?? 0})
+            </h3>
+            {track.galleryImages?.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {track.galleryImages.map((url: string, index: number) => (
+                  <div
+                    key={index}
+                    className="rounded-xl overflow-hidden shadow-sm bg-gray-100 aspect-square"
+                  >
+                    <img
+                      src={url}
+                      alt={`${track.title || track.name} gallery ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center rounded-xl" style={{ backgroundColor: '#F9FAFB' }}>
+                <p className="text-sm" style={{ color: '#999' }}>No gallery images yet</p>
+                <p className="text-xs mt-1" style={{ color: '#999' }}>Add images when editing this track</p>
               </div>
             )}
           </div>

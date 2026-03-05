@@ -14,8 +14,8 @@ interface EventDetailProps {
 export function EventDetail({ role }: EventDetailProps) {
 
   const { id } = useParams<{ id: string }>();
+  const eventId = id ?? '';
   const navigate = useNavigate();
-  // const eventId = id || '';
   const [event, setEvent] = useState<EventApiResponse | null>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,11 +28,15 @@ export function EventDetail({ role }: EventDetailProps) {
   }, [id]);
 
   const loadEvent = async () => {
+    if (!eventId || eventId === 'undefined') {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const [fetchedEvent, fetchedParticipants] = await Promise.all([
-        getEventById(id),
-        getEventResults(id),
+        getEventById(eventId),
+        getEventResults(eventId),
       ]);
       setEvent(fetchedEvent);
       setParticipants(fetchedParticipants);
@@ -65,7 +69,7 @@ export function EventDetail({ role }: EventDetailProps) {
     if (confirm('Are you sure you want to cancel this event?')) {
       setIsSaving(true);
       try {
-        await updateEventApi(id, { status: 'cancelled' });
+        await updateEventApi(eventId, { status: 'cancelled' });
         toast.success('Event cancelled successfully');
         loadEvent(); // Reload event to reflect changes
       } catch (error: any) {

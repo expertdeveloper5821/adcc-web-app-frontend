@@ -49,14 +49,15 @@ export function EventsList({ role }: EventsListProps) {
           getAllCommunities(),
           getAllTracks(),
         ]);
-  
-        setCommunities(communityData.communities);
-        setTracks(trackData.tracks);
+
+        setCommunities(Array.isArray(communityData) ? communityData : []);
+        setTracks(Array.isArray(trackData) ? trackData : []);
       } catch (error) {
         toast.error('Failed to load communities or tracks');
       }
     };
-  },[]);
+    fetchMetaData();
+  }, []);
 
   const toggleCategory = (category: string) => {
     setCategoryFilter(prev =>
@@ -154,7 +155,7 @@ export function EventsList({ role }: EventsListProps) {
   try {
     await deleteEventApi(eventToDelete);
 
-    setEvents(prev => prev.filter(e => e._id !== eventToDelete));
+    setEvents(prev => prev.filter(e => ((e as any)._id ?? (e as any).id) !== eventToDelete));
 
     toast.success('Event deleted successfully');
   } catch (error: any) {
@@ -359,9 +360,11 @@ export function EventsList({ role }: EventsListProps) {
 
       {/* Events Grid */}
       <div className="grid grid-cols-1 gap-4">
-        {filteredEvents.map((event) => (
+        {filteredEvents.map((event) => {
+          const eventId = (event as any)._id ?? (event as any).id;
+          return (
           <div
-            key={event.id}
+            key={eventId}
             className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all relative"
           >
             <div className="flex items-start gap-6">
@@ -446,7 +449,7 @@ export function EventsList({ role }: EventsListProps) {
                 {/* Actions */}
                 <div className="flex flex-wrap items-center gap-2 mt-4">
                   <button
-                    onClick={() => navigate(`/events/${event._id }`)}
+                    onClick={() => navigate(`/events/${eventId}`)}
                     className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
@@ -455,7 +458,7 @@ export function EventsList({ role }: EventsListProps) {
                   </button>
 
                   <button
-                    onClick={() => navigate(`/events/${event._id}/edit`)}
+                    onClick={() => navigate(`/events/${eventId}/edit`)}
                     className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#E5E7EB', color: '#333' }}
                   >
@@ -464,7 +467,7 @@ export function EventsList({ role }: EventsListProps) {
                   </button>
 
                   <button
-                    onClick={() => navigate('event-participants', { selectedEventId: event.id })}
+                    onClick={() => navigate('event-participants', { selectedEventId: eventId })}
                     className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#E5E7EB', color: '#333' }}
                   >
@@ -474,7 +477,7 @@ export function EventsList({ role }: EventsListProps) {
 
                   {event.category === 'Race' && (
                     <button
-                      onClick={() => navigate('event-results', { selectedEventId: event.id })}
+                      onClick={() => navigate('event-results', { selectedEventId: eventId })}
                       className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                       style={{ backgroundColor: '#E5E7EB', color: '#333' }}
                     >
@@ -496,7 +499,8 @@ export function EventsList({ role }: EventsListProps) {
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
 
         {filteredEvents.length === 0 && (
           <div className="p-12 rounded-2xl bg-white text-center">

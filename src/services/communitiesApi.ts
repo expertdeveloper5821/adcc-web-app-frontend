@@ -1,6 +1,7 @@
 import api from './api';
 
 export interface CommunityApiResponse {
+
   id?: string;
   title: string;
   name?: string;
@@ -49,6 +50,7 @@ export interface CommunityApiResponse {
     fundsRaised?: number;
   };
   postsCount?: number;
+  isPublic?: boolean;
 }
 
 /** Backend-allowed location values */
@@ -58,15 +60,11 @@ export type CommunityLocation = (typeof COMMUNITY_LOCATION_OPTIONS)[number];
 export interface CreateCommunityRequest {
   title: string;
   description: string;
-  /** Backend expects array */
-  type: string[];
+  type: string | string[];
   category: string;
-  /** Backend expects one of: Abu Dhabi | Dubai | Al Ain | Sharjah */
-  location: string;
+  location?: string;
   image?: string;
   trackName?: string;
-  memberCount?: string;
-  upcomingEventCount?: string;
   distance?: number;
   foundedYear?: number;
   terrain?: string;
@@ -84,7 +82,11 @@ export interface CreateCommunityRequest {
   weeklyRides?: string;
   /** Backend expects string (not null) */
   fundsRaised?: string;
-}
+  isPublic?: boolean;
+  manager?: string;
+  area?: string;
+  city?: string;
+} 
 
 // Get community by ID
 export const getCommunityById = async (id: string): Promise<CommunityApiResponse> => {

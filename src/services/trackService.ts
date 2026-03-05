@@ -152,8 +152,8 @@ export interface TrackValidationRules {
 }
 
 
-// Get all tracks
-export const getAllTracks = async (): Promise<Track[]> => {
+// Get all tracks (optionally with pagination; default limit 500 for dropdowns)
+export const getAllTracks = async (params?: { page?: number; limit?: number }): Promise<Track[]> => {
   try {
     const response = await api.get('/v1/tracks');
     const body = response.data as { data?: Track[] | { tracks?: Track[] }; tracks?: Track[] };
@@ -203,10 +203,14 @@ export const createTrack = async (trackData: CreateTrackRequest | TrackFormData)
   }
 };
 
-// Update track
+// Update track (ensures galleryImages is always an array when provided)
 export const updateTrack = async (trackId: string, trackData: Partial<TrackFormData>): Promise<Track> => {
   try {
-    const response = await api.patch<any>(`/v1/tracks/${trackId}`, trackData);
+    const payload =
+      trackData.galleryImages !== undefined
+        ? { ...trackData, galleryImages: trackData.galleryImages ?? [] }
+        : trackData;
+    const response = await api.patch<any>(`/v1/tracks/${trackId}`, payload);
     // console.log('updateTrack response:', response.data);
     if ((response.data as any).data) {
         return (response.data as any).data;

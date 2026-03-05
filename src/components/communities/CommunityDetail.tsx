@@ -54,7 +54,7 @@ export function CommunityDetail() {
       try {
         setIsLoading(true);
         const data = await getAllTracks();
-        setAllTracks(data.tracks);
+        setAllTracks(Array.isArray(data) ? data : []);
         
       } catch (error: any) {
         console.error('Error fetching tracks:', error);
