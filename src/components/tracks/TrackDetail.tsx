@@ -3,9 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, MapPin, Users, Calendar, Trophy, CheckCircle, XCircle, AlertTriangle, AlertCircle, Activity, Shield, Trash2 } from 'lucide-react';
 import { UserRole } from '../../App';
 import { getTrack, updateTrack } from '../../data/tracksData';
-import { toast } from 'sonner@2.0.3';
-import { getTrackById, getTrackResults, trackCommunityResults, deleteTrack as deleteTrackApi } from '../../services/trackService';
 
+import { getTrackById, getTrackResults, trackCommunityResults, deleteTrack as deleteTrackApi } from '../../services/trackService';
+import { toast } from 'sonner';
+import { DetailPageSkeleton } from '../ui/skeleton';
+import { any } from 'zod';
 interface TrackDetailProps {
   navigate: (page: string, params?: any) => void;
   role: UserRole;
@@ -84,11 +86,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
 
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-lg" style={{ color: '#666' }}>Loading track...</div>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (!track) {

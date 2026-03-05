@@ -35,7 +35,9 @@ const optionalNumber = (schema: z.ZodNumber) =>
 // Validation schema using Zod
 const communityFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(100, 'Title too long'),
+  titleAr: z.string().optional(),
   description: z.string().min(10, 'Description must be at least 10 characters').max(2000, 'Description too long'),
+  descriptionAr: z.string().optional(),
   country: z.enum(['UAE', 'Saudi Arabia', 'Kuwait', 'Qatar', 'Bahrain', 'Oman']),
   city: z.string().min(1, 'City is required'),
   area: z.string().optional(),
@@ -117,7 +119,9 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
     resolver: zodResolver(communityFormSchema) as unknown as Resolver<CommunityFormValues>,
     defaultValues: {
       title: '',
+      titleAr: '',
       description: '',
+      descriptionAr: '',
       country: 'UAE',
       city: 'Abu Dhabi',
       area: '',
@@ -178,7 +182,9 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
 
       reset({
         title: initialData.title || '',
+        titleAr: (initialData as any).titleAr || '',
         description: initialData.description || '',
+        descriptionAr: (initialData as any).descriptionAr || '',
         country: country as GCCCountry,
         city,
         area: (initialData as any).area || '',

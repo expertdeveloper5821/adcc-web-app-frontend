@@ -5,6 +5,7 @@ import { Plus, Search, Calendar, Users, MapPin, Star, Edit, Eye, UserCheck, Trop
 import { availableCategories, availableCities } from '../../data/eventsData';
 import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
 import { toast } from 'sonner';
+import { CardSkeleton } from '../ui/skeleton';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 
@@ -43,21 +44,29 @@ export function EventsList({ role }: EventsListProps) {
   const [demoTracks, setDemoTracks] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchMetaData = async () => {
+    const fetchAll = async () => {
       try {
-        const [communityData, trackData] = await Promise.all([
+        setIsLoading(true);
+
+        const apiStatus = statusFilter === 'all' ? undefined : statusFilter;
+
+        const [communityData, trackData, eventsResponse] = await Promise.all([
           getAllCommunities(),
           getAllTracks(),
+          getAllEvents({ status: apiStatus, page: 1, limit: 100 }),
         ]);
 
         setCommunities(Array.isArray(communityData) ? communityData : []);
         setTracks(Array.isArray(trackData) ? trackData : []);
+        setEvents((eventsResponse as any)?.events || eventsResponse || []);
       } catch (error) {
-        toast.error('Failed to load communities or tracks');
+        toast.error('Failed to load data');
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchMetaData();
-  }, []);
+    fetchAll();
+  }, [statusFilter]);
 
   const toggleCategory = (category: string) => {
     setCategoryFilter(prev =>
@@ -73,32 +82,6 @@ export function EventsList({ role }: EventsListProps) {
     completed: events.filter(e => e.status === 'Completed').length,
     participants: events.reduce((sum, e) => sum + e.currentParticipants, 0),
   };
-
-  useEffect(() => {
-    loadEvents();
-  }, [statusFilter]);
-
-
-  const loadEvents = async () => {
-  try {
-    setIsLoading(true);
-
-    const apiStatus =
-      statusFilter === 'all' ? undefined : statusFilter;
-
-    const response = await getAllEvents({
-      status: apiStatus,
-      page: 1,
-      limit: 100,
-    });
-
-    setEvents(response?.events || response || []);
-  } catch (error) {
-    toast.error('Failed to load events');
-  } finally {
-    setIsLoading(false);
-  }
-};
 
 
   const filteredEvents = useMemo(() => {
@@ -359,8 +342,15 @@ export function EventsList({ role }: EventsListProps) {
       </div>
 
       {/* Events Grid */}
-      <div className="grid grid-cols-1 gap-4">
-        {filteredEvents.map((event) => {
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredEvents.map((event) => {
           const eventId = (event as any)._id ?? (event as any).id;
           return (
           <div
@@ -510,6 +500,7 @@ export function EventsList({ role }: EventsListProps) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { getEvent } from '../../data/eventsData';
 import { getEventById, updateEvent as updateEventApi, EventApiResponse, getEventResults } from '../../services/eventsApi';
+import { DetailPageSkeleton } from '../ui/skeleton';
 
 interface EventDetailProps {
   navigate: (page: string, params?: any) => void;
@@ -51,7 +52,7 @@ export function EventDetail({ role }: EventDetailProps) {
   console.log('participants',participants);
 
   if (isLoading) {
-    return <div className="text-center py-8" style={{ color: '#666' }}>Loading event...</div>;
+    return <DetailPageSkeleton />;
   }
 
   if (!event) {

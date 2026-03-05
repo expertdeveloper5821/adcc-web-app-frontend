@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Users, Tag, Settings, Shield, Save, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Users, Tag, Settings, Shield, Save, Globe, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCommunityForm } from '../hooks/useCommunityForm';
 import { createCommunity, updateCommunity, getCommunityById, CommunityApiResponse, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
@@ -9,6 +9,7 @@ import { CategorySelector } from './form/CategorySelector';
 import { TrackSelector } from './form/TrackSelector';
 import { gccCountries } from '../../data/gccLocations';
 import { availableCategories } from '../../constants/communityConstants';
+import { useLocale } from '../../contexts/LocaleContext';
 
 interface CommunityCreateProps {
   communityId?: string;
@@ -22,6 +23,7 @@ export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: p
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [fetchedCommunity, setFetchedCommunity] = useState<CommunityApiResponse | null>(null);
+  const { locale } = useLocale();
 
   const stateCommunityId = propCommunityId || locationState?.communityId;
   const editingCommunity = locationState?.editingCommunity || fetchedCommunity;
@@ -95,9 +97,14 @@ console.log('errorss',errors);
       const communityData = {
         title: formData.title,
         description: formData.description,
-        type: Array.isArray(formData.communityType) ? formData.communityType : [formData.communityType ?? 'city'],
-        category: Array.isArray(selectedCategories) ? (selectedCategories[0] ?? '') : String(selectedCategories ?? ''),
-        location,
+        ...(formData.titleAr ? { titleAr: formData.titleAr } : {}),
+        ...(formData.descriptionAr ? { descriptionAr: formData.descriptionAr } : {}),
+        type: Array.isArray(selectedCategories) && selectedCategories.length > 0
+          ? selectedCategories
+          : [formData.communityType || 'city'],
+        category: Array.isArray(selectedCategories) ? selectedCategories.join(', ') : '',
+        location: locationValue,
+        image: formData.image || undefined,
         isActive: formData.status === 'active',
         isFeatured: formData.isFeatured ?? false,
         image: formData.image || undefined,
@@ -112,6 +119,10 @@ console.log('errorss',errors);
         area: formData.area || undefined,
         manager: formData.managerName || undefined,
       };
+
+      if (import.meta.env.DEV) {
+        console.log('Community payload:', JSON.stringify(communityData, null, 2));
+      }
 
       let result: CommunityApiResponse;
 
@@ -173,14 +184,18 @@ console.log('errorss',errors);
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Information */}
           <section className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Users className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <Users className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
+
             </div>
 
-            <div className="space-y-4">
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <FormField
                 label="Community Name"
                 name="title"
@@ -211,7 +226,66 @@ console.log('errorss',errors);
                 rows={4}
                 placeholder="Describe the community..."
               />
+            </div>
 
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المجتمع <span className="text-gray-400">(Community Name)</span>
+                </label>
+                <input
+                  {...register('titleAr')}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="أبوظبي لسباق الطرق"
+                  className={`w-full px-4 py-2 rounded-lg border ${
+                    errors.titleAr ? 'border-red-500' : 'border-gray-200'
+                  } focus:outline-none focus:ring-2 focus:ring-red-600`}
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+                {errors.titleAr && (
+                  <p className="mt-1 text-sm text-red-600">{errors.titleAr.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <textarea
+                  {...register('descriptionAr')}
+                  dir="rtl"
+                  lang="ar"
+                  rows={4}
+                  placeholder="وصف المجتمع..."
+                  className={`w-full px-4 py-2 rounded-lg border ${
+                    errors.descriptionAr ? 'border-red-500' : 'border-gray-200'
+                  } focus:outline-none focus:ring-2 focus:ring-red-600`}
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+                {errors.descriptionAr && (
+                  <p className="mt-1 text-sm text-red-600">{errors.descriptionAr.message}</p>
+                )}
+              </div>
+
+              {/* English reference */}
+              {form.watch('title') && (
+                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <Globe className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-blue-400 mb-1">English Reference</p>
+                    <p className="text-sm text-gray-700">{form.watch('title')}</p>
+                    {form.watch('description') && (
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{form.watch('description')}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Common fields (always visible) */}
+            <div className="space-y-4 mt-4">
               <FormField
                 label="Country"
                 name="country"

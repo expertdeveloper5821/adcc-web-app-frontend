@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, MapPin, Calendar, Users, Edit, Eye, Archive } from 'lucide-react';
 import { UserRole } from '../../App';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
+import { CardSkeleton } from '../ui/skeleton';
 import { getTrackUpcomingEvents, getTrackCommunities } from '../../data/tracksData';
 import { getAllTracks, deleteTrack, Track, archiveTrack } from '../../services/trackService';
 import { getAllEvents, EventApiResponse } from '../../services/eventsApi';
@@ -42,48 +43,32 @@ export function TracksList({ role }: TracksListProps) {
       setLoading(true);
       setError(null);
 
-      const results = await getAllTracks();
+      const [results, eventsRes, communitiesRes] = await Promise.all([
+        getAllTracks(),
+        getAllEvents(),
+        getAllCommunities(),
+      ]);
 
       const list =
         Array.isArray(results)
           ? results
-          : results?.tracks || results?.data?.tracks || results?.data || [];
-
+          : (results as any)?.tracks || (results as any)?.data?.tracks || (results as any)?.data || [];
       setTracks(Array.isArray(list) ? list : []);
-    }
-    catch (err) {
+
+      const eventsList =
+        (eventsRes as any)?.events || (eventsRes as any)?.data?.events || eventsRes || [];
+      const communitiesList =
+        (communitiesRes as any)?.communities || (communitiesRes as any)?.data?.communities || communitiesRes || [];
+
+      setEvents(Array.isArray(eventsList) ? eventsList : []);
+      setCommunities(Array.isArray(communitiesList) ? communitiesList : []);
+    } catch (err) {
       console.log(err);
       setTracks([]);
       setError('Failed to load tracks. Please try again later.');
-
     } finally {
       setLoading(false);
     }
-  }, []);
-
-
-  useEffect(() => {
-    const fetchMeta = async () => {
-      try {
-        const [eventsRes, communitiesRes] = await Promise.all([
-          getAllEvents(),          // use service version, not data file
-          getAllCommunities(),     // use service version
-        ]);
-
-        const eventsList =
-          eventsRes?.events || eventsRes?.data?.events || eventsRes || [];
-
-        const communitiesList =
-          communitiesRes?.communities || communitiesRes?.data?.communities || communitiesRes || [];
-
-        setEvents(Array.isArray(eventsList) ? eventsList : []);
-        setCommunities(Array.isArray(communitiesList) ? communitiesList : []);
-      } catch (err) {
-        toast.error("Failed to load events or communities");
-      }
-    };
-
-    fetchMeta();
   }, []);
 
   const getTrackId = (track: any): string | null => {
@@ -96,7 +81,6 @@ export function TracksList({ role }: TracksListProps) {
   const trackStats = useMemo(() => {
     const stats: Record<string, { eventsCount: number; communitiesCount: number }> = {};
 
-    // Count events
     events.forEach((event) => {
       const trackId = getTrackId(event.trackId);
       if (!trackId) return;
@@ -108,7 +92,6 @@ export function TracksList({ role }: TracksListProps) {
       stats[trackId].eventsCount += 1;
     });
 
-    // Count communities
     communities.forEach((community) => {
       const trackId = getTrackId(community.trackId);
       if (!trackId) return;
@@ -129,8 +112,7 @@ export function TracksList({ role }: TracksListProps) {
 
   const filteredTracks = useMemo(() => {
     return tracks.filter(track => {
-      // const trackId = (track.id ?? track._id ?? '' ).toString();
-      const name = (track.title ?? track.title ?? '').toString();
+      const name = (track.title ?? '').toString();
       const search = (searchTerm ?? '').toString().toLowerCase();
       const matchesSearch = name.toLowerCase().includes(search);
 
@@ -162,7 +144,7 @@ export function TracksList({ role }: TracksListProps) {
 
       return matchesSearch && matchesCity && matchesDifficulty && matchesStatus && matchesEvents && matchesCommunities;
     });
-  }, [tracks, searchTerm, cityFilter, difficultyFilter, statusFilter]);
+  }, [tracks, searchTerm, cityFilter, difficultyFilter, statusFilter, hasEventsFilter, hasCommunitiesFilter, trackStats]);
 
 
   const canEdit = role === 'super-admin';
@@ -170,7 +152,7 @@ export function TracksList({ role }: TracksListProps) {
 
   const handleArchive = async (trackId: string, trackName: string) => {
     const confirmed = window.confirm(
-      `Are you sure you want to archive herrr"${trackName}"?`
+      `Are you sure you want to archive "${trackName}"?`
     );
 
     if (!confirmed) return;
@@ -356,147 +338,141 @@ export function TracksList({ role }: TracksListProps) {
       </div>
 
       {/* Tracks List */}
-      <div className="space-y-4">
-        {filteredTracks.length > 0 ? (
-          filteredTracks.map((track, index) => {
-            const trackId = getTrackId(track);
-            const stats = trackId ? trackStats[trackId] : null;
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredTracks.length > 0 ? (
+            filteredTracks.map((track, index) => {
+              const trackId = getTrackId(track);
+              const stats = trackId ? trackStats[trackId] : null;
+              const eventsCount = stats?.eventsCount || 0;
+              const communitiesCount = stats?.communitiesCount || 0;
 
-            const eventsCount = stats?.eventsCount || 0;
-            const communitiesCount = stats?.communitiesCount || 0;
-
-            return (
-              <div key={trackId ?? track.id ?? `track-${index}`} className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-shadow">
-                <div className="flex gap-6">
-                  {/* Thumbnail */}
-                  <div className="flex-shrink-0 w-40 h-32 rounded-lg overflow-hidden">
-                    <img
-                      src={track.image || track.coverImage}
-                      alt={track.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3
-                            className="text-xl cursor-pointer hover:underline"
-                            style={{ color: '#333' }}
-                            onClick={() => trackId && navigate(`/tracks/${trackId}`)}
-                          >
-                            {track.title}
-                          </h3>
-                          <span
-                            className="px-3 py-1 rounded-full text-xs text-white"
-                            style={{ backgroundColor: getStatusColor(track.status) }}
-                          >
-                            {track.status}
-                          </span>
-                          <span
-                            className="px-2 py-1 rounded text-xs"
-                            style={{ backgroundColor: '#ECC180', color: '#333' }}
-                          >
-                            {track.trackType}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-4 h-4" style={{ color: '#999' }} />
-                          <span className="text-sm" style={{ color: '#666' }}>{track.area}, {track.city}</span>
-                        </div>
-                      </div>
+              return (
+                <div key={trackId ?? track.id ?? `track-${index}`} className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-shadow">
+                  <div className="flex gap-6">
+                    <div className="flex-shrink-0 w-40 h-32 rounded-lg overflow-hidden">
+                      <img src={track.image || track.coverImage} alt={track.title} className="w-full h-full object-cover" />
                     </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
-                      <div>
-                        <div className="text-xs mb-1" style={{ color: '#999' }}>Distance</div>
-                        <div className="text-sm" style={{ color: '#333' }}>{track.distance} km</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3
+                              className="text-xl cursor-pointer hover:underline"
+                              style={{ color: '#333' }}
+                              onClick={() => trackId && navigate(`/tracks/${trackId}`)}
+                            >
+                              {track.title}
+                            </h3>
+                            <span
+                              className="px-3 py-1 rounded-full text-xs text-white"
+                              style={{ backgroundColor: getStatusColor(track.status) }}
+                            >
+                              {track.status}
+                            </span>
+                            <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: '#ECC180', color: '#333' }}>
+                              {track.trackType}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="w-4 h-4" style={{ color: '#999' }} />
+                            <span className="text-sm" style={{ color: '#666' }}>{track.area}, {track.city}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xs mb-1" style={{ color: '#999' }}>Difficulty</div>
-                        <span
-                          className="px-2 py-1 rounded text-xs text-white"
-                          style={{ backgroundColor: getDifficultyColor(track.difficulty) }}
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
+                        <div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>Distance</div>
+                          <div className="text-sm" style={{ color: '#333' }}>{track.distance} km</div>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>Difficulty</div>
+                          <span
+                            className="px-2 py-1 rounded text-xs text-white"
+                            style={{ backgroundColor: getDifficultyColor(track.difficulty) }}
+                          >
+                            {track.difficulty ? track.difficulty : 'NA'}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>Surface</div>
+                          <div className="text-sm" style={{ color: '#333' }}>{track.surfaceType}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>Events</div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" style={{ color: '#999' }} />
+                            <span className="text-sm" style={{ color: '#333' }}>{eventsCount}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>Communities</div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3 h-3" style={{ color: '#999' }} />
+                            <span className="text-sm" style={{ color: '#333' }}>{communitiesCount}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>Last Updated</div>
+                          <div className="text-sm" style={{ color: '#333' }}>
+                            {track.updatedAt
+                              ? new Date(track.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              : '—'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => trackId && navigate(`/tracks/${trackId}`)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all hover:shadow-md"
+                          style={{ backgroundColor: '#ECC180', color: '#333' }}
                         >
-                          {track.difficulty ? track.difficulty : 'NA'}
-                        </span>
+                          <Eye className="w-4 h-4" />
+                          <span className="text-sm">View</span>
+                        </button>
+                        {canEdit && (
+                          <>
+                            <button
+                              onClick={() => trackId && navigate(`/tracks/${trackId}/edit`)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all hover:shadow-md"
+                              style={{ backgroundColor: '#3B82F6', color: '#fff' }}
+                            >
+                              <Edit className="w-4 h-4" />
+                              <span className="text-sm">Edit</span>
+                            </button>
+                            <button
+                              onClick={() => trackId && handleArchive(trackId, track.title)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
+                              style={{ color: '#666' }}
+                            >
+                              <Archive className="w-4 h-4" />
+                              <span className="text-sm">Archive</span>
+                            </button>
+                          </>
+                        )}
                       </div>
-                      <div>
-                        <div className="text-xs mb-1" style={{ color: '#999' }}>Surface</div>
-                        <div className="text-sm" style={{ color: '#333' }}>{track.surfaceType}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs mb-1" style={{ color: '#999' }}>Events</div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" style={{ color: '#999' }} />
-                          <span className="text-sm" style={{ color: '#333' }}>
-                            {eventsCount}
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs mb-1" style={{ color: '#999' }}>Communities</div>
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3" style={{ color: '#999' }} />
-                          <span className="text-sm" style={{ color: '#333' }}>{communitiesCount}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs mb-1" style={{ color: '#999' }}>Last Updated</div>
-                        <div className="text-sm" style={{ color: '#333' }}>
-                          {track.updatedAt
-                            ? new Date(track.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                            : '—'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => trackId && navigate(`/tracks/${trackId}`)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all hover:shadow-md"
-                        style={{ backgroundColor: '#ECC180', color: '#333' }}
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span className="text-sm">View</span>
-                      </button>
-                      {canEdit && (
-                        <>
-                          <button
-                            onClick={() => trackId && navigate(`/tracks/${trackId}/edit`)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all hover:shadow-md"
-                            style={{ backgroundColor: '#3B82F6', color: '#fff' }}
-                          >
-                            <Edit className="w-4 h-4" />
-                            <span className="text-sm">Edit</span>
-                          </button>
-                          <button
-                            onClick={() => trackId && handleArchive(trackId, track.title)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
-                            style={{ color: '#666' }}
-                          >
-                            <Archive className="w-4 h-4" />
-                            <span className="text-sm">Archive</span>
-                          </button>
-                        </>
-                      )}
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="p-12 text-center rounded-2xl bg-white">
-            <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-            <p className="text-lg mb-2" style={{ color: '#666' }}>No tracks found</p>
-            <p className="text-sm" style={{ color: '#999' }}>Try adjusting your filters or create a new track</p>
-          </div>
-        )}
-      </div>
+              );
+            })
+          ) : (
+            <div className="p-12 text-center rounded-2xl bg-white">
+              <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+              <p className="text-lg mb-2" style={{ color: '#666' }}>No tracks found</p>
+              <p className="text-sm" style={{ color: '#999' }}>Try adjusting your filters or create a new track</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

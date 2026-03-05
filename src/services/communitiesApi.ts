@@ -1,12 +1,15 @@
 import api from './api';
+import { getCached, setCache, invalidateCache } from '../utils/apiCache';
 
 export interface CommunityApiResponse {
 
   id?: string;
   title: string;
   name?: string;
-  description: string;
   slug?: string;
+  titleAr?: string;
+  description: string;
+  descriptionAr?: string;
   type: string | string[];
   category: string;
   location: string;
@@ -59,7 +62,9 @@ export type CommunityLocation = (typeof COMMUNITY_LOCATION_OPTIONS)[number];
 
 export interface CreateCommunityRequest {
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
   type: string | string[];
   category: string;
   location?: string;
@@ -72,8 +77,6 @@ export interface CreateCommunityRequest {
   isFeatured?: boolean;
   /** Community logo (square) */
   logo?: string;
-  /** Single track ID (string) */
-  trackId?: string;
   /** Backend expects string (not null) */
   purposeType?: string;
   /** Backend expects string (not number) */
@@ -107,6 +110,7 @@ export const getCommunityById = async (id: string): Promise<CommunityApiResponse
 
 // Create community
 export const createCommunity = async (communityData: CreateCommunityRequest): Promise<CommunityApiResponse> => {
+  invalidateCache('communities');
   try {
     const response = await api.post<any>('/v1/communities', communityData);
     // console.log('📥 createCommunity response:', response.data);
@@ -124,6 +128,7 @@ export const createCommunity = async (communityData: CreateCommunityRequest): Pr
 
 // Update community
 export const updateCommunity = async (id: string, communityData: Partial<CreateCommunityRequest>): Promise<CommunityApiResponse> => {
+  invalidateCache('communities');
   try {
     const response = await api.patch<any>(`/v1/communities/${id}`, communityData);
     // console.log('📥 updateCommunity response:', response.data);
@@ -141,17 +146,21 @@ export const updateCommunity = async (id: string, communityData: Partial<CreateC
 
 // Get all communities
 export const getAllCommunities = async (): Promise<CommunityApiResponse[]> => {
+  const cached = getCached<CommunityApiResponse[]>('communities');
+  if (cached) return cached;
+
   try {
     const response = await api.get<any>('/v1/communities');
     const data = response.data;
     // Handle { data: { communities, pagination } }
     const inner = (data as any).data;
-    if (inner?.communities) return inner.communities;
-    // Handle { communities, pagination }
-    if (Array.isArray((data as any).communities)) return (data as any).communities;
-    // Handle direct array
-    if (Array.isArray(data)) return data;
-    return [];
+    let result: CommunityApiResponse[];
+    if (inner?.communities) result = inner.communities;
+    else if (Array.isArray((data as any).communities)) result = (data as any).communities;
+    else if (Array.isArray(data)) result = data;
+    else result = [];
+    setCache('communities', result);
+    return result;
   } catch (error) {
     console.error('Error fetching communities:', error);
     throw error;
@@ -160,6 +169,7 @@ export const getAllCommunities = async (): Promise<CommunityApiResponse[]> => {
 
 // Delete community
 export const deleteCommunity = async (id: string): Promise<void> => {
+  invalidateCache('communities');
   try {
     await api.delete(`/v1/communities/${id}`);
     // console.log('✅ deleteCommunity successful');

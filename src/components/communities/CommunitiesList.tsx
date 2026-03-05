@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Users, MapPin, Calendar, Star, Filter } from 'lucide-react';
+import { CardSkeleton } from '../ui/skeleton';
 import { UserRole } from '../../App';
 import { toast } from 'sonner';
 import { getAllCommunities as getAllCommunitiesApi, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
@@ -364,6 +365,11 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       </div>
 
       {/* Communities Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCommunities.map((community) => (
           <div
@@ -444,9 +450,10 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
           </div>
         ))}
       </div>
+      )}
 
       {/* Empty State */}
-      {filteredCommunities.length === 0 && (
+      {!loading && filteredCommunities.length === 0 && (
         <div className="text-center py-12">
           <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#ECC180' }} />
           <h3 className="text-xl mb-2" style={{ color: '#333' }}>No communities found</h3>

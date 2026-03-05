@@ -243,9 +243,16 @@ api.interceptors.request.use(
       }
     }
 
-    // Multi-language: backend uses Accept-Language (languageMiddleware) to set req.lang and return translated messages
+    // Multi-language: inject locale into URL path (/v1/en/... or /v1/ar/...)
     const locale = localStorage.getItem('locale') || 'en';
-    config.headers['Accept-Language'] = locale === 'ar' ? 'ar' : 'en';
+    const lang = locale === 'ar' ? 'ar' : 'en';
+    config.headers['Accept-Language'] = lang;
+
+    // Rewrite /v1/... → /v1/{lang}/... (skip auth endpoints — they don't need localization)
+    const isAuthUrl = config.url?.includes('/auth/');
+    if (!isAuthUrl && config.url && /^\/v1\//.test(config.url) && !/^\/v1\/(en|ar)\//.test(config.url)) {
+      config.url = config.url.replace(/^\/v1\//, `/v1/${lang}/`);
+    }
 
     if (import.meta.env.DEV) {
       console.log('🚀 API Request:', {

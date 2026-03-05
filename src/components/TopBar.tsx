@@ -80,16 +80,20 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
           <button
             type="button"
             onClick={() => setLocale('en')}
-            className={`px-3 py-2 text-sm font-medium transition-colors ${locale === 'en' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-            style={{ color: locale === 'en' ? '#333' : '#666' }}
+            className="px-3 py-1.5 text-xs font-bold transition-all duration-200"
+            style={locale === 'en'
+              ? { backgroundColor: '#C12D32', color: '#fff' }
+              : { backgroundColor: '#fff', color: '#666' }}
           >
             EN
           </button>
           <button
             type="button"
             onClick={() => setLocale('ar')}
-            className={`px-3 py-2 text-sm font-medium transition-colors ${locale === 'ar' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-            style={{ color: locale === 'ar' ? '#333' : '#666' }}
+            className="px-3 py-1.5 text-xs font-bold transition-all duration-200"
+            style={locale === 'ar'
+              ? { backgroundColor: '#C12D32', color: '#fff' }
+              : { backgroundColor: '#fff', color: '#666' }}
           >
             AR
           </button>

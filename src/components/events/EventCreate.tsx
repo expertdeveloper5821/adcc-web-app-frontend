@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, Globe } from 'lucide-react';
 import { addEvent, Event, availableCategories } from '../../data/eventsData';
 import { getTracksByCountryAndCity } from '../../data/tracksData';
 import { toast } from 'sonner@2.0.3';
@@ -9,6 +9,7 @@ import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiR
 import { Input } from '../ui/input';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useLocale } from '../../contexts/LocaleContext';
 
 interface EventCreateProps {
   navigate: (page: string, params?: any) => void;
@@ -27,6 +28,7 @@ export function EventCreate({ role }: EventCreateProps) {
   const [tracks, setTracks] = useState<any[]>([]);
   const [communities, setCommunities] = useState<any[]>([]);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const { locale } = useLocale();
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (e.target.files?.[0]) {
@@ -79,10 +81,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const [formData, setFormData] = useState<{
     title: string;
+    titleAr: string;
     slug: string;
     category: string;
     communityId: string;
     description: string;
+    descriptionAr: string;
     country: string;
     city: string;
     trackId: string;
@@ -104,10 +108,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     allowCancellation: boolean;
   }>({
     title: '',
+    titleAr: '',
     slug: '',
     category: 'Community Ride',
     communityId: '',
     description: '',
+    descriptionAr: '',
     country: 'UAE',
     city: 'Abu Dhabi',
     trackId: '',
@@ -327,10 +333,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       // Prepare payload with correct types and only allowed fields
       const payload: Partial<EventApiResponse> = {
         title: formData.title,
+        ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
         slug: formData.slug,
         category: formData.category,
         communityId: formData.communityId,
         description: formData.description,
+        ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
         address: `${formData.city}, ${formData.country}`,
         trackId: formData.trackId,
         eventDate: formData.eventDate,
@@ -377,14 +385,18 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         <div className="lg:col-span-2 space-y-6">
           {/* SECTION A - Basic Information */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Calendar className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>A. Basic Information</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>A. Basic Information</h2>
+
             </div>
 
-            <div className="space-y-4">
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Name *</label>
                 <input
@@ -408,6 +420,70 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe the event..."
+                  rows={4}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+                {formErrors.description && <div className="text-xs text-red-600 mt-1">{formErrors.description}</div>}
+              </div>
+            </div>
+
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم الحدث <span className="text-gray-400">(Event Name)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="سلسلة سباقات أبوظبي الليلية - الجولة 3"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <textarea
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  rows={4}
+                  placeholder="وصف الحدث..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              {/* English reference */}
+              {formData.title && (
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
+                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>English reference</span>
+                  </div>
+                  <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
+                  {formData.description && (
+                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{formData.description}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Common fields always visible */}
+            <div className="space-y-4 mt-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Category *</label>
                 <select
@@ -434,18 +510,6 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   ))}
                 </select>
                 {formErrors.communityId && <div className="text-xs text-red-600 mt-1">{formErrors.communityId}</div>}
-              </div>
-
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the event..."
-                  rows={4}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                />
-                {formErrors.description && <div className="text-xs text-red-600 mt-1">{formErrors.description}</div>}
               </div>
             </div>
           </div>

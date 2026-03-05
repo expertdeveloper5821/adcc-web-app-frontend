@@ -7,6 +7,7 @@ import { getCommunity, getFeedPostsByCommunity, deleteFeedPost, updateFeedPost }
 // import { getAllTracks } from '../../data/tracksData';
 import { getAllTracks, deleteTrack, Track, archiveTrack } from '../../services/trackService';
 import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
+import { DetailPageSkeleton } from '../ui/skeleton';
 
 
 
@@ -202,11 +203,7 @@ export function CommunityDetail() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg" style={{ color: '#666' }}>Loading community...</div>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (!community) {

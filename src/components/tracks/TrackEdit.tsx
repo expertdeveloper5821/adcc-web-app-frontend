@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Archive, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Archive, AlertTriangle, Globe } from 'lucide-react';
 import { getAllEvents } from '../../data/eventsData';
 import { getAllCommunities } from '../../data/communitiesData';
 import { toast } from 'sonner@2.0.3';
 import { UserRole } from '../../App';
 import { getTrackById, getTrackResults, trackCommunityResults, updateTrack, deleteTrack, disableTrack, enableTrack } from '../../services/trackService';
 import { FacilityType } from '@/types/track.types';
-import { TRACK_FACILITIES } from '@/constants/track.constants';// import { getTrack, updateTrack, Track, availableFacilities, getTrackCommunities, deleteTrack } from '../../data/tracksData';
+import { TRACK_FACILITIES } from '@/constants/track.constants';
+import { useLocale } from '../../contexts/LocaleContext';
 
 interface TrackEditProps {
   navigate: (page: string, params?: any) => void;
@@ -22,6 +23,7 @@ export function TrackEdit({ role }: TrackEditProps) {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const { locale } = useLocale();
   const [ track, setTrack ] = useState<Track | null >(null);
 
   const [linkedEvents, setLinkedEvents] = useState<any[]>([]);
@@ -162,8 +164,10 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const [formData, setFormData] = useState({
     title: '',
+    titleAr: '',
     slug: '',
     description: '',
+    descriptionAr: '',
     trackType: 'road' as 'road' | 'circuit' | 'coastal' | 'desert' | 'urban',
     country: 'UAE',
     city: 'Abu Dhabi',
@@ -192,8 +196,10 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   setFormData(prev => ({
     ...prev,
     title: track.title || prev.title,
+    titleAr: (track as any).titleAr || prev.titleAr,
     slug: (track as any).slug || prev.slug,
     description: track.description || prev.description,
+    descriptionAr: (track as any).descriptionAr || prev.descriptionAr,
     city: track.city || prev.city,
     area: track.area || prev.area,
     distance: track.distance ?? prev.distance,
@@ -351,6 +357,8 @@ const handleGalleryUpload = (
         title: formData.title,
         slug: formData.slug,
         description: formData.description,
+        ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
+        ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
         trackType: formData.trackType === 'coastal' ? 'costal' : formData.trackType,
         country: formData.country,
         city: formData.city,
@@ -457,14 +465,18 @@ const handleDisable = async (id: string, name: string) => {
 
           {/* SECTION 1 - Basic Information */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <MapPin className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
+
             </div>
 
-            <div className="space-y-4">
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Track Name *</label>
                 <input
@@ -497,7 +509,59 @@ const handleDisable = async (id: string, name: string) => {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
+            </div>
 
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المسار <span className="text-gray-400">(Track Name)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="حلبة مرسى ياس"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <textarea
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  rows={4}
+                  placeholder="وصف المسار..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              {/* English reference */}
+              {formData.title && (
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
+                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>English reference</span>
+                  </div>
+                  <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
+                  {formData.description && (
+                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{formData.description}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Common fields always visible */}
+            <div className="space-y-4 mt-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Track Type *</label>
                 <select

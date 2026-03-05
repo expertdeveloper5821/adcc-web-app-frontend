@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, AlertTriangle, Archive, Ban, FileText, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Settings, Globe, Award, Image as ImageIcon, Save, Plus, X, AlertTriangle, Archive, Ban, FileText, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getEventById, updateEvent as updateEventApi, deleteEvent as deleteEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
-import { formastToInputDate } from '../../utils/date';
+import { formatToInputDate } from '../../utils/date';
+import { useLocale } from '../../contexts/LocaleContext';
 
 interface EventEditProps {
   navigate: (page: string, params?: any) => void;
@@ -20,6 +22,7 @@ export function EventEdit({ role }: EventEditProps) {
   // const eventId = id || '';
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const { locale } = useLocale();
   const [isSaving, setIsSaving] = useState(false);
   const [existingEvent, setExistingEvent] = useState<EventApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,12 +175,14 @@ export function EventEdit({ role }: EventEditProps) {
 
   const [formData, setFormData] = useState<{
     title: string;
+    titleAr: string;
     slug: string;
     category: string;
     communityId: string;
     mainImage: string;
     description: string;
-    // country: string;
+    descriptionAr: string;
+    country: string;
     city: string;
     trackId: string;
     eventDate: string;
@@ -203,6 +208,7 @@ export function EventEdit({ role }: EventEditProps) {
     maxAge: number;
   }>({
     title: '',
+    titleAr: '',
     slug: '',
     category: 'Community Ride',
     communityId: '',
@@ -211,6 +217,7 @@ export function EventEdit({ role }: EventEditProps) {
     // country: '',
     city: '',
     trackId: '',
+    descriptionAr: '',
     eventImage: '',
     eventDate: '',
     eventTime: '07:00',
@@ -260,36 +267,34 @@ export function EventEdit({ role }: EventEditProps) {
         ? 'archived' as const
         : (ev.status as 'draft' | 'open' | 'full' | 'completed' | 'archived');
       setFormData({
-        title: ev.title,
-        slug: ev.slug ?? '',
-        category: ev.category ?? ev.categories ?? 'Community Ride',
-        communityId,
-        mainImage: ev.mainImage ?? '',
-        description: ev.description,
-        // country: ev.country ?? '',
-        city: ev.city ?? '',
-        trackId,
-        eventDate: formatToInputDate(ev.eventDate),
-        eventTime: ev.eventTime ?? '',
-        endTime: ev.endTime ?? '',
-        distance: ev.distance ?? 25,
-        difficulty: (ev.difficulty === 'Easy' || ev.difficulty === 'Medium' || ev.difficulty === 'Hard' ? ev.difficulty : 'Medium'),
-        maxParticipants: ev.maxParticipants,
-        schedule: (ev.schedule && ev.schedule.length > 0) ? ev.schedule : [{ time: '', title: '' }],
-        amenities: Array.isArray(ev.amenities) ? (ev.amenities as string[]) : [],
-        minAge: ev.minAge ?? 18,
-        eligibilityBike: ev.eligibility?.bikeType ?? 'Any',
-        eligibilityExperience: ev.eligibility?.experienceLevel ?? 'Beginner',
-        categories: '',
-        rewardPoints: ev.rewards?.points ?? 50,
-        rewardBadge: ev.rewards?.badgeName ?? '',
-        status,
-        isFeatured: ev.isFeatured ?? false,
-        allowCancellation: ev.allowCancellation ?? false,
-        galleryImages: ev.galleryImages ?? [],
-        address: ev.address ?? '',
-        youtubeLink: ev.youtubeLink ?? '',
-        maxAge: ev.maxAge ?? 70,
+        title: existingEvent.title,
+        titleAr: (existingEvent as any).titleAr || '',
+        slug: existingEvent.slug,
+        category: existingEvent.category,
+        communityId: existingEvent.communityId,
+        mainImage: existingEvent.mainImage,
+        description: existingEvent.description,
+        descriptionAr: (existingEvent as any).descriptionAr || '',
+        country: existingEvent.country,
+        city: existingEvent.city,
+        trackId: existingEvent.trackId,
+        eventDate: formatToInputDate(existingEvent.eventDate),
+        eventTime: existingEvent.eventTime,
+        endTime: existingEvent.endTime,
+        distance: existingEvent.distance,
+        difficulty: existingEvent.difficulty,
+        maxParticipants: existingEvent.maxParticipants,
+        schedule: existingEvent.schedule.length > 0 ? existingEvent.schedule : [{ time: '', title: '' }],
+        amenities: existingEvent.amenities,
+        minAge: existingEvent.minAge,
+        eligibilityBike: existingEvent.eligibility.bikeType,
+        eligibilityExperience: existingEvent.eligibility.experienceLevel,
+        // rewardPoints: existingEvent.rewards.points,
+        // rewardBadge: existingEvent.rewards.badgeName,
+        status: existingEvent.status,
+        isFeatured: existingEvent.isFeatured,
+        allowCancellation: existingEvent.allowCancellation,
+        galleryImages: existingEvent.galleryImages || [],
       });
     }
   }, [existingEvent]);
@@ -454,13 +459,15 @@ export function EventEdit({ role }: EventEditProps) {
 
       const payload = {
         title: formData.title,
+        ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
         slug: formData.slug,
         category: formData.category,
         communityId: formData.communityId,
         trackId: formData.trackId,
         mainImage: formData.mainImage,
         description: formData.description,
-        // country: formData.country,
+        ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
+        country: formData.country,
         city: formData.city,
         eventDate: formData.eventDate,
         eventTime: formData.eventTime,
@@ -537,14 +544,18 @@ export function EventEdit({ role }: EventEditProps) {
         <div className="lg:col-span-2 space-y-6">
           {/* Event Info */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <FileText className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <FileText className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>Event Information</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Event Information</h2>
+
             </div>
 
-            <div className="space-y-4">
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Title *</label>
                 <input
@@ -567,6 +578,69 @@ export function EventEdit({ role }: EventEditProps) {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Detailed event description"
+                  rows={5}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
+                />
+              </div>
+            </div>
+
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  عنوان الحدث <span className="text-gray-400">(Event Title)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="سلسلة سباقات أبوظبي الليلية"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <textarea
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  rows={5}
+                  placeholder="وصف الحدث..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              {/* English reference */}
+              {formData.title && (
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
+                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>English reference</span>
+                  </div>
+                  <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
+                  {formData.description && (
+                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{formData.description}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Common fields always visible */}
+            <div className="space-y-4 mt-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Category *</label>
                 <select
@@ -597,17 +671,6 @@ export function EventEdit({ role }: EventEditProps) {
                   }
 
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Detailed event description"
-                  rows={5}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
-                />
               </div>
 
               <div>

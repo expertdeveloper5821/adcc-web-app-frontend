@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save } from 'lucide-react';
+import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Globe } from 'lucide-react';
 import { addTrack, Track, availableFacilities } from '../../data/tracksData';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { UserRole } from '../../App';
 import { createTrack, type CreateTrackRequest, type FacilityType, FACILITY_KEY_TO_API } from '../../services/trackService';
 import { useForm, Controller } from 'react-hook-form';
 import { compressImage } from '../../utils/imageUtils';
+import { useLocale } from '../../contexts/LocaleContext';
 
 
 interface TrackCreateProps {
@@ -14,13 +15,12 @@ interface TrackCreateProps {
   role: UserRole;
 }
 
-
-
-
 type FormData = {
   name: string;
+  nameAr: string;
   slug: string;
   description: string;
+  descriptionAr: string;
   trackType: 'road' | 'circuit' | 'coastal' | 'desert' | 'urban';
   country: string;
   city: string;
@@ -80,12 +80,17 @@ export function TrackCreate({ role }: TrackCreateProps) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
   const [coverImageUrl, setCoverImageUrl] = useState<string>('');
   const [galleryImageUrls, setGalleryImageUrls] = useState<string[]>([]);
+  const { locale } = useLocale();
+
 
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       name: '',
+      nameAr: '',
       slug: '',
       description: '',
+      
+      descriptionAr: '',
       trackType: 'road',
       country: 'UAE',
       city: 'Abu Dhabi',
@@ -241,6 +246,8 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
       title: data.name.trim(),
       slug: data.slug || undefined,
       description: data.description.trim(),
+      ...(data.nameAr?.trim() ? { titleAr: data.nameAr.trim() } : {}),
+      ...(data.descriptionAr?.trim() ? { descriptionAr: data.descriptionAr.trim() } : {}),
       trackType: data.trackType === 'coastal' ? 'costal' : data.trackType,
       country: data.country,
       city: data.city,
@@ -382,15 +389,85 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
         <div className="lg:col-span-2 space-y-6">
           {/* SECTION 1 - Basic Information */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <MapPin className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
+
             </div>
 
-            <div className="space-y-4">
-              {formFields.filter(f => f.section === 1).map(renderField)}
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
+              {formFields.filter(f => f.section === 1 && ['name', 'slug', 'description'].includes(f.name)).map(renderField)}
+            </div>
+
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المسار <span className="text-gray-400">(Track Name)</span>
+                </label>
+                <Controller
+                  name="nameAr"
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <input
+                      type="text"
+                      value={value || ''}
+                      onChange={onChange}
+                      dir="rtl"
+                      lang="ar"
+                      placeholder="حلبة مرسى ياس"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                      style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                    />
+                  )}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <Controller
+                  name="descriptionAr"
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <textarea
+                      value={value || ''}
+                      onChange={onChange}
+                      dir="rtl"
+                      lang="ar"
+                      rows={4}
+                      placeholder="وصف المسار..."
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                      style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* English reference */}
+              {watch('name') && (
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
+                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>English reference</span>
+                  </div>
+                  <p className="text-sm" style={{ color: '#1E40AF' }}>{watch('name')}</p>
+                  {watch('description') && (
+                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{watch('description')}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Common fields always visible */}
+            <div className="space-y-4 mt-4">
+              {formFields.filter(f => f.section === 1 && !['name', 'slug', 'description'].includes(f.name)).map(renderField)}
             </div>
           </div>
 
