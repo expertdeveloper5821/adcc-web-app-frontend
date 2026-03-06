@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save } from 'lucide-react';
 import { addTrack, Track, availableFacilities } from '../../data/tracksData';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import { UserRole } from '../../App';
-import { createTrack } from '../../services/trackService';
+import { createTrack, type CreateTrackRequest, type FacilityType, FACILITY_KEY_TO_API } from '../../services/trackService';
 import { useForm, Controller } from 'react-hook-form';
+import { compressImage } from '../../utils/imageUtils';
 
 
 interface TrackCreateProps {
@@ -65,10 +66,20 @@ const formFields = [
   { section: 6, name: 'displayPriority', label: 'Display Priority', type: 'number', min: 0 },
 ];
 
+const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+
 export function TrackCreate({ role }: TrackCreateProps) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
+  const [coverImageUrl, setCoverImageUrl] = useState<string>('');
+  const [galleryImageUrls, setGalleryImageUrls] = useState<string[]>([]);
 
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
@@ -121,6 +132,45 @@ export function TrackCreate({ role }: TrackCreateProps) {
     setValue('facilities', newFacilities);
   };
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !ACCEPTED_IMAGE_TYPES.includes(file.type)) return;
+    setThumbnailFile(file);
+    const url = URL.createObjectURL(file);
+    setThumbnailPreview(url);
+    setThumbnailUrl(''); // URL set after upload; for now just preview
+  };
+
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !ACCEPTED_IMAGE_TYPES.includes(file.type)) return;
+    setCoverFile(file);
+    const url = URL.createObjectURL(file);
+    setCoverPreview(url);
+    setCoverImageUrl('');
+  };
+
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const valid = files.filter((f) => ACCEPTED_IMAGE_TYPES.includes(f.type));
+    if (valid.length === 0) return;
+    setGalleryFiles((prev) => [...prev, ...valid]);
+    setGalleryPreviews((prev) => [
+      ...prev,
+      ...valid.map((f) => URL.createObjectURL(f)),
+    ]);
+    setGalleryImageUrls((prev) => prev); // URLs after upload
+    e.target.value = '';
+  };
+
+  const removeGalleryFile = (index: number) => {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+    setGalleryPreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const addLoopOption = () => {
     const value = parseFloat(watchedLoopOptionInput);
     if (value > 0 && !watchedLoopOptions.includes(value)) {
@@ -140,42 +190,86 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
     // Extra validation (react-hook-form already handles required)
     if (!data.loopOptions.length) {
       toast.error('Please add at least one loop option');
+      setLoading(false);
       return;
     }
 
-    const payload = {
+    // Convert selected image files to base64 so backend can store them
+    let thumbnailBase64 = thumbnailUrl;
+    let coverBase64 = coverImageUrl;
+    let galleryBase64 = [...galleryImageUrls];
+
+    if (thumbnailFile) {
+      try {
+        thumbnailBase64 = await compressImage(thumbnailFile, 400, 300, 0.75);
+      } catch (e) {
+        console.error('Thumbnail compress error:', e);
+        toast.error('Failed to process thumbnail image');
+        setLoading(false);
+        return;
+      }
+    }
+    if (coverFile) {
+      try {
+        coverBase64 = await compressImage(coverFile, 1200, 600, 0.75);
+      } catch (e) {
+        console.error('Cover image compress error:', e);
+        toast.error('Failed to process cover image');
+        setLoading(false);
+        return;
+      }
+    }
+    if (galleryFiles.length > 0) {
+      try {
+        galleryBase64 = await Promise.all(
+          galleryFiles.map((file) => compressImage(file, 800, 600, 0.7))
+        );
+      } catch (e) {
+        console.error('Gallery images compress error:', e);
+        toast.error('Failed to process gallery images');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Map form facility keys to API FacilityType (e.g. bike_rental -> bikeRental); backend expects flat array
+    const facilitiesMapped: FacilityType[] = (data.facilities || [])
+      .map((key) => FACILITY_KEY_TO_API[key] ?? key)
+      .filter((v): v is FacilityType => Boolean(v));
+
+    const payload: CreateTrackRequest = {
       title: data.name.trim(),
-      slug: data.slug,
+      slug: data.slug || undefined,
       description: data.description.trim(),
-      trackType: data.trackType,
+      trackType: data.trackType === 'coastal' ? 'costal' : data.trackType,
       country: data.country,
       city: data.city,
-      area: data.area,
+      area: data.area || undefined,
       distance: Number(data.distance),
       difficulty: data.difficulty,
       surfaceType: data.surfaceType,
-      elevation: data.elevationGain || 0,
-      estimatedTime: data.estimatedTime,
+      elevation: String(data.elevationGain ?? 0),
+      estimatedTime: data.estimatedTime || undefined,
       loopOptions: data.loopOptions,
-      facilities: data.facilities,
-      safetyNotes: data.safetyNotes,
+      facilities: facilitiesMapped.length ? facilitiesMapped : undefined,
+      safetyNotes: data.safetyNotes || undefined,
       helmetRequired: data.helmetRequired,
       nightRidingAllowed: data.nightRidingAllowed,
-      status: action === 'draft' ? 'Closed' : data.status,
+      status: action === 'draft' ? 'closed' : data.status,
       visibility: data.visibility,
       displayPriority: data.displayPriority,
-      // avgtime: data.avgtime,
+      galleryImages: galleryBase64,
+      image: thumbnailBase64 || undefined,
+      coverImage: coverBase64 || undefined,
     };
 
     const response = await createTrack(payload);
 
-    if (response?.success) {
-      toast.success(response.message || 'Track created successfully');
-
-      // optional redirect
+    if (response && (response.success !== false)) {
+      toast.success((response as any).message || 'Track created successfully');
       navigate('/tracks');
     } else {
-      toast.error(response?.message || 'Failed to create track');
+      toast.error((response as any)?.message || 'Failed to create track');
     }
 
   } catch (error: any) {
@@ -205,10 +299,11 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
           rules={{ required: required ? `${label} is required` : false, min: min ? { value: min, message: `Minimum value is ${min}` } : undefined }}
           render={({ field: { onChange, value } }) => {
             if (type === 'text' || type === 'number') {
+              const inputValue = value === undefined || value === null ? '' : String(value);
               return (
                 <input
                   type={type}
-                  value={value || ''}
+                  value={inputValue}
                   onChange={onChange}
                   placeholder={placeholder}
                   min={min}
@@ -219,9 +314,10 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
               );
             }
             if (type === 'textarea') {
+              const textValue = value === undefined || value === null ? '' : String(value);
               return (
                 <textarea
-                  value={value || ''}
+                  value={textValue}
                   onChange={onChange}
                   placeholder={placeholder}
                   rows={4}
@@ -230,9 +326,10 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
               );
             }
             if (type === 'select') {
+              const selectValue = value === undefined || value === null ? '' : String(value);
               return (
                 <select
-                  value={value || ''}
+                  value={selectValue}
                   onChange={onChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
@@ -247,7 +344,7 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={value || false}
+                    checked={Boolean(value)}
                     onChange={(e) => onChange(e.target.checked)}
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
@@ -416,38 +513,97 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Track Thumbnail Image *</label>
-                <div
-                  className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                <input
+                  type="file"
+                  accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                  onChange={handleThumbnailChange}
+                  className="hidden"
+                  id="track-thumbnail"
+                />
+                <label
+                  htmlFor="track-thumbnail"
+                  className="block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   style={{ borderColor: '#ECC180' }}
                 >
-                  <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload thumbnail (400x300)</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 4:3 format recommended</p>
-                </div>
+                  {thumbnailPreview ? (
+                    <div className="relative inline-block">
+                      <img src={thumbnailPreview} alt="Thumbnail preview" className="max-h-40 mx-auto rounded object-cover" />
+                      <span className="text-xs mt-1 block" style={{ color: '#666' }}>{thumbnailFile?.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
+                      <p className="text-sm" style={{ color: '#666' }}>Upload thumbnail (400x300)</p>
+                      <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 4:3 format recommended</p>
+                    </>
+                  )}
+                </label>
               </div>
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Cover Image *</label>
-                <div
-                  className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                <input
+                  type="file"
+                  accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                  onChange={handleCoverChange}
+                  className="hidden"
+                  id="track-cover"
+                />
+                <label
+                  htmlFor="track-cover"
+                  className="block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   style={{ borderColor: '#ECC180' }}
                 >
-                  <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload cover image (1200x600)</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 2:1 format recommended</p>
-                </div>
+                  {coverPreview ? (
+                    <div className="relative inline-block">
+                      <img src={coverPreview} alt="Cover preview" className="max-h-40 mx-auto rounded object-cover" />
+                      <span className="text-xs mt-1 block" style={{ color: '#666' }}>{coverFile?.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
+                      <p className="text-sm" style={{ color: '#666' }}>Upload cover image (1200x600)</p>
+                      <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 2:1 format recommended</p>
+                    </>
+                  )}
+                </label>
               </div>
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Gallery Images (multiple)</label>
-                <div
-                  className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                <input
+                  type="file"
+                  accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                  onChange={handleGalleryChange}
+                  className="hidden"
+                  id="track-gallery"
+                  multiple
+                />
+                <label
+                  htmlFor="track-gallery"
+                  className="block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   style={{ borderColor: '#ECC180' }}
                 >
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
                   <p className="text-sm" style={{ color: '#666' }}>Upload gallery images</p>
                   <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - Multiple files accepted</p>
-                </div>
+                </label>
+                {galleryPreviews.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {galleryPreviews.map((src, index) => (
+                      <div key={index} className="relative">
+                        <img src={src} alt={`Gallery ${index + 1}`} className="h-20 w-20 rounded object-cover border" />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryFile(index)}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-xs leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

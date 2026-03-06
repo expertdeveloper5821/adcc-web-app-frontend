@@ -358,8 +358,7 @@ export function TracksList({ role }: TracksListProps) {
       {/* Tracks List */}
       <div className="space-y-4">
         {filteredTracks.length > 0 ? (
-          filteredTracks.map(track => {
-
+          filteredTracks.map((track, index) => {
             const trackId = getTrackId(track);
             const stats = trackId ? trackStats[trackId] : null;
 
@@ -367,12 +366,12 @@ export function TracksList({ role }: TracksListProps) {
             const communitiesCount = stats?.communitiesCount || 0;
 
             return (
-              <div key={track.id} className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-shadow">
+              <div key={trackId ?? track.id ?? `track-${index}`} className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-shadow">
                 <div className="flex gap-6">
                   {/* Thumbnail */}
                   <div className="flex-shrink-0 w-40 h-32 rounded-lg overflow-hidden">
                     <img
-                      src={track.image}
+                      src={track.image || track.coverImage}
                       alt={track.title}
                       className="w-full h-full object-cover"
                     />
@@ -386,7 +385,7 @@ export function TracksList({ role }: TracksListProps) {
                           <h3
                             className="text-xl cursor-pointer hover:underline"
                             style={{ color: '#333' }}
-                            onClick={() => navigate(`/tracks/${track._id}` )}
+                            onClick={() => trackId && navigate(`/tracks/${trackId}`)}
                           >
                             {track.title}
                           </h3>
@@ -447,7 +446,9 @@ export function TracksList({ role }: TracksListProps) {
                       <div>
                         <div className="text-xs mb-1" style={{ color: '#999' }}>Last Updated</div>
                         <div className="text-sm" style={{ color: '#333' }}>
-                          {new Date(track.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {track.updatedAt
+                            ? new Date(track.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            : '—'}
                         </div>
                       </div>
                     </div>
@@ -455,7 +456,7 @@ export function TracksList({ role }: TracksListProps) {
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigate(`/tracks/${track._id}`)}
+                        onClick={() => trackId && navigate(`/tracks/${trackId}`)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all hover:shadow-md"
                         style={{ backgroundColor: '#ECC180', color: '#333' }}
                       >
@@ -465,7 +466,7 @@ export function TracksList({ role }: TracksListProps) {
                       {canEdit && (
                         <>
                           <button
-                            onClick={() => navigate(`/tracks/${track._id}/edit`)}
+                            onClick={() => trackId && navigate(`/tracks/${trackId}/edit`)}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all hover:shadow-md"
                             style={{ backgroundColor: '#3B82F6', color: '#fff' }}
                           >
@@ -473,7 +474,7 @@ export function TracksList({ role }: TracksListProps) {
                             <span className="text-sm">Edit</span>
                           </button>
                           <button
-                            onClick={() => handleArchive(track._id, track.title)}
+                            onClick={() => trackId && handleArchive(trackId, track.title)}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                             style={{ color: '#666' }}
                           >

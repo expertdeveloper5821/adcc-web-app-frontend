@@ -2,7 +2,7 @@ import { api } from './api';
 
 export type FacilityType =
   | 'water'
-  | 'troilets'
+  | 'toilets'
   | 'parking'
   | 'lights'
   | 'cafes'
@@ -14,6 +14,77 @@ export interface ITrackFacility {
   facilities?: FacilityType[];
 }
 
+/** Backend track type literal (API uses "costal") */
+export type TrackTypeBackend = 'circuit' | 'road' | 'costal' | 'desert' | 'urban';
+
+export type SurfaceTypeBackend = 'asphalt' | 'concrete' | 'mixed';
+
+export type TrackStatusBackend = 'open' | 'limited' | 'closed' | 'archived' | 'disabled';
+
+/**
+ * Backend ITrack shape (matches API /v1/tracks).
+ * Document fields id, createdAt, updatedAt are set by the server.
+ */
+export interface ITrack {
+  _id?: string;
+  title: string;
+  description: string;
+  image?: string;
+  coverImage?: string;
+  city: string;
+  zipcode?: string;
+  distance: number;
+  elevation: string;
+  trackType: TrackTypeBackend;
+  avgtime?: string;
+  pace?: string;
+  /** API accepts flat array of facility options */
+  facilities?: FacilityType[];
+  estimatedTime?: string;
+  loopOptions?: number[];
+  difficulty?: string;
+  category?: string;
+  surfaceType: SurfaceTypeBackend;
+  status: TrackStatusBackend;
+  slug?: string;
+  country?: string;
+  safetyNotes?: string;
+  helmetRequired?: boolean;
+  area?: string;
+  displayPriority?: number;
+  nightRidingAllowed?: boolean;
+  visibility?: string;
+  /** Required by backend as array (can be empty []) */
+  galleryImages: string[];
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+/** Payload for POST {{baseUrl}}/v1/tracks - create track */
+export type CreateTrackRequest = Omit<ITrack, '_id' | 'createdAt' | 'updatedAt'> & {
+  title: string;
+  description: string;
+  city: string;
+  distance: number;
+  elevation: string;
+  trackType: TrackTypeBackend;
+  surfaceType: SurfaceTypeBackend;
+  status: TrackStatusBackend;
+  galleryImages: string[];
+};
+
+/** Map form facility keys (e.g. bike_rental) to API FacilityType (e.g. bikeRental) */
+export const FACILITY_KEY_TO_API: Record<string, FacilityType> = {
+  bike_rental: 'bikeRental',
+  first_aid: 'firstAid',
+  changing_rooms: 'changingRooms',
+  lights: 'lights',
+  water: 'water',
+  parking: 'parking',
+  toilets: 'toilets',
+  cafes: 'cafes',
+};
+
 export const UAE_CITIES = [
   'Abu Dhabi',
   'Dubai',
@@ -24,7 +95,6 @@ export const UAE_CITIES = [
   'Fujairah',
   'Al Ain'
 ];
-
 
 export interface Track {
   id: string;
@@ -41,7 +111,6 @@ export interface Track {
   nightRidingAllowed: boolean;
   safetyNotes: string;
   shortDescription: string;
-  // status: 'Active' | 'Draft';
   eventsCount: number;
   image: string;
   coverImage?: string;
@@ -87,10 +156,13 @@ export interface TrackValidationRules {
 export const getAllTracks = async (): Promise<Track[]> => {
   try {
     const response = await api.get('/v1/tracks');
-
-    if ((response.data as any).data) {
-      return (response.data as any).data;
-    }
+    const body = response.data as { data?: Track[] | { tracks?: Track[] }; tracks?: Track[] };
+    if (Array.isArray(body?.data)) return body.data;
+    const data = body?.data as { tracks?: Track[] } | undefined;
+    if (data && Array.isArray(data.tracks)) return data.tracks;
+    if (Array.isArray(body?.tracks)) return body.tracks;
+    if (Array.isArray(body)) return body;
+    return [];
   } catch (error) {
     console.error('Error fetching tracks:', error);
     throw error;
@@ -113,15 +185,18 @@ export const getTrackById = async (trackId: string): Promise<Track> => {
   }
 };
 
-// Create track
-export const createTrack = async (trackData: TrackFormData): Promise<Track> => {
+/**
+ * Create track – POST {{baseUrl}}/v1/tracks
+ * Sends payload in backend ITrack format (CreateTrackRequest).
+ */
+export const createTrack = async (trackData: CreateTrackRequest | TrackFormData): Promise<Track & { success?: boolean; message?: string }> => {
   try {
-    const response = await api.post<any>('/v1/tracks', trackData);
-    // console.log('createTrack response:', response.data);
-    if ((response.data as any).data) {
-        return (response.data as any).data;
+    const response = await api.post<{ data?: Track; success?: boolean; message?: string }>('/v1/tracks', trackData);
+    const body = response.data as { data?: Track; success?: boolean; message?: string };
+    if (body?.data) {
+      return { ...body.data, success: body.success ?? true, message: body.message };
     }
-    return response.data;
+    return body as Track & { success?: boolean; message?: string };
   } catch (error) {
     console.error('Error creating track:', error);
     throw error;

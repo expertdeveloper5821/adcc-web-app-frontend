@@ -134,24 +134,24 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   // const tracks = getTracksByCountryAndCity(formData.country, formData.city);
   // const selectedCommunity = communities.find(c => c.id === formData.communityId);
 
-  // Community records 
-    useEffect(() => {
-      const fetchMetaData = async () => {
-        try {
-          const [communityData, trackData] = await Promise.all([
-            getAllCommunities(),
-            getAllTracks(),
-          ]);
-  
-          setCommunities(communityData.communities);
-          setTracks(trackData.tracks);
-        } catch (error) {
-          toast.error('Failed to load communities or tracks');
-        }
-      };
-  
-      fetchMetaData();
-    }, []);
+  // Community and track records – APIs return arrays directly
+  useEffect(() => {
+    const fetchMetaData = async () => {
+      try {
+        const [communityList, trackList] = await Promise.all([
+          getAllCommunities(),
+          getAllTracks(),
+        ]);
+
+        setCommunities(Array.isArray(communityList) ? communityList : []);
+        setTracks(Array.isArray(trackList) ? trackList : []);
+      } catch (error) {
+        toast.error('Failed to load communities or tracks');
+      }
+    };
+
+    fetchMetaData();
+  }, []);
 
   // Predefined amenities that appear as checkboxes
   const predefinedAmenities = ['water', 'toilets', 'parking', 'lighting', 'medical support', 'bike service'];
@@ -429,7 +429,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
                   <option value="">Select community...</option>
-                  {communities.map(community => (
+                  {communities?.map(community => (
                     <option key={community.id || community._id} value={community.id || community._id}>{community.title || community.name}</option>
                   ))}
                 </select>
@@ -467,7 +467,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               >
                 <option value="">Select track...</option>
-                {tracks.map(track => (
+                {tracks?.map(track => (
                   <option key={track.id || track._id} value={track.id || track._id}>{track.title}</option>
                 ))}
                 

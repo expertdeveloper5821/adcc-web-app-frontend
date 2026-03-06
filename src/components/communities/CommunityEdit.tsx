@@ -4,7 +4,7 @@ import { deleteCommunity } from '../../data/communitiesData';
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getCommunityById, updateCommunity, CommunityApiResponse, getAvailableCities, getAvailableCategories } from '../../services/communitiesApi';
+import { getCommunityById, updateCommunity, CommunityApiResponse, getAvailableCities, getAvailableCategories, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { CommunityFormData } from '../../types/community';
 import { availableCategories } from '../../data/communitiesData'
@@ -53,22 +53,20 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     fetchCommunity();
   }, [id]);
 
-  // gey all tracks
+  // Load all tracks from API (getAllTracks returns Track[] directly)
   useEffect(() => {
-
-    const fetchTrack = async () => {
+    const fetchTracks = async () => {
       try {
-        const response = await getAllTracks();
-        console.log('responseData', response.tracks);
-        setTracks(response.tracks);
+        const list = await getAllTracks();
+        setTracks(Array.isArray(list) ? list : []);
       } catch (error) {
-        toast.error('Track not found');
+        toast.error('Failed to load tracks');
+        setTracks([]);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchTrack();
+    fetchTracks();
   }, []);
 
 
@@ -137,10 +135,10 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     if (!existingCommunity) return;
 
     setFormData({
-      title: existingCommunity.title,
-      slug: existingCommunity.slug,
-      description: existingCommunity.description,
-      city: existingCommunity.city,
+      title: existingCommunity.title ?? (existingCommunity as any).name ?? '',
+      slug: (existingCommunity as any).slug ?? '',
+      description: existingCommunity.description ?? '',
+      city: (existingCommunity as any).city ?? existingCommunity.location ?? '',
       category: existingCommunity.category,
       type: Array.isArray(existingCommunity.type)
         ? existingCommunity.type
@@ -277,8 +275,9 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
 
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!formData.title || !formData.description || !formData.city) {
+      console.log(formData );
       toast.error('Please fill in all required fields');
       return;
     }
@@ -293,28 +292,31 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       return;
     }
 
-    // Map form data to the backend API structure
+    // Backend: location must be one of "Abu Dhabi"|"Dubai"|"Al Ain"|"Sharjah"
+    const location = COMMUNITY_LOCATION_OPTIONS.includes((formData.city || formData.location) as any)
+      ? (formData.city || formData.location)
+      : COMMUNITY_LOCATION_OPTIONS[0];
+
+    // Map form data to backend API structure (type=array, category=string, trackId as string)
     const communityData = {
       title: formData.title,
-      slug: formData.slug,
       description: formData.description,
-      category: formData.category,
-      type: formData.type,
-      area: formData.area,
-      city: formData.city,
-      location: formData.city,
-      foundedYear: formData.foundedYear,
-      image: formData.image,
-      logo: formData.logo,
-      isFeatured: formData.isFeatured,
-      trackId: formData.primaryTrack,
-      distance: existingCommunity?.distance,
-      manager: formData?.manager,
-      terrain: existingCommunity?.terrain,
+      type: Array.isArray(formData.type) ? formData.type : [formData.communityType ?? formData.type ?? 'city'],
+      category: typeof formData.category === 'string' ? formData.category : (formData.category?.[0] ?? ''),
+      location,
+      area: formData.area || undefined,
+      foundedYear: formData.foundedYear ?? undefined,
+      image: formData.image || formData.logo || undefined,
+      isFeatured: formData.isFeatured ?? false,
       isActive: formData.status === 'active',
+      trackId: formData.primaryTrack ?? undefined,
+      purposeType: formData.purposeType ?? '',
+      ridesThisMonth: String(formData.ridesThisMonth ?? ''),
+      weeklyRides: String(formData.weeklyRides ?? ''),
+      fundsRaised: String(formData.fundsRaised ?? ''),
     };
 
-    updateCommunity(id, communityData);
+    await updateCommunity(id, communityData);
     toast.success('Community updated successfully');
     // navigate(`/communities/${id}`);
   };

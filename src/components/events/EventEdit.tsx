@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, AlertTriangle, Archive, Ban } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, AlertTriangle, Archive, Ban, FileText, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getEventById, updateEvent as updateEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
+import { getEventById, updateEvent as updateEventApi, deleteEvent as deleteEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { formatToInputDate } from '../../utils/date';
@@ -38,7 +38,7 @@ export function EventEdit({ role }: EventEditProps) {
       try {
         setIsLoading(true);
         const data = await getEventById(id);
-        // console.log('result',data);
+        console.log('result',data);
         setExistingEvent(data);
       } catch (error) {
         toast.error('Event not found');
@@ -56,13 +56,12 @@ export function EventEdit({ role }: EventEditProps) {
   useEffect(() => {
     const fetchMetaData = async () => {
       try {
-        const [communityData, trackData] = await Promise.all([
+        const [communitiesList, tracksList] = await Promise.all([
           getAllCommunities(),
           getAllTracks(),
         ]);
-
-        setCommunities(communityData.communities);
-        setTracks(trackData.tracks);
+        setCommunities(Array.isArray(communitiesList) ? communitiesList : []);
+        setTracks(Array.isArray(tracksList) ? tracksList : []);
       } catch (error) {
         toast.error('Failed to load communities or tracks');
       }
@@ -171,9 +170,9 @@ export function EventEdit({ role }: EventEditProps) {
     slug: string;
     category: string;
     communityId: string;
-    mainImage: string,
+    mainImage: string;
     description: string;
-    country: string;
+    // country: string;
     city: string;
     trackId: string;
     eventDate: string;
@@ -194,6 +193,9 @@ export function EventEdit({ role }: EventEditProps) {
     isFeatured: boolean;
     allowCancellation: boolean;
     galleryImages: string[];
+    address: string;
+    youtubeLink: string;
+    maxAge: number;
   }>({
     title: '',
     slug: '',
@@ -201,8 +203,9 @@ export function EventEdit({ role }: EventEditProps) {
     communityId: '',
     mainImage: '',
     description: '',
-    mainImage: '',
-    eventImage: '',
+    // country: '',
+    city: '',
+    trackId: '',
     eventDate: '',
     eventTime: '07:00',
     endTime: '08:00',
@@ -214,69 +217,73 @@ export function EventEdit({ role }: EventEditProps) {
     minAge: 18,
     eligibilityBike: 'Any',
     eligibilityExperience: 'Beginner',
+    categories: '',
     rewardPoints: 50,
     rewardBadge: '',
-    status: 'Draft',
-    galleryImages: [] as string[],
+    status: 'draft',
+    galleryImages: [],
     isFeatured: false,
     allowCancellation: false,
+    address: '',
+    youtubeLink: '',
+    maxAge: 70,
   });
-
-  const loadEvent = async () => {
-    setIsLoading(true);
-    try {
-      const fetchedEvent = await getEventById(eventId);
-      setEvent(fetchedEvent);
-      setFormData({
-        title: fetchedEvent.title || '',
-        description: fetchedEvent.description || '',
-        mainImage: fetchedEvent.mainImage || '',
-        eventImage: fetchedEvent.eventImage || '',
-        eventDate: fetchedEvent.eventDate ? fetchedEvent.eventDate.split('T')[0] : '',
-        eventTime: fetchedEvent.eventTime || '',
-        address: fetchedEvent.address || '',
-        maxParticipants: fetchedEvent.maxParticipants || 500,
-        minAge: fetchedEvent.minAge || 16,
-        maxAge: fetchedEvent.maxAge || 70,
-        youtubeLink: fetchedEvent.youtubeLink || '',
-      });
-    } catch (error: any) {
-      console.error('Error loading event:', error);
-      toast.error('Failed to load event. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (existingEvent) {
+      const ev = existingEvent as EventApiResponse & {
+        category?: string;
+        country?: string;
+        city?: string;
+        distance?: number;
+        schedule?: { time: string; title: string }[];
+        eligibility?: { bikeType: string; experienceLevel: string };
+        communityId?: string | { _id?: string; id?: string };
+        community?: { _id?: string; id?: string };
+        trackId?: string | { _id?: string; id?: string };
+        track?: { _id?: string; id?: string };
+      };
+      const resolveId = (value: string | { _id?: string; id?: string } | undefined): string => {
+        if (value == null) return '';
+        if (typeof value === 'string') return value;
+        return (value._id ?? value.id ?? '') as string;
+      };
+      const communityId = resolveId(ev.communityId ?? ev.community);
+      const trackId = resolveId(ev.trackId ?? ev.track);
+      const status = ev.status === 'cancelled' || ev.status === 'reoprn' || ev.status === 'disable'
+        ? 'archived' as const
+        : (ev.status as 'draft' | 'open' | 'full' | 'completed' | 'archived');
       setFormData({
-        title: existingEvent.title,
-        slug: existingEvent.slug,
-        category: existingEvent.category,
-        communityId: existingEvent.communityId,
-        mainImage: existingEvent.mainImage,
-        description: existingEvent.description,
-        country: existingEvent.country,
-        city: existingEvent.city,
-        trackId: existingEvent.trackId,
-        eventDate: formatToInputDate(existingEvent.eventDate),
-        eventTime: existingEvent.eventTime,
-        endTime: existingEvent.endTime,
-        distance: existingEvent.distance,
-        difficulty: existingEvent.difficulty,
-        maxParticipants: existingEvent.maxParticipants,
-        schedule: existingEvent.schedule.length > 0 ? existingEvent.schedule : [{ time: '', title: '' }],
-        amenities: existingEvent.amenities,
-        minAge: existingEvent.minAge,
-        eligibilityBike: existingEvent.eligibility.bikeType,
-        eligibilityExperience: existingEvent.eligibility.experienceLevel,
-        // rewardPoints: existingEvent.rewards.points,
-        // rewardBadge: existingEvent.rewards.badgeName,
-        status: existingEvent.status,
-        isFeatured: existingEvent.isFeatured,
-        allowCancellation: existingEvent.allowCancellation,
-        galleryImages: existingEvent.galleryImages || [],
+        title: ev.title,
+        slug: ev.slug ?? '',
+        category: ev.category ?? ev.categories ?? 'Community Ride',
+        communityId,
+        mainImage: ev.mainImage ?? '',
+        description: ev.description,
+        // country: ev.country ?? '',
+        city: ev.city ?? '',
+        trackId,
+        eventDate: formatToInputDate(ev.eventDate),
+        eventTime: ev.eventTime ?? '',
+        endTime: ev.endTime ?? '',
+        distance: ev.distance ?? 25,
+        difficulty: (ev.difficulty === 'Easy' || ev.difficulty === 'Medium' || ev.difficulty === 'Hard' ? ev.difficulty : 'Medium'),
+        maxParticipants: ev.maxParticipants,
+        schedule: (ev.schedule && ev.schedule.length > 0) ? ev.schedule : [{ time: '', title: '' }],
+        amenities: Array.isArray(ev.amenities) ? (ev.amenities as string[]) : [],
+        minAge: ev.minAge ?? 18,
+        eligibilityBike: ev.eligibility?.bikeType ?? 'Any',
+        eligibilityExperience: ev.eligibility?.experienceLevel ?? 'Beginner',
+        categories: '',
+        rewardPoints: ev.rewards?.points ?? 50,
+        rewardBadge: ev.rewards?.badgeName ?? '',
+        status,
+        isFeatured: ev.isFeatured ?? false,
+        allowCancellation: ev.allowCancellation ?? false,
+        galleryImages: ev.galleryImages ?? [],
+        address: ev.address ?? '',
+        youtubeLink: ev.youtubeLink ?? '',
+        maxAge: ev.maxAge ?? 70,
       });
     }
   }, [existingEvent]);
@@ -293,7 +300,7 @@ export function EventEdit({ role }: EventEditProps) {
   const handleNameChange = (name: string) => {
     setFormData(prev => ({
       ...prev,
-      name,
+      title: name,
       slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
     }));
   };
@@ -389,11 +396,16 @@ export function EventEdit({ role }: EventEditProps) {
     navigate(`/event/${id}`);
   };
 
-  const handleArchive = () => {
-    deleteEvent(id);
-    toast.success('Event archived');
-    setShowArchiveModal(false);
-    navigate('events');
+  const handleArchive = async () => {
+    if (!id) return;
+    try {
+      await deleteEventApi(id);
+      toast.success('Event archived');
+      setShowArchiveModal(false);
+      navigate('/events');
+    } catch {
+      toast.error('Failed to archive event');
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -442,7 +454,7 @@ export function EventEdit({ role }: EventEditProps) {
         trackId: formData.trackId,
         mainImage: formData.mainImage,
         description: formData.description,
-        country: formData.country,
+        // country: formData.country,
         city: formData.city,
         eventDate: formData.eventDate,
         eventTime: formData.eventTime,
@@ -510,7 +522,7 @@ export function EventEdit({ role }: EventEditProps) {
         </button>
         <div className="flex-1">
           <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Edit Event</h1>
-          <p style={{ color: '#666' }}>{event.title}</p>
+          <p style={{ color: '#666' }}>{existingEvent?.title ?? formData.title}</p>
         </div>
       </div>
 
@@ -572,7 +584,7 @@ export function EventEdit({ role }: EventEditProps) {
                   <option value="">Select community...</option>
                   {Array.isArray(communities) &&
                     communities.map((community) => (
-                      <option key={community._id} value={community._id}>
+                      <option key={(community as { _id?: string; id?: string })._id ?? (community as { _id?: string; id?: string }).id} value={(community as { _id?: string; id?: string })._id ?? (community as { _id?: string; id?: string }).id}>
                         {community.title}
                       </option>
                     ))
@@ -647,7 +659,7 @@ export function EventEdit({ role }: EventEditProps) {
             </div>
 
             <div className="space-y-4">
-              <div>
+              {/* <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Country</label>
                 <select
                   value={formData.country}
@@ -661,7 +673,7 @@ export function EventEdit({ role }: EventEditProps) {
                   <option value="Oman">Oman</option>
                   <option value="Qatar">Qatar</option>
                 </select>
-              </div>
+              </div> */}
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>City *</label>
@@ -690,7 +702,7 @@ export function EventEdit({ role }: EventEditProps) {
                   <option value="">Select track...</option>
                   {Array.isArray(tracks) &&
                     tracks.map(track => (
-                      <option key={track._id} value={track._id}>
+                      <option key={track.id ?? (track as { _id?: string })._id} value={track.id ?? (track as { _id?: string })._id}>
                         {track.title} ({track.distance} km - {track.difficulty})
                       </option>
                     ))

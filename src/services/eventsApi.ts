@@ -23,7 +23,7 @@ export interface EventApiResponse {
   shares?: number;
   difficulty?: string;
   featured?: boolean;
-  amenities?: [];
+  amenities?: string[];
   registrationOpen?: boolean;
   categories?: 'race' | 'community Ride' | 'Training & Clinics' | 'Awareness Rides' | 'Family & Kids' | 'Corporate Events' | 'National Events';
   rewards: {

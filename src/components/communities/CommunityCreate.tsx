@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Users, Tag, Settings, Shield, Save } from 'lucide-react';
+import { ArrowLeft, Users, Tag, Settings, Shield, Save, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useCommunityForm } from '../hooks/useCommunityForm';
-import { createCommunity, updateCommunity, getCommunityById, CommunityApiResponse } from '../../services/communitiesApi';
+import { createCommunity, updateCommunity, getCommunityById, CommunityApiResponse, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
 import { FormField } from './form/FormField';
 import { CategorySelector } from './form/CategorySelector';
-import { ImageUploader } from './form/ImageUploader';
 import { TrackSelector } from './form/TrackSelector';
 import { gccCountries } from '../../data/gccLocations';
 import { availableCategories } from '../../constants/communityConstants';
@@ -38,21 +37,25 @@ export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: p
     selectedCategories,
     selectedTrackIds,
     imagePreview,
+    logoPreview,
     isCompressing,
     communityType,
     availableCities,
     tracks,
+    tracksLoading,
     toggleCategory,
     toggleTrack,
     handleImageUpload,
     clearImage,
+    handleLogoUpload,
+    clearLogo,
   } = useCommunityForm({
     initialData: editingCommunity,
     isEditMode,
   });
 
   const { register, handleSubmit, setValue, formState: { errors } } = form;
-
+console.log('errorss',errors);
   // Fetch community data if ID is provided
   useEffect(() => {
     const fetchCommunity = async () => {
@@ -78,33 +81,31 @@ export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: p
     setIsLoading(true);
 
     try {
-      // Transform form data to API format
+      // Backend: location must be one of "Abu Dhabi"|"Dubai"|"Al Ain"|"Sharjah"
+      const location = COMMUNITY_LOCATION_OPTIONS.includes(selectedCity as any)
+        ? selectedCity
+        : COMMUNITY_LOCATION_OPTIONS[0];
+
+      // Build payload to match backend validation; include primary track IDs from database
       const communityData = {
         title: formData.title,
         description: formData.description,
-        type: formData.communityType,
-        category: selectedCategories,
-        location: `${selectedCity}, ${selectedCountry}`,
+        type: Array.isArray(formData.communityType) ? formData.communityType : [formData.communityType ?? 'city'],
+        category: Array.isArray(selectedCategories) ? (selectedCategories[0] ?? '') : String(selectedCategories ?? ''),
+        location,
         isActive: formData.status === 'active',
-        isFeatured: formData.isFeatured,
-        area: formData.area,
-        country: selectedCountry,
-        city: selectedCity,
-        communityType: formData.communityType,
-        purposeType: formData.purposeType,
-        foundedYear: formData.foundedYear,
-        ridesThisMonth: formData.ridesThisMonth,
-        weeklyRides: formData.weeklyRides,
-        fundsRaised: formData.fundsRaised,
-        primaryTracks: selectedTrackIds,
-        managerName: formData.managerName,
-        visibility: formData.visibility,
-        joinMode: formData.joinMode,
-        displayPriority: formData.displayPriority,
-        allowPosts: formData.allowPosts,
-        allowGallery: formData.allowGallery,
-        status: formData.status,
-        image: formData.image,
+        isFeatured: formData.isFeatured ?? false,
+        image: formData.image || undefined,
+        logo: formData.logo || undefined,
+        // Backend accepts a single track ID as string
+        trackId: selectedTrackIds?.[0] ?? undefined,
+        purposeType: formData.purposeType ?? '',
+        ridesThisMonth: String(formData.ridesThisMonth ?? ''),
+        weeklyRides: String(formData.weeklyRides ?? ''),
+        fundsRaised: String(formData.fundsRaised ?? ''),
+        foundedYear: formData.foundedYear ?? undefined,
+        area: formData.area || undefined,
+        manager: formData.managerName || undefined,
       };
 
       let result: CommunityApiResponse;
@@ -289,15 +290,22 @@ export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: p
             </div>
           </section>
 
-          {/* Tracks Mapping */}
+          {/* Tracks Mapping - loaded from database */}
           <section className="p-6 rounded-2xl shadow-sm bg-white">
-            <TrackSelector
-              tracks={tracks}
-              selectedTrackIds={selectedTrackIds}
-              onToggle={toggleTrack}
-              city={selectedCity}
-              country={selectedCountry}
-            />
+            {tracksLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: '#C12D32' }} />
+                <span className="ml-3 text-sm" style={{ color: '#666' }}>Loading tracks...</span>
+              </div>
+            ) : (
+              <TrackSelector
+                tracks={tracks}
+                selectedTrackIds={selectedTrackIds}
+                onToggle={toggleTrack}
+                city={selectedCity}
+                country={selectedCountry}
+              />
+            )}
           </section>
 
           {/* Community Stats */}
@@ -355,22 +363,127 @@ export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: p
             </div>
           </section>
 
-          {/* Media */}
+          {/* Media - Community Logo & Cover Image */}
           <section className="p-6 rounded-2xl shadow-sm bg-white">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Settings className="w-5 h-5" />
+                <ImageIcon className="w-5 h-5" />
               </div>
               <h2 className="text-xl" style={{ color: '#333' }}>5. Media</h2>
             </div>
 
-            <ImageUploader
-              imagePreview={imagePreview}
-              isUploading={isCompressing}
-              onUpload={handleImageUpload}
-              onClear={clearImage}
-              error={errors.image?.message}
-            />
+            <div className="space-y-6">
+              {/* Community Logo */}
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Logo</label>
+                <input
+                  id="community-logo-upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
+                  disabled={isCompressing}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) await handleLogoUpload(file);
+                    e.target.value = '';
+                  }}
+                />
+                <label
+                  htmlFor="community-logo-upload"
+                  className="block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{ borderColor: '#ECC180' }}
+                >
+                  {isCompressing && !logoPreview ? (
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 mb-2" style={{ borderColor: '#C12D32' }} />
+                      <p className="text-sm" style={{ color: '#666' }}>Compressing...</p>
+                    </div>
+                  ) : logoPreview ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={logoPreview}
+                        alt="Logo preview"
+                        className="mx-auto rounded-lg max-h-32 w-32 object-cover"
+                      />
+                      <p className="text-xs mt-2" style={{ color: '#666' }}>Click to change logo</p>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
+                      <p className="text-sm" style={{ color: '#666' }}>Upload community logo</p>
+                      <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - Square format recommended</p>
+                    </>
+                  )}
+                </label>
+                {logoPreview && !isCompressing && (
+                  <button
+                    type="button"
+                    onClick={clearLogo}
+                    className="mt-2 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+                    style={{ color: '#666' }}
+                  >
+                    Remove logo
+                  </button>
+                )}
+              </div>
+
+              {/* Cover Image */}
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Cover Image</label>
+                <input
+                  id="community-cover-upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
+                  disabled={isCompressing}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) await handleImageUpload(file);
+                    e.target.value = '';
+                  }}
+                />
+                <label
+                  htmlFor="community-cover-upload"
+                  className="block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{ borderColor: '#ECC180' }}
+                >
+                  {isCompressing && !imagePreview ? (
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 mb-2" style={{ borderColor: '#C12D32' }} />
+                      <p className="text-sm" style={{ color: '#666' }}>Compressing...</p>
+                    </div>
+                  ) : imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Cover preview"
+                        className="mx-auto rounded-lg w-full max-h-48 object-cover"
+                      />
+                      <p className="text-xs mt-2" style={{ color: '#666' }}>Click to change cover image</p>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
+                      <p className="text-sm" style={{ color: '#666' }}>Upload cover image</p>
+                      <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 16:9 format recommended</p>
+                    </>
+                  )}
+                </label>
+                {imagePreview && !isCompressing && (
+                  <button
+                    type="button"
+                    onClick={clearImage}
+                    className="mt-2 text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+                    style={{ color: '#666' }}
+                  >
+                    Remove cover image
+                  </button>
+                )}
+                {errors.image?.message && (
+                  <p className="mt-1 text-sm text-red-600">{errors.image.message}</p>
+                )}
+              </div>
+            </div>
           </section>
 
           {/* Admin Assignment */}

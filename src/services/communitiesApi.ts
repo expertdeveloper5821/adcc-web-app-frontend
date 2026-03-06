@@ -27,11 +27,17 @@ export interface CommunityApiResponse {
   gallery?: string[];
 }
 
+/** Backend-allowed location values */
+export const COMMUNITY_LOCATION_OPTIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'] as const;
+export type CommunityLocation = (typeof COMMUNITY_LOCATION_OPTIONS)[number];
+
 export interface CreateCommunityRequest {
   title: string;
   description: string;
-  type: string;
+  /** Backend expects array */
+  type: string[];
   category: string;
+  /** Backend expects one of: Abu Dhabi | Dubai | Al Ain | Sharjah */
   location: string;
   image?: string;
   trackName?: string;
@@ -41,7 +47,19 @@ export interface CreateCommunityRequest {
   foundedYear?: number;
   terrain?: string;
   isActive: boolean;
-  isFeatured: boolean;
+  isFeatured?: boolean;
+  /** Community logo (square) */
+  logo?: string;
+  /** Single track ID (string) */
+  trackId?: string;
+  /** Backend expects string (not null) */
+  purposeType?: string;
+  /** Backend expects string (not number) */
+  ridesThisMonth?: string;
+  /** Backend expects string (not null) */
+  weeklyRides?: string;
+  /** Backend expects string (not null) */
+  fundsRaised?: string;
 }
 
 // Get community by ID
@@ -99,16 +117,19 @@ export const updateCommunity = async (id: string, communityData: Partial<CreateC
 export const getAllCommunities = async (): Promise<CommunityApiResponse[]> => {
   try {
     const response = await api.get<any>('/v1/communities');
-    // console.log('📥 getAllCommunities response:', response.data);
-    if ((response.data as any).data) {
-      return (response.data as any).data;
-    }
-    return response.data;
+    const data = response.data;
+    // Handle { data: { communities, pagination } }
+    const inner = (data as any).data;
+    if (inner?.communities) return inner.communities;
+    // Handle { communities, pagination }
+    if (Array.isArray((data as any).communities)) return (data as any).communities;
+    // Handle direct array
+    if (Array.isArray(data)) return data;
+    return [];
   } catch (error) {
     console.error('Error fetching communities:', error);
     throw error;
   }
-
 };
 
 // Delete community
