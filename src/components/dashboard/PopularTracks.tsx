@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Users, Star } from 'lucide-react';
 
@@ -11,16 +12,17 @@ const tracks = [
 
 export function PopularTracks() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl" style={{ color: '#333' }}>Popular Tracks</h2>
+        <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.popularTracks')}</h2>
         <button
           onClick={() => navigate('/tracks')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
         >
-          View All
+          {t('dashboard.viewAll')}
         </button>
       </div>
 
@@ -47,7 +49,7 @@ export function PopularTracks() {
             <div className="flex items-center justify-between pl-11">
               <div className="flex items-center gap-1 text-xs" style={{ color: '#666' }}>
                 <Users className="w-3 h-3" />
-                <span>{track.users.toLocaleString()} riders</span>
+                <span>{t('dashboard.riders', { count: track.users })}</span>
               </div>
               <div className="flex items-center gap-1 text-xs" style={{ color: '#666' }}>
                 <Star className="w-3 h-3 fill-current" style={{ color: '#CF9F0C' }} />

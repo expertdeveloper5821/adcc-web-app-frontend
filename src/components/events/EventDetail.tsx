@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Edit, Copy, Bell, ImageIcon, Trophy, UserCheck, Users, Star, Share2, Calendar, MapPin, Clock, Award, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
@@ -13,7 +14,7 @@ interface EventDetailProps {
 }
 
 export function EventDetail({ role }: EventDetailProps) {
-
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const eventId = id ?? '';
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export function EventDetail({ role }: EventDetailProps) {
       setParticipants(fetchedParticipants);
     } catch (error: any) {
       console.error('Error loading event:', error);
-      toast.error('Failed to load event. Please try again.');
+      toast.error(t('events.detail.toasts.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +57,7 @@ export function EventDetail({ role }: EventDetailProps) {
   }
 
   if (!event) {
-    return <div className="text-center py-8" style={{ color: '#666' }}>Event not found</div>;
+    return <div className="text-center py-8" style={{ color: '#666' }}>{t('events.detail.notFound')}</div>;
   }
 
   const canEdit = role === 'super-admin' || role === 'content-manager' || role === 'community-manager';
@@ -67,15 +68,15 @@ export function EventDetail({ role }: EventDetailProps) {
 
 
    const handleCancel = async () => {
-    if (confirm('Are you sure you want to cancel this event?')) {
+    if (confirm(t('events.detail.confirmCancel'))) {
       setIsSaving(true);
       try {
         await updateEventApi(eventId, { status: 'cancelled' });
-        toast.success('Event cancelled successfully');
+        toast.success(t('events.detail.toasts.cancelSuccess'));
         loadEvent(); // Reload event to reflect changes
       } catch (error: any) {
         console.error('Error cancelling event:', error);
-        toast.error(error.response?.data?.message || 'Failed to cancel event. Please try again.');
+        toast.error(error.response?.data?.message || t('events.detail.toasts.failedToCancelEvent'));
       } finally {
         setIsSaving(false);
       }
@@ -88,7 +89,7 @@ export function EventDetail({ role }: EventDetailProps) {
   };
 
   const handleSendPush = () => {
-    toast.success('Push notification sent to all registrants');
+    toast.success(t('events.detail.toasts.notificationSent'));
   };
 
   const handleFeaturedToggle = async () => {
@@ -97,9 +98,9 @@ export function EventDetail({ role }: EventDetailProps) {
     try {
       await updateEventApi(eventId, { featured: next });
       setEvent((prev) => (prev ? { ...prev, featured: next } : null));
-      toast.success(next ? 'Event featured' : 'Event unfeatured');
+      toast.success(next ? t('events.detail.toasts.eventFeatured') : t('events.detail.toasts.eventUnfeatured'));
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to update');
+      toast.error(e.response?.data?.message || t('events.detail.toasts.failedToUpdate'));
     } finally {
       setUpdatingField(null);
     }
@@ -111,9 +112,9 @@ export function EventDetail({ role }: EventDetailProps) {
     try {
       await updateEventApi(eventId, { registrationOpen: next });
       setEvent((prev) => (prev ? { ...prev, registrationOpen: next } : null));
-      toast.success(next ? 'Registration opened' : 'Registration closed');
+      toast.success(next ? t('events.detail.toasts.registrationOpened') : t('events.detail.toasts.registrationClosed'));
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to update');
+      toast.error(e.response?.data?.message || t('events.detail.toasts.failedToUpdate'));
     } finally {
       setUpdatingField(null);
     }
@@ -175,7 +176,7 @@ export function EventDetail({ role }: EventDetailProps) {
           style={{ backgroundColor: '#C12D32' }}
         >
           <Edit className="w-5 h-5" />
-          Edit Event
+          {t('events.detail.editButton')}
         </button>
       </div>
 
@@ -184,7 +185,7 @@ export function EventDetail({ role }: EventDetailProps) {
         <div className="p-4 rounded-xl bg-white shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Users className="w-4 h-4" style={{ color: '#999' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Registered</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.detail.registered')}</span>
           </div>
           <p className="text-2xl" style={{ color: '#333' }}>
             {event.currentParticipants} / {event.maxParticipants}
@@ -203,7 +204,7 @@ export function EventDetail({ role }: EventDetailProps) {
         <div className="p-4 rounded-xl bg-white shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <UserCheck className="w-4 h-4" style={{ color: '#999' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Checked In</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.detail.checkedIn')}</span>
           </div>
           <p className="text-2xl" style={{ color: '#333' }}>
             {event.stats?.checkedIn || 0}
@@ -213,7 +214,7 @@ export function EventDetail({ role }: EventDetailProps) {
         <div className="p-4 rounded-xl bg-white shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Trophy className="w-4 h-4" style={{ color: '#999' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Completed</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.detail.completed')}</span>
           </div>
           <p className="text-2xl" style={{ color: '#333' }}>
             {event.stats?.completed || 0}
@@ -223,7 +224,7 @@ export function EventDetail({ role }: EventDetailProps) {
         <div className="p-4 rounded-xl bg-white shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Award className="w-4 h-4" style={{ color: '#999' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Reward Points</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.detail.rewardPoints')}</span>
           </div>
           <p className="text-2xl" style={{ color: '#333' }}>
             {/* {event.rewards.points} */}
@@ -241,7 +242,7 @@ export function EventDetail({ role }: EventDetailProps) {
             borderBottom: activeTab === 'overview' ? '2px solid #C12D32' : 'none',
           }}
         >
-          Overview
+          {t('events.detail.tabs.overview')}
         </button>
         <button
           onClick={() => setActiveTab('participants')}
@@ -251,7 +252,7 @@ export function EventDetail({ role }: EventDetailProps) {
             borderBottom: activeTab === 'participants' ? '2px solid #C12D32' : 'none',
           }}
         >
-          Participants
+          {t('events.detail.tabs.participants')}
         </button>
         {event.category === 'Race' && (
           <button
@@ -262,7 +263,7 @@ export function EventDetail({ role }: EventDetailProps) {
               borderBottom: activeTab === 'results' ? '2px solid #C12D32' : 'none',
             }}
           >
-            Results
+            {t('events.detail.tabs.results')}
           </button>
         )}
         <button
@@ -273,7 +274,7 @@ export function EventDetail({ role }: EventDetailProps) {
             borderBottom: activeTab === 'gallery' ? '2px solid #C12D32' : 'none',
           }}
         >
-          Gallery
+          {t('events.detail.tabs.gallery')}
         </button>
         <button
           onClick={() => setActiveTab('notifications')}
@@ -283,7 +284,7 @@ export function EventDetail({ role }: EventDetailProps) {
             borderBottom: activeTab === 'notifications' ? '2px solid #C12D32' : 'none',
           }}
         >
-          Notifications
+          {t('events.detail.tabs.notifications')}
         </button>
       </div>
 
@@ -299,18 +300,18 @@ export function EventDetail({ role }: EventDetailProps) {
 
             {/* Description */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-3" style={{ color: '#333' }}>About This Event</h3>
+              <h3 className="text-lg mb-3" style={{ color: '#333' }}>{t('events.detail.aboutEvent')}</h3>
               <p style={{ color: '#666', lineHeight: '1.6' }}>{event.description}</p>
             </div>
 
             {/* Event Details */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Event Details</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.eventDetails')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-start gap-3">
                   <Calendar className="w-5 h-5 mt-1" style={{ color: '#999' }} />
                   <div>
-                    <p className="text-sm mb-1" style={{ color: '#666' }}>Date</p>
+                    <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.date')}</p>
                     <p style={{ color: '#333' }}>
                       {new Date(event.eventDate).toLocaleDateString('en-US', { 
                         weekday: 'long', 
@@ -325,7 +326,7 @@ export function EventDetail({ role }: EventDetailProps) {
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 mt-1" style={{ color: '#999' }} />
                   <div>
-                    <p className="text-sm mb-1" style={{ color: '#666' }}>Time</p>
+                    <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.time')}</p>
                     <p style={{ color: '#333' }}>{event.startTime} - {event.endTime}</p>
                   </div>
                 </div>
@@ -333,7 +334,7 @@ export function EventDetail({ role }: EventDetailProps) {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 mt-1" style={{ color: '#999' }} />
                   <div>
-                    <p className="text-sm mb-1" style={{ color: '#666' }}>Location</p>
+                    <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.location')}</p>
                     <p style={{ color: '#333' }}>{event.trackName}</p>
                     <p className="text-sm" style={{ color: '#999' }}>{event.city}, {event.country}</p>
                   </div>
@@ -342,7 +343,7 @@ export function EventDetail({ role }: EventDetailProps) {
                 <div className="flex items-start gap-3">
                   <Users className="w-5 h-5 mt-1" style={{ color: '#999' }} />
                   <div>
-                    <p className="text-sm mb-1" style={{ color: '#666' }}>Community</p>
+                    <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.community')}</p>
                     <p style={{ color: '#333' }}>{event.communityName}</p>
                   </div>
                 </div>
@@ -352,7 +353,7 @@ export function EventDetail({ role }: EventDetailProps) {
             {/* Event Schedule */}
             {event.schedule.length > 0 && (
               <div className="p-6 rounded-2xl bg-white shadow-sm">
-                <h3 className="text-lg mb-4" style={{ color: '#333' }}>Event Schedule</h3>
+                <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.eventSchedule')}</h3>
                 <div className="space-y-3">
                   {event.schedule.map((item, index) => (
                     <div key={index} className="flex items-center gap-4 p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
@@ -368,7 +369,7 @@ export function EventDetail({ role }: EventDetailProps) {
 
             {/* Amenities */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Amenities</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.amenitiesHeading')}</h3>
               <div className="flex flex-wrap gap-2">
                 {event.amenities.map(amenity => (
                   <span
@@ -387,14 +388,14 @@ export function EventDetail({ role }: EventDetailProps) {
           <div className="space-y-6">
             {/* Ride Info */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Ride Information</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.rideInfo')}</h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>Distance</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.distance')}</p>
                   <p className="text-xl" style={{ color: '#333' }}>{event.distance} km</p>
                 </div>
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>Difficulty</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.difficulty')}</p>
                   <span
                     className="inline-block px-3 py-1 rounded-full text-sm text-white"
                     style={{
@@ -407,26 +408,26 @@ export function EventDetail({ role }: EventDetailProps) {
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>Registration Fee</p>
-                  <p className="text-xl" style={{ color: '#10B981' }}>FREE</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.registrationFee')}</p>
+                  <p className="text-xl" style={{ color: '#10B981' }}>{t('common.free')}</p>
                 </div>
               </div>
             </div>
 
             {/* Eligibility */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Eligibility</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.eligibility')}</h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>Age Requirement</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.ageRequirement')}</p>
                   <p style={{ color: '#333' }}>{event.minAge}</p>
                 </div>
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>Bike Type</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.bikeType')}</p>
                   <p style={{ color: '#333' }}>{event.eligibility.bikeType}</p>
                 </div>
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>Experience Level</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.experienceLevel')}</p>
                   {/* <p style={{ color: '#333' }}>{event.eligibility?.[0].experienceLevel}</p> */}
                 </div>
               </div>
@@ -434,15 +435,15 @@ export function EventDetail({ role }: EventDetailProps) {
 
             {/* Rewards */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Rewards</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.rewardsHeading')}</h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>Points</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.points')}</p>
                   {/* <p className="text-xl" style={{ color: '#C12D32' }}>{event.rewards.points} pts</p> */}
                 </div>
                 {/* {event.rewards.badgeName && (
                   <div> */}
-                    <p className="text-sm mb-1" style={{ color: '#666' }}>Badge</p>
+                    <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.badge')}</p>
                     {/* <p style={{ color: '#333' }}>{event.rewards.badgeName}</p>
                   </div>
                 )} */}
@@ -451,22 +452,22 @@ export function EventDetail({ role }: EventDetailProps) {
 
             {/* Settings */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Settings</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.settings')}</h3>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Featured</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{event.isFeatured ? 'Yes' : 'No'}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.detail.labels.featured')}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{event.isFeatured ? t('common.yes') : t('common.no')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Cancellation</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{event.allowCancellation ? 'Allowed' : 'Not Allowed'}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.detail.labels.cancellation')}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{event.allowCancellation ? t('events.detail.allowed') : t('events.detail.notAllowed')}</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Actions */}
             <div className="p-6 rounded-2xl bg-white shadow-sm space-y-3">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Quick Actions</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.quickActions')}</h3>
               
               <button
                 onClick={() => navigate('event-participants', { selectedEventId: eventId })}
@@ -474,7 +475,7 @@ export function EventDetail({ role }: EventDetailProps) {
                 style={{ backgroundColor: '#3B82F6' }}
               >
                 <UserCheck className="w-5 h-5" />
-                Manage Participants
+                {t('events.detail.manageParticipants')}
               </button>
 
               {event.category === 'Race' && (
@@ -484,7 +485,7 @@ export function EventDetail({ role }: EventDetailProps) {
                   style={{ backgroundColor: '#F59E0B' }}
                 >
                   <Trophy className="w-5 h-5" />
-                  Enter Results
+                  {t('events.detail.enterResults')}
                 </button>
               )}
             </div>
@@ -495,18 +496,18 @@ export function EventDetail({ role }: EventDetailProps) {
       {activeTab === 'participants' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg" style={{ color: '#333' }}>Participant Management</h3>
+            <h3 className="text-lg" style={{ color: '#333' }}>{t('events.detail.participantsTab.heading')}</h3>
             <button
               onClick={() => navigate('event-participants', { selectedEventId: id })}
               className="px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
               style={{ backgroundColor: '#C12D32' }}
             >
-              Full Management View
+              {t('events.detail.fullManagementView')}
             </button>
           </div>
           <div className="space-y-4">
             {participants.length === 0 ? (
-              <p style={{ color: '#666' }}>No participants yet.</p>
+              <p style={{ color: '#666' }}>{t('events.detail.participantsTab.noParticipants')}</p>
             ) : (
               <div className="grid gap-3">
                 {participants.slice(0, 10).map((participant, index) => (
@@ -516,8 +517,8 @@ export function EventDetail({ role }: EventDetailProps) {
                         <Users className="w-5 h-5" style={{ color: '#666' }} />
                       </div>
                       <div>
-                        <p className="font-medium" style={{ color: '#333' }}>{participant.user?.fullName || participant.userName || 'Unknown'}</p>
-                        <p className="text-sm" style={{ color: '#666' }}>{participant.user?.email || participant.userCommunity || 'No community'}</p>
+                        <p className="font-medium" style={{ color: '#333' }}>{participant.user?.fullName || participant.userName || t('events.detail.participantsTab.unknown')}</p>
+                        <p className="text-sm" style={{ color: '#666' }}>{participant.user?.email || participant.userCommunity || t('events.detail.participantsTab.noCommunity')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -526,14 +527,14 @@ export function EventDetail({ role }: EventDetailProps) {
                         participant.rank ? 'bg-blue-100 text-blue-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {participant.rank ? `Rank #${participant.rank}` : (participant.status || 'Registered')}
+                        {participant.rank ? t('events.detail.participantsTab.rankLabel', { rank: participant.rank }) : (participant.status || t('events.detail.participantsTab.registered'))}
                       </span>
                     </div>
                   </div>
                 ))}
                 {participants.length > 10 && (
                   <p className="text-sm text-center" style={{ color: '#666' }}>
-                    And {participants.length - 10} more participants...
+                    {t('events.detail.participantsTab.moreParticipants', { count: participants.length - 10 })}
                   </p>
                 )}
               </div>
@@ -545,22 +546,22 @@ export function EventDetail({ role }: EventDetailProps) {
       {activeTab === 'results' && event.category === 'Race' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg" style={{ color: '#333' }}>Race Results</h3>
+            <h3 className="text-lg" style={{ color: '#333' }}>{t('events.detail.resultsTab.heading')}</h3>
             <button
               onClick={() => navigate('event-results', { selectedEventId: eventId })}
               className="px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
               style={{ backgroundColor: '#C12D32' }}
             >
-              Enter Results
+              {t('events.detail.enterResults')}
             </button>
           </div>
-          <p style={{ color: '#666' }}>Use the results page to enter finish times, ranks, and publish final standings.</p>
+          <p style={{ color: '#666' }}>{t('events.detail.resultsTab.body')}</p>
         </div>
       )}
 
       {activeTab === 'gallery' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm">
-          <h3 className="text-lg mb-6" style={{ color: '#333' }}>Event Gallery</h3>
+          <h3 className="text-lg mb-6" style={{ color: '#333' }}>{t('events.detail.galleryTab.heading')}</h3>
           <div className="grid grid-cols-3 gap-4 mb-6">
             {event.galleryImages.length > 0 ? (
               event.galleryImages.map((img, index) => (
@@ -571,7 +572,7 @@ export function EventDetail({ role }: EventDetailProps) {
             ) : (
               <div className="col-span-3 p-12 text-center border-2 border-dashed rounded-lg" style={{ borderColor: '#E5E7EB' }}>
                 <ImageIcon className="w-12 h-12 mx-auto mb-3" style={{ color: '#CCC' }} />
-                <p style={{ color: '#999' }}>No gallery images yet</p>
+                <p style={{ color: '#999' }}>{t('events.detail.galleryTab.noImages')}</p>
               </div>
             )}
           </div>
@@ -580,32 +581,32 @@ export function EventDetail({ role }: EventDetailProps) {
 
       {activeTab === 'notifications' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm">
-          <h3 className="text-lg mb-6" style={{ color: '#333' }}>Send Notifications</h3>
+          <h3 className="text-lg mb-6" style={{ color: '#333' }}>{t('events.detail.notificationsTab.heading')}</h3>
           
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#666' }}>Send To</label>
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.detail.notificationsTab.sendTo')}</label>
               <select className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600">
-                <option>All Event Participants</option>
-                <option>Registered Only</option>
-                <option>Checked-In Only</option>
-                <option>Entire Community</option>
+                <option>{t('events.detail.notificationsTab.allParticipants')}</option>
+                <option>{t('events.detail.notificationsTab.registeredOnly')}</option>
+                <option>{t('events.detail.notificationsTab.checkedInOnly')}</option>
+                <option>{t('events.detail.notificationsTab.entireCommunity')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#666' }}>Message Title</label>
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.detail.notificationsTab.messageTitle')}</label>
               <input
                 type="text"
-                placeholder="Event Update"
+                placeholder={t('events.detail.notificationsTab.messageTitlePlaceholder')}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
 
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#666' }}>Message</label>
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.detail.notificationsTab.message')}</label>
               <textarea
-                placeholder="Type your message..."
+                placeholder={t('events.detail.notificationsTab.messagePlaceholder')}
                 rows={4}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
@@ -617,7 +618,7 @@ export function EventDetail({ role }: EventDetailProps) {
             style={{ backgroundColor: '#C12D32' }}
           >
             <Bell className="w-5 h-5" />
-            Send Push Notification
+            {t('events.detail.sendPushNotification')}
           </button>
         </div>
       )}

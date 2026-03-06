@@ -144,22 +144,26 @@ export const updateCommunity = async (id: string, communityData: Partial<CreateC
   }
 };
 
-// Get all communities
-export const getAllCommunities = async (): Promise<CommunityApiResponse[]> => {
-  const cached = getCached<CommunityApiResponse[]>('communities');
+// Get all communities (optionally with pagination)
+export const getAllCommunities = async (params?: { page?: number; limit?: number }): Promise<CommunityApiResponse[]> => {
+  const limit = params?.limit ?? 20;
+  const cacheKey = `communities:${params?.page ?? 1}:${limit}`;
+  const cached = getCached<CommunityApiResponse[]>(cacheKey);
   if (cached) return cached;
 
   try {
-    const response = await api.get<any>('/v1/communities');
+    const response = await api.get<any>('/v1/communities', {
+      params: { page: params?.page ?? 1, limit },
+    });
     const data = response.data;
-    // Handle { data: { communities, pagination } }
     const inner = (data as any).data;
     let result: CommunityApiResponse[];
     if (inner?.communities) result = inner.communities;
     else if (Array.isArray((data as any).communities)) result = (data as any).communities;
+    else if (Array.isArray(inner)) result = inner;
     else if (Array.isArray(data)) result = data;
     else result = [];
-    setCache('communities', result);
+    setCache(cacheKey, result);
     return result;
   } catch (error) {
     console.error('Error fetching communities:', error);

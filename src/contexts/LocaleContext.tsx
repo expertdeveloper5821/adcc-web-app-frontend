@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 export type Locale = 'en' | 'ar';
 
@@ -7,7 +9,6 @@ const STORAGE_KEY = 'locale';
 interface LocaleContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  /** Translation function; returns key until translations are loaded from API. */
   t: (key: string) => string;
   isRtl: boolean;
 }
@@ -38,10 +39,11 @@ interface LocaleProviderProps {
 
 export function LocaleProvider({ children }: LocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(getStoredLocale);
-  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const { t } = useTranslation();
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
+    i18n.changeLanguage(newLocale);
     try {
       localStorage.setItem(STORAGE_KEY, newLocale);
     } catch {
@@ -59,13 +61,6 @@ export function LocaleProvider({ children }: LocaleProviderProps) {
       root.lang = 'en';
     }
   }, [locale]);
-
-  const t = useCallback(
-    (key: string): string => {
-      return translations[key] ?? key;
-    },
-    [translations]
-  );
 
   const value: LocaleContextType = {
     locale,

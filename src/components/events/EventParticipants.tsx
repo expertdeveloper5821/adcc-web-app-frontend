@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Search, Download, UserX, Check, X } from 'lucide-react';
 import { getEventById } from '../../services/eventsApi';
 import { getEventResults } from '../../services/eventsApi';
@@ -15,6 +16,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [event, setEvent] = useState<any>(null);
   const [participants, setParticipants] = useState<any[]>([]);
@@ -33,7 +35,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
         setEvent(eventData);
         setParticipants(resultsData);
       } catch (error) {
-        toast.error('Failed to load event participants');
+        toast.error(t('events.participants.toasts.loadError'));
         console.error(error);
       } finally {
         setIsLoading(false);
@@ -44,13 +46,13 @@ export function EventParticipants({ role }: EventParticipantsProps) {
   }, [id]);
 
   if (isLoading) {
-    return <div className="text-center py-8" style={{ color: '#666' }}>Loading participants...</div>;
+    return <div className="text-center py-8" style={{ color: '#666' }}>{t('events.participants.loadingParticipants')}</div>;
   }
 
   if (!event) {
     return (
       <div className="p-6 rounded-2xl bg-white">
-        <p style={{ color: '#666' }}>Event not found</p>
+        <p style={{ color: '#666' }}>{t('events.detail.notFound')}</p>
       </div>
     );
   }
@@ -66,21 +68,21 @@ export function EventParticipants({ role }: EventParticipantsProps) {
 
   const handleCheckIn = (participantId: string) => {
     // TODO: Implement API call to update participant status
-    toast.success('Participant checked in');
+    toast.success(t('events.participants.toasts.checkInSuccess'));
   };
 
   const handleMarkNoShow = (participantId: string) => {
     // TODO: Implement API call to update participant status
-    toast.success('Marked as no-show');
+    toast.success(t('events.participants.toasts.noShowSuccess'));
   };
 
   const handleRemoveParticipant = (participantId: string, userName: string) => {
     // TODO: Implement API call to remove participant
-    toast.success('Participant removed');
+    toast.success(t('events.participants.toasts.removeSuccess'));
   };
 
   const handleExportCSV = () => {
-    toast.success('Participant list exported');
+    toast.success(t('events.participants.toasts.exportSuccess'));
   };
 
   const stats = {
@@ -102,7 +104,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Participant Management</h1>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('events.participants.title')}</h1>
           <p style={{ color: '#666' }}>{event.name}</p>
         </div>
         <button
@@ -111,34 +113,34 @@ export function EventParticipants({ role }: EventParticipantsProps) {
           style={{ backgroundColor: '#ECC180', color: '#333' }}
         >
           <Download className="w-5 h-5" />
-          Export CSV
+          {t('events.participants.exportCSV')}
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Total</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.participants.total')}</p>
           <p className="text-2xl" style={{ color: '#333' }}>{stats.total}</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Registered</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.participants.registered')}</p>
           <p className="text-2xl" style={{ color: '#3B82F6' }}>{stats.registered}</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Checked In</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.participants.checkedIn')}</p>
           <p className="text-2xl" style={{ color: '#10B981' }}>{stats.checkedIn}</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Completed</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.participants.completed')}</p>
           <p className="text-2xl" style={{ color: '#F59E0B' }}>{stats.completed}</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>No-Show</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.participants.noShow')}</p>
           <p className="text-2xl" style={{ color: '#EF4444' }}>{stats.noShow}</p>
         </div>
       </div>
@@ -150,7 +152,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
             <input
               type="text"
-              placeholder="Search by name or community..."
+              placeholder={t('events.participants.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
@@ -163,11 +165,11 @@ export function EventParticipants({ role }: EventParticipantsProps) {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="">All Status</option>
-              <option value="registered">Registered</option>
-              <option value="checked-in">Checked In</option>
-              <option value="completed">Completed</option>
-              <option value="no-show">No-Show</option>
+              <option value="">{t('events.participants.allStatus')}</option>
+              <option value="registered">{t('events.participants.registered')}</option>
+              <option value="checked-in">{t('events.participants.checkedIn')}</option>
+              <option value="completed">{t('events.participants.completed')}</option>
+              <option value="no-show">{t('events.participants.noShow')}</option>
             </select>
 
             <button
@@ -178,7 +180,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
               className="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
               style={{ color: '#666' }}
             >
-              Clear
+              {t('events.participants.clear')}
             </button>
           </div>
         </div>
@@ -189,18 +191,18 @@ export function EventParticipants({ role }: EventParticipantsProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4" style={{ color: '#666' }}>Name</th>
-              <th className="text-left py-3 px-4" style={{ color: '#666' }}>Community</th>
-              <th className="text-left py-3 px-4" style={{ color: '#666' }}>Status</th>
-              <th className="text-left py-3 px-4" style={{ color: '#666' }}>Registered At</th>
-              <th className="text-left py-3 px-4" style={{ color: '#666' }}>Checked In</th>
+              <th className="text-left py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.name')}</th>
+              <th className="text-left py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.community')}</th>
+              <th className="text-left py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.status')}</th>
+              <th className="text-left py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.registeredAt')}</th>
+              <th className="text-left py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.checkedIn')}</th>
               {event.category === 'Race' && (
                 <>
-                  <th className="text-left py-3 px-4" style={{ color: '#666' }}>Rank</th>
-                  <th className="text-left py-3 px-4" style={{ color: '#666' }}>Time</th>
+                  <th className="text-left py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.rank')}</th>
+                  <th className="text-left py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.time')}</th>
                 </>
               )}
-              <th className="text-right py-3 px-4" style={{ color: '#666' }}>Actions</th>
+              <th className="text-right py-3 px-4" style={{ color: '#666' }}>{t('events.participants.table.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -243,7 +245,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
                       <button
                         onClick={() => handleCheckIn(participant._id || participant.id)}
                         className="p-2 rounded-lg transition-colors hover:bg-green-50"
-                        title="Check In"
+                        title={t('events.participants.checkIn')}
                       >
                         <Check className="w-4 h-4" style={{ color: '#10B981' }} />
                       </button>
@@ -253,7 +255,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
                       <button
                         onClick={() => handleMarkNoShow(participant._id || participant.id)}
                         className="p-2 rounded-lg transition-colors hover:bg-red-50"
-                        title="Mark No-Show"
+                        title={t('events.participants.markNoShow')}
                       >
                         <X className="w-4 h-4" style={{ color: '#EF4444' }} />
                       </button>
@@ -262,7 +264,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
                     <button
                       onClick={() => handleRemoveParticipant(participant._id || participant.id, participant.user?.fullName || participant.userName || 'Participant')}
                       className="p-2 rounded-lg transition-colors hover:bg-red-50"
-                      title="Remove Participant"
+                      title={t('events.participants.removeParticipant')}
                     >
                       <UserX className="w-4 h-4" style={{ color: '#EF4444' }} />
                     </button>
@@ -274,7 +276,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
             {filteredParticipants.length === 0 && (
               <tr>
                 <td colSpan={event.category === 'Race' ? 8 : 6} className="py-12 text-center" style={{ color: '#999' }}>
-                  No participants found
+                  {t('events.participants.noParticipants')}
                 </td>
               </tr>
             )}
@@ -285,26 +287,26 @@ export function EventParticipants({ role }: EventParticipantsProps) {
       {/* Bulk Actions */}
       {filteredParticipants.length > 0 && (
         <div className="p-6 rounded-2xl bg-white shadow-sm">
-          <h3 className="text-lg mb-4" style={{ color: '#333' }}>Bulk Actions</h3>
+          <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.participants.bulkActions')}</h3>
           <div className="flex flex-wrap gap-3">
             <button
               className="px-4 py-2 rounded-lg transition-all hover:shadow-md"
               style={{ backgroundColor: '#10B981', color: '#fff' }}
             >
-              Check In All Registered
+              {t('events.participants.checkInAll')}
             </button>
             <button
               className="px-4 py-2 rounded-lg transition-all hover:shadow-md"
               style={{ backgroundColor: '#EF4444', color: '#fff' }}
             >
-              Mark All No-Show
+              {t('events.participants.markAllNoShow')}
             </button>
             <button
               onClick={handleExportCSV}
               className="px-4 py-2 rounded-lg transition-all hover:shadow-md"
               style={{ backgroundColor: '#ECC180', color: '#333' }}
             >
-              Export Filtered List
+              {t('events.participants.exportFiltered')}
             </button>
           </div>
         </div>

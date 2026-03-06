@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
@@ -12,9 +13,10 @@ const data = [
 ];
 
 export function CommunityGrowth() {
+  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
-      <h2 className="text-xl mb-6" style={{ color: '#333' }}>Community Growth</h2>
+      <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('dashboard.communityGrowth')}</h2>
       
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>

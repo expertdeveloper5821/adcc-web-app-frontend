@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Search, MapPin, Calendar, Users, Edit, Eye, Archive } from 'lucide-react';
 import { UserRole } from '../../App';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ interface TracksListProps {
 
 export function TracksList({ role }: TracksListProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
@@ -65,7 +67,7 @@ export function TracksList({ role }: TracksListProps) {
     } catch (err) {
       console.log(err);
       setTracks([]);
-      setError('Failed to load tracks. Please try again later.');
+      setError(t('tracks.toasts.loadError'));
     } finally {
       setLoading(false);
     }
@@ -162,11 +164,11 @@ export function TracksList({ role }: TracksListProps) {
 
       await archiveTrack(trackId);
 
-      toast.success('Track archived successfully');
+      toast.success(t('tracks.toasts.archiveSuccess'));
       fetchTracks();
 
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to archive');
+      toast.error(error?.response?.data?.message || t('tracks.toasts.archiveError'));
     } finally {
       setArchivingId(null);
     }
@@ -198,7 +200,7 @@ export function TracksList({ role }: TracksListProps) {
   const confirmDelete = () => {
     if (trackToDelete) {
       deleteTrack(trackToDelete);
-      toast.success('Track deleted successfully');
+      toast.success(t('tracks.toasts.deleteSuccess'));
       setShowDeleteModal(false);
       setTrackToDelete(null);
     }
@@ -212,8 +214,8 @@ export function TracksList({ role }: TracksListProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Tracks</h1>
-          <p style={{ color: '#666' }}>Manage cycling routes and tracks across the GCC</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('tracks.title')}</h1>
+          <p style={{ color: '#666' }}>{t('tracks.subtitle')}</p>
         </div>
         {canCreate && (
           <button
@@ -222,7 +224,7 @@ export function TracksList({ role }: TracksListProps) {
             style={{ backgroundColor: '#C12D32' }}
           >
             <Plus className="w-5 h-5" />
-            <span>Create Track</span>
+            <span>{t('tracks.createButton')}</span>
           </button>
         )}
       </div>
@@ -230,19 +232,19 @@ export function TracksList({ role }: TracksListProps) {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Total Tracks</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.totalTracks')}</p>
           <p className="text-2xl" style={{ color: '#333' }}>{tracks.length}</p>
         </div>
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Open Tracks</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.openTracks')}</p>
           <p className="text-2xl" style={{ color: '#10B981' }}>{tracks.filter(t => t.status === 'Open').length}</p>
         </div>
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Cities Covered</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.citiesCovered')}</p>
           <p className="text-2xl" style={{ color: '#333' }}>{cities.length}</p>
         </div>
         <div className="p-4 rounded-xl bg-white shadow-sm">
-          <p className="text-sm mb-1" style={{ color: '#666' }}>Total Distance</p>
+          <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.totalDistance')}</p>
           <p className="text-2xl" style={{ color: '#333' }}>{tracks.reduce((sum, t) => sum + t.distance, 0)} km</p>
         </div>
       </div>
@@ -256,7 +258,7 @@ export function TracksList({ role }: TracksListProps) {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
               <input
                 type="text"
-                placeholder="Search tracks..."
+                placeholder={t('tracks.filters.search')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
@@ -271,7 +273,7 @@ export function TracksList({ role }: TracksListProps) {
               onChange={(e) => setCityFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="all">All Cities</option>
+              <option value="all">{t('tracks.filters.allCities')}</option>
               {cities.map(city => (
                 <option key={city} value={city}>{city}</option>
               ))}
@@ -285,10 +287,10 @@ export function TracksList({ role }: TracksListProps) {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="all">All Status</option>
-              <option value="Open">Open</option>
-              <option value="Limited">Limited</option>
-              <option value="Closed">Closed</option>
+              <option value="all">{t('tracks.filters.allStatus')}</option>
+              <option value="Open">{t('tracks.filters.open')}</option>
+              <option value="Limited">{t('tracks.filters.limited')}</option>
+              <option value="Closed">{t('tracks.filters.closed')}</option>
             </select>
           </div>
 
@@ -299,10 +301,10 @@ export function TracksList({ role }: TracksListProps) {
               onChange={(e) => setDifficultyFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="all">All Difficulty</option>
-              <option value="Easy">Easy</option>
-              <option value="Medium">Medium</option>
-              <option value="Hard">Hard</option>
+              <option value="all">{t('tracks.filters.allDifficulty')}</option>
+              <option value="Easy">{t('tracks.filters.easy')}</option>
+              <option value="Medium">{t('tracks.filters.medium')}</option>
+              <option value="Hard">{t('tracks.filters.hard')}</option>
             </select>
           </div>
 
@@ -313,9 +315,9 @@ export function TracksList({ role }: TracksListProps) {
               onChange={(e) => setHasEventsFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="all">Has Events</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
+              <option value="all">{t('tracks.filters.hasEvents')}</option>
+              <option value="yes">{t('tracks.filters.yes')}</option>
+              <option value="no">{t('tracks.filters.no')}</option>
             </select>
           </div>
         </div>
@@ -329,9 +331,9 @@ export function TracksList({ role }: TracksListProps) {
               onChange={(e) => setHasCommunitiesFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="all">Has Communities</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
+              <option value="all">{t('tracks.filters.hasCommunities')}</option>
+              <option value="yes">{t('tracks.filters.yes')}</option>
+              <option value="no">{t('tracks.filters.no')}</option>
             </select>
           </div>
         </div>
@@ -389,38 +391,38 @@ export function TracksList({ role }: TracksListProps) {
 
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
                         <div>
-                          <div className="text-xs mb-1" style={{ color: '#999' }}>Distance</div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.distance')}</div>
                           <div className="text-sm" style={{ color: '#333' }}>{track.distance} km</div>
                         </div>
                         <div>
-                          <div className="text-xs mb-1" style={{ color: '#999' }}>Difficulty</div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.difficulty')}</div>
                           <span
                             className="px-2 py-1 rounded text-xs text-white"
                             style={{ backgroundColor: getDifficultyColor(track.difficulty) }}
                           >
-                            {track.difficulty ? track.difficulty : 'NA'}
+                            {track.difficulty ? track.difficulty : t('tracks.card.na')}
                           </span>
                         </div>
                         <div>
-                          <div className="text-xs mb-1" style={{ color: '#999' }}>Surface</div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.surface')}</div>
                           <div className="text-sm" style={{ color: '#333' }}>{track.surfaceType}</div>
                         </div>
                         <div>
-                          <div className="text-xs mb-1" style={{ color: '#999' }}>Events</div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.events')}</div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" style={{ color: '#999' }} />
                             <span className="text-sm" style={{ color: '#333' }}>{eventsCount}</span>
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs mb-1" style={{ color: '#999' }}>Communities</div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.communities')}</div>
                           <div className="flex items-center gap-1">
                             <Users className="w-3 h-3" style={{ color: '#999' }} />
                             <span className="text-sm" style={{ color: '#333' }}>{communitiesCount}</span>
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs mb-1" style={{ color: '#999' }}>Last Updated</div>
+                          <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.lastUpdated')}</div>
                           <div className="text-sm" style={{ color: '#333' }}>
                             {track.updatedAt
                               ? new Date(track.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -436,7 +438,7 @@ export function TracksList({ role }: TracksListProps) {
                           style={{ backgroundColor: '#ECC180', color: '#333' }}
                         >
                           <Eye className="w-4 h-4" />
-                          <span className="text-sm">View</span>
+                          <span className="text-sm">{t('tracks.card.view')}</span>
                         </button>
                         {canEdit && (
                           <>
@@ -446,7 +448,7 @@ export function TracksList({ role }: TracksListProps) {
                               style={{ backgroundColor: '#3B82F6', color: '#fff' }}
                             >
                               <Edit className="w-4 h-4" />
-                              <span className="text-sm">Edit</span>
+                              <span className="text-sm">{t('tracks.card.edit')}</span>
                             </button>
                             <button
                               onClick={() => trackId && handleArchive(trackId, track.title)}
@@ -454,7 +456,7 @@ export function TracksList({ role }: TracksListProps) {
                               style={{ color: '#666' }}
                             >
                               <Archive className="w-4 h-4" />
-                              <span className="text-sm">Archive</span>
+                              <span className="text-sm">{t('tracks.card.archive')}</span>
                             </button>
                           </>
                         )}
@@ -467,8 +469,8 @@ export function TracksList({ role }: TracksListProps) {
           ) : (
             <div className="p-12 text-center rounded-2xl bg-white">
               <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-              <p className="text-lg mb-2" style={{ color: '#666' }}>No tracks found</p>
-              <p className="text-sm" style={{ color: '#999' }}>Try adjusting your filters or create a new track</p>
+              <p className="text-lg mb-2" style={{ color: '#666' }}>{t('tracks.empty.noResults')}</p>
+              <p className="text-sm" style={{ color: '#999' }}>{t('tracks.empty.tryFilters')}</p>
             </div>
           )}
         </div>

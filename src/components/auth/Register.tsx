@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, User, Calendar, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
+import { useTranslation } from 'react-i18next';
 
 interface RegisterProps {
   onSwitchToLogin: () => void;
@@ -19,28 +20,29 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
   });
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password || !formData.fullName || !formData.age) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('auth.fillRequired'));
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('auth.passwordMismatch'));
       return;
     }
 
     if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(t('auth.passwordTooShort'));
       return;
     }
 
     const age = parseInt(formData.age);
     if (isNaN(age) || age < 0 || age > 150) {
-      toast.error('Please enter a valid age (0-150)');
+      toast.error(t('auth.invalidAge'));
       return;
     }
 
@@ -67,15 +69,15 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2" style={{ color: '#333' }}>
-              Create Account
+              {t('auth.createAccount')}
             </h1>
-            <p style={{ color: '#666' }}>Sign up to get started</p>
+            <p style={{ color: '#666' }}>{t('auth.signUpSubtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                Full Name *
+                {t('auth.fullName')}
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
@@ -83,7 +85,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="Enter your full name"
+                  placeholder={t('auth.fullNamePlaceholder')}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
                   style={{ focusRing: '#C12D32' }}
                   required
@@ -93,7 +95,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
 
             <div>
               <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                Email Address *
+                {t('auth.emailRequired')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
@@ -101,7 +103,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Enter your email"
+                  placeholder={t('auth.emailPlaceholder')}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
                   style={{ focusRing: '#C12D32' }}
                   required
@@ -112,7 +114,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  Gender *
+                  {t('auth.gender')}
                 </label>
                 <select
                   value={formData.gender}
@@ -121,14 +123,14 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
                   style={{ focusRing: '#C12D32' }}
                   required
                 >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
+                  <option value="Male">{t('auth.male')}</option>
+                  <option value="Female">{t('auth.female')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  Age *
+                  {t('auth.age')}
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
@@ -136,7 +138,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
                     type="number"
                     value={formData.age}
                     onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    placeholder="Age"
+                    placeholder={t('auth.agePlaceholder')}
                     min="0"
                     max="150"
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
@@ -149,7 +151,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
 
             <div>
               <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                Password *
+                {t('auth.passwordRequired')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
@@ -157,7 +159,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.passwordPlaceholder')}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
                   style={{ focusRing: '#C12D32' }}
                   required
@@ -167,7 +169,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
 
             <div>
               <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                Confirm Password *
+                {t('auth.confirmPassword')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
@@ -175,7 +177,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder="Confirm your password"
+                  placeholder={t('auth.confirmPasswordPlaceholder')}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
                   style={{ focusRing: '#C12D32' }}
                   required
@@ -190,10 +192,10 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
               style={{ backgroundColor: '#C12D32' }}
             >
               {isLoading ? (
-                'Creating account...'
+                t('auth.creatingAccount')
               ) : (
                 <>
-                  Create Account
+                  {t('auth.createAccount')}
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -202,13 +204,13 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
 
           <div className="mt-6 text-center">
             <p style={{ color: '#666' }}>
-              Already have an account?{' '}
+              {t('auth.hasAccount')}{' '}
               <button
                 onClick={onSwitchToLogin}
                 className="font-semibold hover:underline"
                 style={{ color: '#C12D32' }}
               >
-                Sign in
+                {t('auth.signInLink')}
               </button>
             </p>
           </div>

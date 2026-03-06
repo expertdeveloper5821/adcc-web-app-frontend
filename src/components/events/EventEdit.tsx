@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Settings, Globe, Award, Image as ImageIcon, Save, Plus, X, AlertTriangle, Archive, Ban, FileText, Clock } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Clock, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, AlertTriangle, Archive, Ban, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -62,14 +62,8 @@ export function EventEdit({ role }: EventEditProps) {
           getAllCommunities(),
           getAllTracks(),
         ]);
-<<<<<<< HEAD
         setCommunities(Array.isArray(communitiesList) ? communitiesList : []);
         setTracks(Array.isArray(tracksList) ? tracksList : []);
-=======
-
-        setCommunities(Array.isArray(communityData) ? communityData : []);
-        setTracks(Array.isArray(trackData) ? trackData : []);
->>>>>>> 6877678 (Refactor community and track components for improved data handling and localization support)
       } catch (error) {
         toast.error('Failed to load communities or tracks');
       }
@@ -214,10 +208,10 @@ export function EventEdit({ role }: EventEditProps) {
     communityId: '',
     mainImage: '',
     description: '',
-    // country: '',
+    descriptionAr: '',
+    country: '',
     city: '',
     trackId: '',
-    descriptionAr: '',
     eventImage: '',
     eventDate: '',
     eventTime: '07:00',
@@ -267,34 +261,38 @@ export function EventEdit({ role }: EventEditProps) {
         ? 'archived' as const
         : (ev.status as 'draft' | 'open' | 'full' | 'completed' | 'archived');
       setFormData({
-        title: existingEvent.title,
-        titleAr: (existingEvent as any).titleAr || '',
-        slug: existingEvent.slug,
-        category: existingEvent.category,
-        communityId: existingEvent.communityId,
-        mainImage: existingEvent.mainImage,
-        description: existingEvent.description,
-        descriptionAr: (existingEvent as any).descriptionAr || '',
-        country: existingEvent.country,
-        city: existingEvent.city,
-        trackId: existingEvent.trackId,
-        eventDate: formatToInputDate(existingEvent.eventDate),
-        eventTime: existingEvent.eventTime,
-        endTime: existingEvent.endTime,
-        distance: existingEvent.distance,
-        difficulty: existingEvent.difficulty,
-        maxParticipants: existingEvent.maxParticipants,
-        schedule: existingEvent.schedule.length > 0 ? existingEvent.schedule : [{ time: '', title: '' }],
-        amenities: existingEvent.amenities,
-        minAge: existingEvent.minAge,
-        eligibilityBike: existingEvent.eligibility.bikeType,
-        eligibilityExperience: existingEvent.eligibility.experienceLevel,
-        // rewardPoints: existingEvent.rewards.points,
-        // rewardBadge: existingEvent.rewards.badgeName,
-        status: existingEvent.status,
-        isFeatured: existingEvent.isFeatured,
-        allowCancellation: existingEvent.allowCancellation,
-        galleryImages: existingEvent.galleryImages || [],
+        title: ev.title,
+        titleAr: (ev as any).titleAr || '',
+        slug: ev.slug ?? '',
+        category: ev.category ?? ev.categories ?? 'Community Ride',
+        communityId,
+        mainImage: ev.mainImage ?? '',
+        description: ev.description,
+        descriptionAr: (ev as any).descriptionAr || '',
+        country: ev.country ?? '',
+        city: ev.city ?? '',
+        trackId,
+        eventDate: formatToInputDate(ev.eventDate),
+        eventTime: ev.eventTime ?? '',
+        endTime: ev.endTime ?? '',
+        distance: ev.distance ?? 25,
+        difficulty: (ev.difficulty === 'Easy' || ev.difficulty === 'Medium' || ev.difficulty === 'Hard' ? ev.difficulty : 'Medium'),
+        maxParticipants: ev.maxParticipants,
+        schedule: (ev.schedule && ev.schedule.length > 0) ? ev.schedule : [{ time: '', title: '' }],
+        amenities: Array.isArray(ev.amenities) ? (ev.amenities as string[]) : [],
+        minAge: ev.minAge ?? 18,
+        eligibilityBike: ev.eligibility?.bikeType ?? 'Any',
+        eligibilityExperience: ev.eligibility?.experienceLevel ?? 'Beginner',
+        categories: '',
+        rewardPoints: ev.rewards?.points ?? 50,
+        rewardBadge: ev.rewards?.badgeName ?? '',
+        status,
+        isFeatured: ev.isFeatured ?? false,
+        allowCancellation: ev.allowCancellation ?? false,
+        galleryImages: ev.galleryImages ?? [],
+        address: ev.address ?? '',
+        youtubeLink: ev.youtubeLink ?? '',
+        maxAge: ev.maxAge ?? 70,
       });
     }
   }, [existingEvent]);
@@ -467,7 +465,6 @@ export function EventEdit({ role }: EventEditProps) {
         mainImage: formData.mainImage,
         description: formData.description,
         ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
-        country: formData.country,
         city: formData.city,
         eventDate: formData.eventDate,
         eventTime: formData.eventTime,

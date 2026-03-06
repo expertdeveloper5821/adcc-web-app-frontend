@@ -6,6 +6,7 @@ import { UserRole } from '../../App';
 import { toast } from 'sonner';
 import { getAllCommunities as getAllCommunitiesApi, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { availableCities, availableCategories } from '../../data/communitiesData';
+import { useTranslation } from 'react-i18next';
 
 interface CommunitiesListProps {
   role: UserRole;
@@ -33,6 +34,7 @@ interface Community {
 
 export function CommunitiesList({ role }: CommunitiesListProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [communityTypeFilter, setCommunityTypeFilter] = useState('all');
@@ -146,7 +148,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
         console.error('Error fetching communities:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch communities';
         setError(errorMessage);
-        toast.error(`Error loading communities: ${errorMessage}`);
+        toast.error(t('communities.toasts.loadError', { error: errorMessage }));
       } finally {
         setLoading(false);
       }
@@ -178,14 +180,14 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     if (communityToDelete) {
       try {
         await deleteCommunityApi(communityToDelete);
-        toast.success('Community deleted successfully');
+        toast.success(t('communities.toasts.deleteSuccess'));
         // Remove the deleted community from the list
         setCommunities(communities.filter(c => c.id !== communityToDelete));
         setShowDeleteModal(false);
         setCommunityToDelete(null);
       } catch (error: any) {
         console.error('Error deleting community:', error);
-        toast.error(error?.response?.data?.message || 'Failed to delete community');
+        toast.error(error?.response?.data?.message || t('communities.toasts.deleteError'));
         setShowDeleteModal(false);
         setCommunityToDelete(null);
       }
@@ -203,9 +205,9 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
 
   const formatCommunityType = (type?: string) => {
     switch (type) {
-      case 'city': return 'City Community';
-      case 'type': return 'Type Community';
-      case 'special': return 'Purpose-Based Community';
+      case 'city': return t('communities.card.cityType');
+      case 'type': return t('communities.card.interestType');
+      case 'special': return t('communities.card.purposeType');
       default: return type || '';
     }
   };
@@ -223,8 +225,8 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Communities / Cycling Teams</h1>
-          <p style={{ color: '#666' }}>Manage cycling communities and teams across the UAE</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('communities.title')}</h1>
+          <p style={{ color: '#666' }}>{t('communities.subtitle')}</p>
         </div>
         {canCreate && (
           <button
@@ -233,7 +235,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             style={{ backgroundColor: '#C12D32' }}
           >
             <Plus className="w-5 h-5" />
-            <span>Create Community</span>
+            <span>{t('communities.createButton')}</span>
           </button>
         )}
       </div>
@@ -243,7 +245,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
         <div className="p-6 rounded-2xl shadow-sm" style={{ backgroundColor: '#ECC180' }}>
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-5 h-5" style={{ color: '#C12D32' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Total Communities</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('communities.totalCommunities')}</span>
           </div>
           <p className="text-3xl" style={{ color: '#333' }}>{communities.length}</p>
         </div>
@@ -251,7 +253,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center gap-3 mb-2">
             <Star className="w-5 h-5" style={{ color: '#C12D32' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Featured</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('communities.featured')}</span>
           </div>
           <p className="text-3xl" style={{ color: '#333' }}>{communities.filter(c => c.isFeatured == true).length}</p>
         </div>
@@ -259,7 +261,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-5 h-5" style={{ color: '#C12D32' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Total Members</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('communities.totalMembers')}</span>
           </div>
           <p className="text-3xl" style={{ color: '#333' }}>
             {communities.reduce((sum, c) => sum + (parseInt(c.memberCount as string) || 0), 0).toLocaleString()}
@@ -269,7 +271,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center gap-3 mb-2">
             <Calendar className="w-5 h-5" style={{ color: '#C12D32' }} />
-            <span className="text-sm" style={{ color: '#666' }}>Upcoming Events</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('communities.upcomingEvents')}</span>
           </div>
           <p className="text-3xl" style={{ color: '#333' }}>
             {communities.reduce((sum, c) => sum + (parseInt(c.upcomingEventCount as string) || 0), 0)}
@@ -281,7 +283,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       <div className="p-6 rounded-2xl shadow-sm bg-white space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-5 h-5" style={{ color: '#666' }} />
-          <h3 className="text-lg" style={{ color: '#333' }}>Filters</h3>
+          <h3 className="text-lg" style={{ color: '#333' }}>{t('common.filters')}</h3>
         </div>
 
         {/* Row 1: Search, City, Community Type */}
@@ -290,7 +292,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
             <input
               type="text"
-              placeholder="Search communities..."
+              placeholder={t('communities.filters.search')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
@@ -302,7 +304,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             onChange={(e) => setCityFilter(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           >
-            <option value="all">All Cities</option>
+            <option value="all">{t('communities.filters.allCities')}</option>
             {availableCities.map(city => (
               <option key={city} value={city}>{city}</option>
             ))}
@@ -313,10 +315,10 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             onChange={(e) => setCommunityTypeFilter(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           >
-            <option value="all">All Community Types</option>
-            <option value="city">City Community</option>
-            <option value="type">Interest / Type Community</option>
-            <option value="purpose-based">Special Purpose Community</option>
+            <option value="all">{t('communities.filters.allTypes')}</option>
+            <option value="city">{t('communities.filters.cityType')}</option>
+            <option value="type">{t('communities.filters.interestType')}</option>
+            <option value="purpose-based">{t('communities.filters.specialPurposeType')}</option>
           </select>
         </div>
 
@@ -327,9 +329,9 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="all">{t('communities.filters.allStatus')}</option>
+            <option value="active">{t('communities.filters.active')}</option>
+            <option value="inactive">{t('communities.filters.inactive')}</option>
           </select>
 
           <select
@@ -337,15 +339,15 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             onChange={(e) => setFeaturedFilter(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           >
-            <option value="all">All Featured Status</option>
-            <option value="yes">Featured Only</option>
-            <option value="no">Not Featured</option>
+            <option value="all">{t('communities.filters.allFeatured')}</option>
+            <option value="yes">{t('communities.filters.featuredOnly')}</option>
+            <option value="no">{t('communities.filters.notFeatured')}</option>
           </select>
         </div>
 
         {/* Row 3: Category Multi-Select */}
         <div>
-          <label className="block text-sm mb-2" style={{ color: '#666' }}>Categories</label>
+          <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.card.categories')}</label>
           <div className="flex flex-wrap gap-2">
             {availableCategories.map(category => (
               <button
@@ -381,7 +383,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             {community.isFeatured && (
               <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: '#C12D32' }}>
                 <Star className="w-3 h-3" />
-                Featured
+                {t('communities.card.featured')}
               </div>
             )}
 
@@ -429,11 +431,11 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
               <div>
-                <p className="text-xs mb-1" style={{ color: '#999' }}>Members</p>
+                <p className="text-xs mb-1" style={{ color: '#999' }}>{t('communities.card.members')}</p>
                 <p className="text-lg" style={{ color: '#333' }}>{community.memberCount || 0}</p>
               </div>
               <div>
-                <p className="text-xs mb-1" style={{ color: '#999' }}>Upcoming Events</p>
+                <p className="text-xs mb-1" style={{ color: '#999' }}>{t('communities.card.upcomingEvents')}</p>
                 <p className="text-lg" style={{ color: '#333' }}>{community.upcomingEventCount || 0}</p>
               </div>
             </div>
@@ -444,7 +446,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
                 className="px-3 py-1 rounded-full text-xs text-white"
                 style={{ backgroundColor: community.isActive ? '#10B981' : '#6B7280' }}
               >
-                {community.isActive ? 'Active' : 'Inactive'}
+                {community.isActive ? t('communities.card.active') : t('communities.card.inactive')}
               </span>
             </div>
           </div>
@@ -456,11 +458,11 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       {!loading && filteredCommunities.length === 0 && (
         <div className="text-center py-12">
           <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#ECC180' }} />
-          <h3 className="text-xl mb-2" style={{ color: '#333' }}>No communities found</h3>
+          <h3 className="text-xl mb-2" style={{ color: '#333' }}>{t('communities.empty.noResults')}</h3>
           <p style={{ color: '#666' }}>
             {searchTerm || cityFilter !== 'all' || communityTypeFilter !== 'all' || statusFilter !== 'all' || categoryFilter.length > 0 || featuredFilter !== 'all'
-              ? 'Try adjusting your filters'
-              : 'Create your first community to get started'}
+              ? t('communities.empty.tryFilters')
+              : t('communities.empty.createFirst')}
           </p>
         </div>
       )}
@@ -469,9 +471,9 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowDeleteModal(false)}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Delete Community?</h3>
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.deleteModal.title')}</h3>
             <p className="mb-6" style={{ color: '#666' }}>
-              Are you sure you want to delete this community? This action cannot be undone.
+              {t('communities.deleteModal.body')}
             </p>
             <div className="flex gap-3">
               <button
@@ -479,14 +481,14 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
                 className="flex-1 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                Delete
+                {t('communities.deleteModal.confirm')}
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                 style={{ color: '#666' }}
               >
-                Cancel
+                {t('communities.deleteModal.cancel')}
               </button>
             </div>
           </div>
