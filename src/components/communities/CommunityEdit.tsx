@@ -498,7 +498,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 >
                   <option value="">Select category...</option>
                   {availableCategories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>{t(`data.communityCategories.${c}`, c)}</option>
                   ))}
                 </select>
               </div>
@@ -556,7 +556,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                           color: isSelected ? '#fff' : '#666',
                         }}
                       >
-                        {item}
+                        {t(`data.communityCategories.${item}`, item)}
                       </button>
                     );
                   })}

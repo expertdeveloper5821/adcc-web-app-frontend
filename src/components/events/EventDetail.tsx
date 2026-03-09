@@ -14,7 +14,7 @@ interface EventDetailProps {
 }
 
 export function EventDetail({ role }: EventDetailProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const eventId = id ?? '';
   const navigate = useNavigate();
@@ -28,6 +28,13 @@ export function EventDetail({ role }: EventDetailProps) {
   useEffect(() => {
     loadEvent();
   }, [id]);
+
+  // Re-fetch when language changes so backend returns translated values
+  useEffect(() => {
+    const onLanguageChanged = () => { loadEvent(); };
+    i18n.on('languageChanged', onLanguageChanged);
+    return () => { i18n.off('languageChanged', onLanguageChanged); };
+  }, [i18n]);
 
   const loadEvent = async () => {
     if (!eventId || eventId === 'undefined') {
@@ -152,7 +159,7 @@ export function EventDetail({ role }: EventDetailProps) {
                     event.category === 'Family & Kids' ? '#F59E0B' : '#8B5CF6'
                 }}
               >
-                {event.category}
+                {t(`data.eventCategories.${event.category}`, event.category)}
               </span>
               <span
                 className="px-3 py-1 rounded-full text-xs capitalize text-white"
@@ -164,7 +171,7 @@ export function EventDetail({ role }: EventDetailProps) {
                     event.status === 'Draft' ? '#6B7280' : '#EF4444'
                 }}
               >
-                {event.status}
+                {t(`data.statuses.${event.status}`, event.status)}
               </span>
             </div>
           </div>

@@ -18,8 +18,8 @@ interface EventsListProps {
 
 export function EventsList({ role }: EventsListProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
-  
+  const { t, i18n } = useTranslation();
+
   const [events, setEvents] = useState<IEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -69,6 +69,33 @@ export function EventsList({ role }: EventsListProps) {
     };
     fetchAll();
   }, [statusFilter]);
+
+  // Re-fetch when language changes so backend returns translated values
+  useEffect(() => {
+    const onLanguageChanged = () => {
+      const fetchAll = async () => {
+        try {
+          setIsLoading(true);
+          const apiStatus = statusFilter === 'all' ? undefined : statusFilter;
+          const [communityData, trackData, eventsResponse] = await Promise.all([
+            getAllCommunities(),
+            getAllTracks(),
+            getAllEvents({ status: apiStatus, page: 1, limit: 100 }),
+          ]);
+          setCommunities(Array.isArray(communityData) ? communityData : []);
+          setTracks(Array.isArray(trackData) ? trackData : []);
+          setEvents((eventsResponse as any)?.events || eventsResponse || []);
+        } catch (error) {
+          toast.error(t('events.toasts.loadError'));
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchAll();
+    };
+    i18n.on('languageChanged', onLanguageChanged);
+    return () => { i18n.off('languageChanged', onLanguageChanged); };
+  }, [i18n, statusFilter, t]);
 
   const toggleCategory = (category: string) => {
     setCategoryFilter(prev =>
@@ -251,7 +278,7 @@ export function EventsList({ role }: EventsListProps) {
             >
               <option value="">{t('events.filters.allCities')}</option>
               {availableCities.map(city => (
-                <option key={city} value={city}>{city}</option>
+                <option key={city} value={city}>{t(`data.locations.${city}`, city)}</option>
               ))}
             </select>
           </div>
@@ -336,7 +363,7 @@ export function EventsList({ role }: EventsListProps) {
                   color: categoryFilter.includes(category) ? '#fff' : '#666',
                 }}
               >
-                {category}
+                {t(`data.eventCategories.${category}`, category)}
               </button>
             ))}
           </div>
@@ -390,7 +417,7 @@ export function EventsList({ role }: EventsListProps) {
                             event.category === 'Family & Kids' ? '#F59E0B' : '#8B5CF6'
                         }}
                       >
-                        {event.category}
+                        {event.category ? t(`data.eventCategories.${event.category}`, event.category) : t('events.card.noCategory', 'Uncategorized')}
                       </span>
                       <span className="text-sm" style={{ color: '#666' }}>{event.communityId?.title || t('events.card.noCommunity')}</span>
                       <span className="text-sm" style={{ color: '#666' }}>|</span>
@@ -419,7 +446,7 @@ export function EventsList({ role }: EventsListProps) {
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" style={{ color: '#999' }} />
-                        <span className="text-sm" style={{ color: '#666' }}>{event.city}</span>
+                        <span className="text-sm" style={{ color: '#666' }}>{event.city ? t(`data.locations.${event.city}`, event.city) : t('events.card.noLocation', 'No Location')}</span>
                       </div>
                     </div>
                   </div>
@@ -434,7 +461,7 @@ export function EventsList({ role }: EventsListProps) {
                         event.status === 'Draft' ? '#6B7280' : '#EF4444'
                     }}
                   >
-                    {event.status}
+                    {t(`data.statuses.${event.status}`, event.status)}
                   </span>
                 </div>
 

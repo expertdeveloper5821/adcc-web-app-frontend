@@ -496,7 +496,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
                   {availableCategories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>{t(`data.eventCategories.${category}`, category)}</option>
                   ))}
                 </select>
               </div>

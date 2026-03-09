@@ -8,6 +8,7 @@ import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { formatToInputDate } from '../../utils/date';
 import { useLocale } from '../../contexts/LocaleContext';
+import { useTranslation } from 'react-i18next';
 
 interface EventEditProps {
   navigate: (page: string, params?: any) => void;
@@ -23,6 +24,7 @@ export function EventEdit({ role }: EventEditProps) {
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const { locale } = useLocale();
+  const { t } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
   const [existingEvent, setExistingEvent] = useState<EventApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -646,7 +648,7 @@ export function EventEdit({ role }: EventEditProps) {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
                   {availableCategories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>{t(`data.eventCategories.${category}`, category)}</option>
                   ))}
                 </select>
               </div>
@@ -658,6 +660,7 @@ export function EventEdit({ role }: EventEditProps) {
                   onChange={(e) => setFormData({ ...formData, communityId: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
+                  
                   <option value="">Select community...</option>
                   {Array.isArray(communities) &&
                     communities.map((community) => (

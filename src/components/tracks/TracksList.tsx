@@ -19,7 +19,7 @@ interface TracksListProps {
 
 export function TracksList({ role }: TracksListProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
@@ -111,6 +111,13 @@ export function TracksList({ role }: TracksListProps) {
   useEffect(() => {
     fetchTracks();
   }, [fetchTracks]);
+
+  // Re-fetch when language changes so backend returns translated values
+  useEffect(() => {
+    const onLanguageChanged = () => { fetchTracks(); };
+    i18n.on('languageChanged', onLanguageChanged);
+    return () => { i18n.off('languageChanged', onLanguageChanged); };
+  }, [fetchTracks, i18n]);
 
   const filteredTracks = useMemo(() => {
     return tracks.filter(track => {
@@ -275,7 +282,7 @@ export function TracksList({ role }: TracksListProps) {
             >
               <option value="all">{t('tracks.filters.allCities')}</option>
               {cities.map(city => (
-                <option key={city} value={city}>{city}</option>
+                <option key={city} value={city}>{t(`data.locations.${city}`, String(city))}</option>
               ))}
             </select>
           </div>
@@ -376,15 +383,15 @@ export function TracksList({ role }: TracksListProps) {
                               className="px-3 py-1 rounded-full text-xs text-white"
                               style={{ backgroundColor: getStatusColor(track.status) }}
                             >
-                              {track.status}
+                              {t(`data.statuses.${track.status}`, track.status)}
                             </span>
                             <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: '#ECC180', color: '#333' }}>
-                              {track.trackType}
+                              {t(`data.trackTypes.${track.trackType}`, track.trackType)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mb-2">
                             <MapPin className="w-4 h-4" style={{ color: '#999' }} />
-                            <span className="text-sm" style={{ color: '#666' }}>{track.area}, {track.city}</span>
+                            <span className="text-sm" style={{ color: '#666' }}>{track.area}, {t(`data.locations.${track.city}`, track.city)}</span>
                           </div>
                         </div>
                       </div>
@@ -400,12 +407,12 @@ export function TracksList({ role }: TracksListProps) {
                             className="px-2 py-1 rounded text-xs text-white"
                             style={{ backgroundColor: getDifficultyColor(track.difficulty) }}
                           >
-                            {track.difficulty ? track.difficulty : t('tracks.card.na')}
+                            {track.difficulty ? t(`data.difficulties.${track.difficulty}`, track.difficulty) : t('tracks.card.na')}
                           </span>
                         </div>
                         <div>
                           <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.surface')}</div>
-                          <div className="text-sm" style={{ color: '#333' }}>{track.surfaceType}</div>
+                          <div className="text-sm" style={{ color: '#333' }}>{t(`data.surfaceTypes.${track.surfaceType}`, track.surfaceType)}</div>
                         </div>
                         <div>
                           <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.events')}</div>

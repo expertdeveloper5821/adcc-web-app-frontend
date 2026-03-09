@@ -1338,5 +1338,77 @@
     "subtitle": "Manage homepage and app content",
     "addSection": "Add Section",
     "homepageSections": "Homepage Sections"
+  },
+  "data": {
+    "communityCategories": {
+      "Racing & Performance": "Racing & Performance",
+      "Family & Leisure": "Family & Leisure",
+      "Women (SheRides)": "Women (SheRides)",
+      "Youth": "Youth",
+      "Social / Weekend": "Social / Weekend",
+      "Night Riders": "Night Riders",
+      "MTB / Trail": "MTB / Trail",
+      "Training & Clinics": "Training & Clinics",
+      "Awareness & Charity": "Awareness & Charity",
+      "Corporate": "Corporate",
+      "Education": "Education",
+      "Health": "Health",
+      "City Communities": "City Communities",
+      "Group Communities": "Group Communities",
+      "Awareness & special communities": "Awareness & special communities"
+    },
+    "eventCategories": {
+      "Race": "Race",
+      "Community Ride": "Community Ride",
+      "Training & Clinics": "Training & Clinics",
+      "Awareness Rides": "Awareness Rides",
+      "Family & Kids": "Family & Kids",
+      "Corporate Events": "Corporate Events",
+      "National Events": "National Events"
+    },
+    "locations": {
+      "Abu Dhabi": "Abu Dhabi",
+      "Al Ain": "Al Ain",
+      "Dubai": "Dubai",
+      "Al Dhafra": "Al Dhafra",
+      "Sharjah": "Sharjah",
+      "Ajman": "Ajman",
+      "Umm Al Quwain": "Umm Al Quwain",
+      "Ras Al Khaimah": "Ras Al Khaimah",
+      "Fujairah": "Fujairah"
+    },
+    "statuses": {
+      "Open": "Open",
+      "Draft": "Draft",
+      "Full": "Full",
+      "Completed": "Completed",
+      "Archived": "Archived",
+      "Limited": "Limited",
+      "Closed": "Closed",
+      "Active": "Active",
+      "Disabled": "Disabled"
+    },
+    "difficulties": {
+      "Easy": "Easy",
+      "Medium": "Medium",
+      "Hard": "Hard"
+    },
+    "trackTypes": {
+      "Road": "Road",
+      "Mountain": "Mountain",
+      "Hybrid": "Hybrid",
+      "Trail": "Trail",
+      "Circuit": "Circuit"
+    },
+    "surfaceTypes": {
+      "Asphalt": "Asphalt",
+      "Gravel": "Gravel",
+      "Mixed": "Mixed",
+      "Dirt": "Dirt",
+      "Sand": "Sand",
+      "asphalt": "Asphalt",
+      "concrete": "Concrete",
+      "mixed": "Mixed"
+    }
   }
 }
