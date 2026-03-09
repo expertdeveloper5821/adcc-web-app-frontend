@@ -545,11 +545,12 @@ export function TrackDetail({  role }: TrackDetailProps) {
       )}
 
       {/* Upcoming Events (same list, detailed cards) */}
-      {activeTab === 'events' && linkedEvents.length > 0 && (
+      {activeTab === 'events' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm mt-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg" style={{ color: '#333' }}>{t('tracks.detail.eventsTab.upcomingHeading')}</h3>
           </div>
+          {linkedEvents.length > 0 ? (
           <div className="space-y-4">
             {linkedEvents.map((event: any) => {
               const eventId = event.id ?? event._id;

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, UseFormReturn, Resolver } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CommunityFormData, GCCCountry, CommunityType } from '../../types/community';
 import type { CommunityApiResponse } from '../../services/communitiesApi';
 
-import { getAllTracks } from '../../services/trackService';import { gccCountries, getCitiesByCountry } from '../../data/gccLocations';
+import { gccCountries, getCitiesByCountry } from '../../data/gccLocations';
 import { getAllTracks, type Track as ApiTrack } from '../../services/trackService';
 import { compressImage } from '../../utils/imageUtils';
 
@@ -252,7 +253,6 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
 
   // Load tracks from database (API)
   const [tracksFromApi, setTracksFromApi] = useState<any[]>([]);
-  const [tracksLoading, setTracksLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
     setTracksLoading(true);

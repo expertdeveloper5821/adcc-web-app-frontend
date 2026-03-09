@@ -349,7 +349,9 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         distance: Number(formData.distance),
         difficulty: formData.difficulty,
         maxParticipants: Number(formData.maxParticipants),
-        schedule: Array.isArray(formData.schedule) ? formData.schedule : [],
+        schedule: Array.isArray(formData.schedule)
+          ? formData.schedule.filter((s) => s.time && s.title?.trim())
+          : [],
         amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
         mainImage: coverBase64 || undefined,
         galleryImages: galleryBase64,

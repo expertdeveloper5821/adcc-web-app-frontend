@@ -105,11 +105,10 @@ console.log('errorss',errors);
           ? selectedCategories
           : [formData.communityType || 'city'],
         category: Array.isArray(selectedCategories) ? selectedCategories.join(', ') : '',
-        location: locationValue,
+        location,
         image: formData.image || undefined,
         isActive: formData.status === 'active',
         isFeatured: formData.isFeatured ?? false,
-        image: formData.image || undefined,
         logo: formData.logo || undefined,
         // Backend accepts a single track ID as string
         trackId: selectedTrackIds?.[0] ?? undefined,

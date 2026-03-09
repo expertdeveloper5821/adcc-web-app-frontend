@@ -583,6 +583,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                   </select>
                 </div>
               )}
+            </div>
+          </div>
 
           {/* SECTION 3 - Tracks Mapping */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
