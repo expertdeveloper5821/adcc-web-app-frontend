@@ -1297,5 +1297,77 @@
     "subtitle": "إدارة محتوى الصفحة الرئيسية والتطبيق",
     "addSection": "إضافة قسم",
     "homepageSections": "أقسام الصفحة الرئيسية"
+  },
+  "data": {
+    "communityCategories": {
+      "Racing & Performance": "السباقات والأداء",
+      "Family & Leisure": "العائلة والترفيه",
+      "Women (SheRides)": "النساء (SheRides)",
+      "Youth": "الشباب",
+      "Social / Weekend": "اجتماعي / نهاية الأسبوع",
+      "Night Riders": "راكبو الليل",
+      "MTB / Trail": "دراجات الجبال / المسارات",
+      "Training & Clinics": "التدريب والورش",
+      "Awareness & Charity": "التوعية والأعمال الخيرية",
+      "Corporate": "مؤسسي",
+      "Education": "تعليمي",
+      "Health": "صحي",
+      "City Communities": "مجتمعات المدن",
+      "Group Communities": "مجتمعات المجموعات",
+      "Awareness & special communities": "مجتمعات التوعية والمجتمعات الخاصة"
+    },
+    "eventCategories": {
+      "Race": "سباق",
+      "Community Ride": "جولة مجتمعية",
+      "Training & Clinics": "التدريب والورش",
+      "Awareness Rides": "جولات التوعية",
+      "Family & Kids": "العائلة والأطفال",
+      "Corporate Events": "فعاليات مؤسسية",
+      "National Events": "فعاليات وطنية"
+    },
+    "locations": {
+      "Abu Dhabi": "أبوظبي",
+      "Al Ain": "العين",
+      "Dubai": "دبي",
+      "Al Dhafra": "الظفرة",
+      "Sharjah": "الشارقة",
+      "Ajman": "عجمان",
+      "Umm Al Quwain": "أم القيوين",
+      "Ras Al Khaimah": "رأس الخيمة",
+      "Fujairah": "الفجيرة"
+    },
+    "statuses": {
+      "Open": "مفتوح",
+      "Draft": "مسودة",
+      "Full": "مكتمل",
+      "Completed": "منتهي",
+      "Archived": "مؤرشف",
+      "Limited": "محدود",
+      "Closed": "مغلق",
+      "Active": "نشط",
+      "Disabled": "معطل"
+    },
+    "difficulties": {
+      "Easy": "سهل",
+      "Medium": "متوسط",
+      "Hard": "صعب"
+    },
+    "trackTypes": {
+      "Road": "طريق",
+      "Mountain": "جبلي",
+      "Hybrid": "هجين",
+      "Trail": "مسار",
+      "Circuit": "حلبة"
+    },
+    "surfaceTypes": {
+      "Asphalt": "أسفلت",
+      "Gravel": "حصى",
+      "Mixed": "مختلط",
+      "Dirt": "تراب",
+      "Sand": "رمل",
+      "asphalt": "أسفلت",
+      "concrete": "خرسانة",
+      "mixed": "مختلط"
+    }
   }
 }

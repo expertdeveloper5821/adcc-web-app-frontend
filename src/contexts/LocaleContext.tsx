@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
+import { invalidateCache } from '../utils/apiCache';
 
 export type Locale = 'en' | 'ar';
 
@@ -41,14 +42,17 @@ export function LocaleProvider({ children }: LocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(getStoredLocale);
   const { t } = useTranslation();
 
-  const setLocale = useCallback((newLocale: Locale) => {
-    setLocaleState(newLocale);
-    i18n.changeLanguage(newLocale);
+  const setLocale = useCallback(async (newLocale: Locale) => {
     try {
       localStorage.setItem(STORAGE_KEY, newLocale);
     } catch {
       // ignore
     }
+    // Clear API cache so re-fetches get backend-translated data
+    invalidateCache();
+    // Await language change so i18n is fully updated before React re-renders
+    await i18n.changeLanguage(newLocale);
+    setLocaleState(newLocale);
   }, []);
 
   useEffect(() => {

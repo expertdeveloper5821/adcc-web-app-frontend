@@ -17,7 +17,7 @@ interface TrackDetailProps {
 type TabType = 'overview' | 'events' | 'safety' | 'media' | 'communities';
 
 export function TrackDetail({  role }: TrackDetailProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -85,6 +85,30 @@ export function TrackDetail({  role }: TrackDetailProps) {
     fetchCommunities();
     return () => { cancelled = true; };
   }, [trackId]);
+
+  // Re-fetch when language changes so backend returns translated values
+  useEffect(() => {
+    if (!trackId) return;
+    const onLanguageChanged = async () => {
+      try {
+        setLoading(true);
+        const [trackResult, eventsData, communitiesData] = await Promise.all([
+          getTrackById(trackId),
+          getTrackResults(trackId),
+          trackCommunityResults(trackId),
+        ]);
+        setTrack(trackResult);
+        setLinkedEvents(eventsData || []);
+        setLinkedCommunities(Array.isArray(communitiesData) ? communitiesData : []);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    i18n.on('languageChanged', onLanguageChanged);
+    return () => { i18n.off('languageChanged', onLanguageChanged); };
+  }, [trackId, i18n]);
 
 
   if (loading) {
@@ -243,9 +267,9 @@ export function TrackDetail({  role }: TrackDetailProps) {
                             track.difficulty === 'Medium' ? '#E1C06E' : '#C12D32'
                         }}
                       >
-                        {track.difficulty}
+                        {track.difficulty ? t(`data.difficulties.${track.difficulty}`, track.difficulty) : t('tracks.card.na')}
                       </span>
-                      <span className="text-sm" style={{ color: '#666' }}>{t('tracks.detail.surfaceLabel', { type: track.surfaceType })}</span>
+                      <span className="text-sm" style={{ color: '#666' }}>{t('tracks.detail.surfaceLabel', { type: t(`data.surfaceTypes.${track.surfaceType}`, track.surfaceType) })}</span>
                     </div>
                   </div>
                 </div>

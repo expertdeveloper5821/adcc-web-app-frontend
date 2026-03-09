@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface CategorySelectorProps {
   selectedCategories: string[];
@@ -13,10 +14,11 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   error,
   availableCategories,
 }) => {
+  const { t } = useTranslation();
   return (
     <div>
       <label className="block text-sm mb-2" style={{ color: '#666' }}>
-        Category (multi-select) *
+        {t('communities.form.categoryLabel', 'Category (multi-select) *')}
       </label>
       {error && (
         <p className="mb-2 text-sm text-red-600">{error}</p>
@@ -33,7 +35,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               color: selectedCategories.includes(category) ? '#fff' : '#666',
             }}
           >
-            {category}
+            {t(`data.communityCategories.${category}`, category)}
           </button>
         ))}
       </div>

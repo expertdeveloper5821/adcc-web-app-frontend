@@ -311,7 +311,7 @@ console.log('errorss',errors);
                 required
               >
                 {availableCities.map(city => (
-                  <option key={city} value={city}>{city}</option>
+                  <option key={city} value={city}>{t(`data.locations.${city}`, city)}</option>
                 ))}
               </FormField>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Users, MapPin, Calendar, Star, Filter } from 'lucide-react';
 import { CardSkeleton } from '../ui/skeleton';
@@ -34,7 +34,7 @@ interface Community {
 
 export function CommunitiesList({ role }: CommunitiesListProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [communityTypeFilter, setCommunityTypeFilter] = useState('all');
@@ -77,85 +77,92 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     };
   };
 
-  useEffect(() => {
-    const fetchCommunities = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await getAllCommunitiesApi();
-        
-        // Handle different API response structures
-        let apiCommunities: CommunityApiResponse[] = [];
-        
-        if (Array.isArray(response)) {
-          // Direct array response
-          apiCommunities = response;
-        } else if (response && typeof response === 'object') {
-          // Handle wrapped response: { success: true, message: '...', data: {...} }
-          const responseData = (response as any).data;
-          
-          // Check if data itself is an array
-          if (Array.isArray(responseData)) {
-            apiCommunities = responseData;
-          } 
-          // Check if data is an object containing an array property
-          else if (responseData && typeof responseData === 'object') {
-            // Try common nested array properties
-            const nestedArray = responseData.communities || 
-                               responseData.items || 
-                               responseData.list || 
-                               responseData.results ||
-                               responseData.data;
-            
-            if (Array.isArray(nestedArray)) {
-              apiCommunities = nestedArray;
-            } else {
-              // Log the structure to help debug
-             
-              console.warn('Could not find array in response.data:', responseData);
-            }
-          }
-          
-          // Also check top-level properties as fallback
-          if (apiCommunities.length === 0) {
-            const topLevelCommunities = (response as any).communities;
-            const topLevelResults = (response as any).results;
-            
-            if (Array.isArray(topLevelCommunities)) {
-              apiCommunities = topLevelCommunities;
-            } else if (Array.isArray(topLevelResults)) {
-              apiCommunities = topLevelResults;
-            }
-          }
-          
-          if (apiCommunities.length === 0) {
-            console.warn('API response is not in expected format:', response);
-          }
-        } else {
-          console.warn('API response is not an array or object:', response);
-          apiCommunities = [];
-        }
-        
-        // Ensure apiCommunities is an array before mapping
-        if (!Array.isArray(apiCommunities)) {
-          console.error('apiCommunities is not an array:', apiCommunities);
-          apiCommunities = [];
-        }
-        
-        const mappedCommunities = apiCommunities.map(mapApiResponseToCommunity);
-        setCommunities(mappedCommunities);
-      } catch (err) {
-        console.error('Error fetching communities:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch communities';
-        setError(errorMessage);
-        toast.error(t('communities.toasts.loadError', { error: errorMessage }));
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchCommunities = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getAllCommunitiesApi();
 
+      // Handle different API response structures
+      let apiCommunities: CommunityApiResponse[] = [];
+
+      if (Array.isArray(response)) {
+        // Direct array response
+        apiCommunities = response;
+      } else if (response && typeof response === 'object') {
+        // Handle wrapped response: { success: true, message: '...', data: {...} }
+        const responseData = (response as any).data;
+
+        // Check if data itself is an array
+        if (Array.isArray(responseData)) {
+          apiCommunities = responseData;
+        }
+        // Check if data is an object containing an array property
+        else if (responseData && typeof responseData === 'object') {
+          // Try common nested array properties
+          const nestedArray = responseData.communities ||
+                             responseData.items ||
+                             responseData.list ||
+                             responseData.results ||
+                             responseData.data;
+
+          if (Array.isArray(nestedArray)) {
+            apiCommunities = nestedArray;
+          } else {
+            // Log the structure to help debug
+
+            console.warn('Could not find array in response.data:', responseData);
+          }
+        }
+
+        // Also check top-level properties as fallback
+        if (apiCommunities.length === 0) {
+          const topLevelCommunities = (response as any).communities;
+          const topLevelResults = (response as any).results;
+
+          if (Array.isArray(topLevelCommunities)) {
+            apiCommunities = topLevelCommunities;
+          } else if (Array.isArray(topLevelResults)) {
+            apiCommunities = topLevelResults;
+          }
+        }
+
+        if (apiCommunities.length === 0) {
+          console.warn('API response is not in expected format:', response);
+        }
+      } else {
+        console.warn('API response is not an array or object:', response);
+        apiCommunities = [];
+      }
+
+      // Ensure apiCommunities is an array before mapping
+      if (!Array.isArray(apiCommunities)) {
+        console.error('apiCommunities is not an array:', apiCommunities);
+        apiCommunities = [];
+      }
+
+      const mappedCommunities = apiCommunities.map(mapApiResponseToCommunity);
+      setCommunities(mappedCommunities);
+    } catch (err) {
+      console.error('Error fetching communities:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch communities';
+      setError(errorMessage);
+      toast.error(t('communities.toasts.loadError', { error: errorMessage }));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
     fetchCommunities();
-  }, []);
+  }, [fetchCommunities]);
+
+  // Re-fetch when language changes so backend returns translated values
+  useEffect(() => {
+    const onLanguageChanged = () => { fetchCommunities(); };
+    i18n.on('languageChanged', onLanguageChanged);
+    return () => { i18n.off('languageChanged', onLanguageChanged); };
+  }, [fetchCommunities, i18n]);
 
   const filteredCommunities = communities.filter(community => {
     const q = searchTerm.toLowerCase();
@@ -306,7 +313,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
           >
             <option value="all">{t('communities.filters.allCities')}</option>
             {availableCities.map(city => (
-              <option key={city} value={city}>{city}</option>
+              <option key={city} value={city}>{t(`data.locations.${city}`, city)}</option>
             ))}
           </select>
 
@@ -359,7 +366,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
                   color: categoryFilter.includes(category) ? '#fff' : '#666',
                 }}
               >
-                {category}
+                {t(`data.communityCategories.${category}`, category)}
               </button>
             ))}
           </div>
@@ -402,7 +409,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             <div className="space-y-2 mb-4">
               <div className="flex items-center gap-2 text-sm" style={{ color: '#666' }}>
                 <MapPin className="w-4 h-4" />
-                {community.city}
+                {t(`data.locations.${community.city}`, community.city)}
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -422,7 +429,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
                     className="px-3 py-1 rounded-full text-xs"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
-                    {cat}
+                    {t(`data.communityCategories.${cat}`, cat)}
                   </span>
                 ))}
                 </div>
