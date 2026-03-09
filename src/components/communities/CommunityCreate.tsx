@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Users, Tag, Settings, Shield, Save, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Users, Tag, Settings, Shield, Save, Globe, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { useTranslation } from 'react-i18next';
 import { useCommunityForm } from '../hooks/useCommunityForm';
 import { createCommunity, updateCommunity, getCommunityById, CommunityApiResponse, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
 import { FormField } from './form/FormField';
@@ -10,6 +10,7 @@ import { CategorySelector } from './form/CategorySelector';
 import { TrackSelector } from './form/TrackSelector';
 import { gccCountries } from '../../data/gccLocations';
 import { availableCategories } from '../../constants/communityConstants';
+import { useLocale } from '../../contexts/LocaleContext';
 
 interface CommunityCreateProps {
   communityId?: string;
@@ -18,11 +19,13 @@ interface CommunityCreateProps {
 export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: propCommunityId }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const locationState = location.state as { editingCommunity?: CommunityApiResponse; communityId?: string } | null;
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [fetchedCommunity, setFetchedCommunity] = useState<CommunityApiResponse | null>(null);
+  const { locale } = useLocale();
 
   const stateCommunityId = propCommunityId || locationState?.communityId;
   const editingCommunity = locationState?.editingCommunity || fetchedCommunity;
@@ -66,7 +69,7 @@ console.log('errorss',errors);
           setFetchedCommunity(data);
         } catch (error) {
           console.error('Error fetching community:', error);
-          toast.error('Failed to load community data');
+          toast.error(t('communities.create.toasts.loadError'));
           navigate('/communities');
         } finally {
           setIsFetching(false);
@@ -76,6 +79,12 @@ console.log('errorss',errors);
 
     fetchCommunity();
   }, [stateCommunityId, editingCommunity, navigate]);
+
+  // Backend accepts only these fields (createCommunitySchema/updateCommunitySchema are strict)
+  const ALLOWED_LOCATIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'] as const;
+
+  const isValidMongoId = (val: string | undefined): boolean =>
+    !!val && /^[a-fA-F0-9]{24}$/.test(val);
 
   const onSubmit = async (formData: any) => {
     setIsLoading(true);
@@ -90,12 +99,16 @@ console.log('errorss',errors);
       const communityData = {
         title: formData.title,
         description: formData.description,
-        type: Array.isArray(formData.communityType) ? formData.communityType : [formData.communityType ?? 'city'],
-        category: Array.isArray(selectedCategories) ? (selectedCategories[0] ?? '') : String(selectedCategories ?? ''),
+        ...(formData.titleAr ? { titleAr: formData.titleAr } : {}),
+        ...(formData.descriptionAr ? { descriptionAr: formData.descriptionAr } : {}),
+        type: Array.isArray(selectedCategories) && selectedCategories.length > 0
+          ? selectedCategories
+          : [formData.communityType || 'city'],
+        category: Array.isArray(selectedCategories) ? selectedCategories.join(', ') : '',
         location,
+        image: formData.image || undefined,
         isActive: formData.status === 'active',
         isFeatured: formData.isFeatured ?? false,
-        image: formData.image || undefined,
         logo: formData.logo || undefined,
         // Backend accepts a single track ID as string
         trackId: selectedTrackIds?.[0] ?? undefined,
@@ -108,25 +121,30 @@ console.log('errorss',errors);
         manager: formData.managerName || undefined,
       };
 
+      if (import.meta.env.DEV) {
+        console.log('Community payload:', JSON.stringify(communityData, null, 2));
+      }
+
       let result: CommunityApiResponse;
-      
+
       if (isEditMode && stateCommunityId) {
         result = await updateCommunity(stateCommunityId, communityData);
-        toast.success('Community updated successfully');
+        toast.success(t('communities.create.toasts.updateSuccess'));
         navigate(`/communities/${stateCommunityId}`);
       } else {
         result = await createCommunity(communityData);
-        toast.success('Community created successfully');
+        toast.success(t('communities.create.toasts.createSuccess'));
         const id = result._id || result.id;
         navigate(id ? `/communities/${id}` : '/communities');
       }
     } catch (error: any) {
       console.error('Error saving community:', error);
-      
-      const errorMessage = error?.response?.status === 413
-        ? 'Image file is too large. Please use a smaller image.'
-        : error?.response?.data?.message || 'Failed to save community';
-      
+
+      const errorMessage =
+        error?.response?.status === 413
+          ? t('communities.create.toasts.imageTooLarge')
+          : error?.response?.data?.message || t('communities.create.toasts.saveError');
+
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -146,7 +164,7 @@ console.log('errorss',errors);
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate(isEditMode ? -1 : '/communities')}
+          onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           aria-label="Back"
         >
@@ -154,10 +172,10 @@ console.log('errorss',errors);
         </button>
         <div>
           <h1 className="text-3xl mb-2" style={{ color: '#333' }}>
-            {isEditMode ? 'Edit Community' : 'Create Community'}
+            {isEditMode ? t('communities.create.titleEdit') : t('communities.create.titleCreate')}
           </h1>
           <p style={{ color: '#666' }}>
-            {isEditMode ? 'Edit community details' : 'Create a new cycling community'}
+            {isEditMode ? t('communities.create.subtitleEdit') : t('communities.create.subtitleCreate')}
           </p>
         </div>
       </div>
@@ -167,28 +185,32 @@ console.log('errorss',errors);
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Information */}
           <section className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Users className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <Users className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.create.basicInfo')}</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
+
             </div>
 
-            <div className="space-y-4">
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <FormField
-                label="Community Name"
+                label={t('communities.create.communityName')}
                 name="title"
                 register={register}
                 error={errors.title}
                 required
-                placeholder="Abu Dhabi Road Racers"
+                placeholder={t('communities.create.placeholders.communityName')}
               />
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug (auto-generated)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.create.slug')}</label>
                 <input
                   type="text"
-                  value={form.watch('title')?.toLowerCase().replace(/\s+/g, '-') || ''}
+                  value={String(form.watch('title') ?? '').toLowerCase().replace(/\s+/g, '-')}
                   readOnly
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
                   style={{ color: '#999' }}
@@ -196,18 +218,77 @@ console.log('errorss',errors);
               </div>
 
               <FormField
-                label="Description"
+                label={t('communities.create.description')}
                 name="description"
                 register={register}
                 error={errors.description}
                 required
                 as="textarea"
                 rows={4}
-                placeholder="Describe the community..."
+                placeholder={t('communities.create.placeholders.description')}
               />
+            </div>
 
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المجتمع <span className="text-gray-400">(Community Name)</span>
+                </label>
+                <input
+                  {...register('titleAr')}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="أبوظبي لسباق الطرق"
+                  className={`w-full px-4 py-2 rounded-lg border ${
+                    errors.titleAr ? 'border-red-500' : 'border-gray-200'
+                  } focus:outline-none focus:ring-2 focus:ring-red-600`}
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+                {errors.titleAr && (
+                  <p className="mt-1 text-sm text-red-600">{errors.titleAr.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <textarea
+                  {...register('descriptionAr')}
+                  dir="rtl"
+                  lang="ar"
+                  rows={4}
+                  placeholder="وصف المجتمع..."
+                  className={`w-full px-4 py-2 rounded-lg border ${
+                    errors.descriptionAr ? 'border-red-500' : 'border-gray-200'
+                  } focus:outline-none focus:ring-2 focus:ring-red-600`}
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+                {errors.descriptionAr && (
+                  <p className="mt-1 text-sm text-red-600">{errors.descriptionAr.message}</p>
+                )}
+              </div>
+
+              {/* English reference */}
+              {form.watch('title') && (
+                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <Globe className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-blue-400 mb-1">{t('common.englishReference')}</p>
+                    <p className="text-sm text-gray-700">{form.watch('title')}</p>
+                    {form.watch('description') && (
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{form.watch('description')}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Common fields (always visible) */}
+            <div className="space-y-4 mt-4">
               <FormField
-                label="Country"
+                label={t('communities.create.country')}
                 name="country"
                 register={register}
                 as="select"
@@ -220,7 +301,7 @@ console.log('errorss',errors);
               </FormField>
 
               <FormField
-                label="City"
+                label={t('communities.create.city')}
                 name="city"
                 register={register}
                 as="select"
@@ -235,10 +316,10 @@ console.log('errorss',errors);
               </FormField>
 
               <FormField
-                label="Area (optional)"
+                label={t('communities.create.area')}
                 name="area"
                 register={register}
-                placeholder="e.g., Yas Island, Corniche, Marina..."
+                placeholder={t('communities.create.placeholders.area')}
               />
             </div>
           </section>
@@ -249,19 +330,19 @@ console.log('errorss',errors);
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Tag className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>2. Community Classification</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.create.classification')}</h2>
             </div>
 
             <div className="space-y-4">
               <FormField
-                label="Community Type"
+                label={t('communities.create.communityType')}
                 name="communityType"
                 register={register}
                 as="select"
               >
-                <option value="city">City Community</option>
-                <option value="type">Interest / Type Community</option>
-                <option value="purpose-based">Special Purpose Community</option>
+                <option value="city">{t('communities.create.typeOptions.city')}</option>
+                <option value="type">{t('communities.create.typeOptions.interest')}</option>
+                <option value="purpose-based">{t('communities.create.typeOptions.specialPurpose')}</option>
               </FormField>
 
               <CategorySelector
@@ -273,18 +354,18 @@ console.log('errorss',errors);
 
               {communityType === 'purpose-based' && (
                 <FormField
-                  label="Special Purpose Type"
+                  label={t('communities.create.specialPurposeType')}
                   name="purposeType"
                   register={register}
                   as="select"
                 >
-                  <option value="">Select special type...</option>
-                  <option value="Awareness">Awareness</option>
-                  <option value="Charity">Charity</option>
-                  <option value="Corporate">Corporate</option>
-                  <option value="Education">Education</option>
-                  <option value="Health">Health</option>
-                  <option value="National">National Events</option>
+                  <option value="">{t('communities.create.specialPurposeOptions.select')}</option>
+                  <option value="Awareness">{t('communities.create.specialPurposeOptions.awareness')}</option>
+                  <option value="Charity">{t('communities.create.specialPurposeOptions.charity')}</option>
+                  <option value="Corporate">{t('communities.create.specialPurposeOptions.corporate')}</option>
+                  <option value="Education">{t('communities.create.specialPurposeOptions.education')}</option>
+                  <option value="Health">{t('communities.create.specialPurposeOptions.health')}</option>
+                  <option value="National">{t('communities.create.specialPurposeOptions.nationalEvents')}</option>
                 </FormField>
               )}
             </div>
@@ -314,49 +395,49 @@ console.log('errorss',errors);
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Settings className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>4. Community Stats Setup</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.create.stats')}</h2>
             </div>
 
             <div className="space-y-4">
               <FormField
-                label="Founded Year"
+                label={t('communities.create.foundedYear')}
                 name="foundedYear"
                 register={register}
                 type="number"
-                placeholder="2019"
+                placeholder={t('communities.create.placeholders.foundedYear')}
                 min={2000}
                 max={new Date().getFullYear()}
               />
 
               {communityType === 'city' && (
                 <FormField
-                  label="Rides This Month"
+                  label={t('communities.create.ridesThisMonth')}
                   name="ridesThisMonth"
                   register={register}
                   type="number"
-                  placeholder="24"
+                  placeholder={t('communities.create.placeholders.ridesThisMonth')}
                   min={0}
                 />
               )}
 
               {communityType === 'type' && (
                 <FormField
-                  label="Weekly Rides"
+                  label={t('communities.create.weeklyRides')}
                   name="weeklyRides"
                   register={register}
                   type="number"
-                  placeholder="6"
+                  placeholder={t('communities.create.placeholders.weeklyRides')}
                   min={0}
                 />
               )}
 
               {communityType === 'purpose-based' && (
                 <FormField
-                  label="Funds Raised (AED)"
+                  label={t('communities.create.fundsRaised')}
                   name="fundsRaised"
                   register={register}
                   type="number"
-                  placeholder="125000"
+                  placeholder={t('communities.create.placeholders.fundsRaised')}
                   min={0}
                 />
               )}
@@ -369,7 +450,7 @@ console.log('errorss',errors);
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <ImageIcon className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>5. Media</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.create.media')}</h2>
             </div>
 
             <div className="space-y-6">
@@ -492,19 +573,19 @@ console.log('errorss',errors);
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Shield className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>7. Admin Assignment</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.create.adminAssignment')}</h2>
             </div>
 
             <FormField
-              label="Community Manager"
+              label={t('communities.create.communityManager')}
               name="managerName"
               register={register}
-              placeholder="Manager name"
+              placeholder={t('communities.create.placeholders.manager')}
             />
 
             <div className="mt-4">
-              <label className="block text-sm mb-2" style={{ color: '#666' }}>Moderators (multi-select)</label>
-              <p className="text-xs" style={{ color: '#999' }}>Feature coming soon</p>
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.create.moderators')}</label>
+              <p className="text-xs" style={{ color: '#999' }}>{t('communities.create.featureComingSoon')}</p>
             </div>
           </section>
         </div>
@@ -513,49 +594,49 @@ console.log('errorss',errors);
         <div className="space-y-6">
           {/* Visibility & Rules */}
           <section className="p-6 rounded-2xl shadow-sm bg-white">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>6. Visibility & Rules</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.create.visibilityRules')}</h3>
 
             <div className="space-y-4">
               <FormField
-                label="Status"
+                label={t('communities.create.status')}
                 name="status"
                 register={register}
                 as="select"
               >
-                <option value="inactive">Draft</option>
-                <option value="active">Active</option>
+                <option value="inactive">{t('communities.create.statusOptions.draft')}</option>
+                <option value="active">{t('communities.create.statusOptions.active')}</option>
               </FormField>
 
               <FormField
-                label="Visibility"
+                label={t('communities.create.visibility')}
                 name="visibility"
                 register={register}
                 as="select"
               >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
+                <option value="public">{t('communities.create.visibilityOptions.public')}</option>
+                <option value="private">{t('communities.create.visibilityOptions.private')}</option>
               </FormField>
 
               <FormField
-                label="Join Mode"
+                label={t('communities.create.joinMode')}
                 name="joinMode"
                 register={register}
                 as="select"
               >
-                <option value="open">Open</option>
-                <option value="approval">Approval Required</option>
-                <option value="invite">Invite Only</option>
+                <option value="open">{t('communities.create.joinModeOptions.open')}</option>
+                <option value="approval">{t('communities.create.joinModeOptions.approvalRequired')}</option>
+                <option value="invite">{t('communities.create.joinModeOptions.inviteOnly')}</option>
               </FormField>
 
               <FormField
-                label="Display Priority"
+                label={t('communities.create.displayPriority')}
                 name="displayPriority"
                 register={register}
                 type="number"
-                placeholder="0"
+                placeholder={t('communities.create.placeholders.displayPriority')}
                 min={0}
               />
-              <p className="text-xs mt-1" style={{ color: '#999' }}>Higher numbers appear first</p>
+              <p className="text-xs mt-1" style={{ color: '#999' }}>{t('communities.create.displayPriorityHint')}</p>
 
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -565,7 +646,7 @@ console.log('errorss',errors);
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Featured on Homepage</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.create.featuredHomepage')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -575,7 +656,7 @@ console.log('errorss',errors);
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Allow Posts</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.create.allowPosts')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -585,7 +666,7 @@ console.log('errorss',errors);
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Allow Gallery Uploads</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.create.allowGallery')}</span>
                 </label>
               </div>
             </div>
@@ -593,7 +674,7 @@ console.log('errorss',errors);
 
           {/* Actions */}
           <section className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>8. Actions</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.create.actions')}</h3>
 
             <button
               type="submit"
@@ -604,23 +685,23 @@ console.log('errorss',errors);
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  {isEditMode ? 'Updating...' : 'Creating...'}
+                  {isEditMode ? t('communities.create.updating') : t('communities.create.creating')}
                 </>
               ) : (
                 <>
                   <Save className="w-5 h-5" />
-                  {isEditMode ? 'Update Community' : 'Create & Publish'}
+                  {isEditMode ? t('communities.create.updateCommunity') : t('communities.create.createPublish')}
                 </>
               )}
             </button>
 
             <button
               type="button"
-              onClick={() => navigate(isEditMode ? -1 : '/communities')}
+              onClick={() => (isEditMode ? navigate(-1) : navigate('/communities'))}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </section>
         </div>

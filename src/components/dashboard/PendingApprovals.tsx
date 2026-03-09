@@ -1,19 +1,22 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, ShoppingBag, AlertCircle } from 'lucide-react';
 
-const approvals = [
-  { type: 'feed', count: 12, label: 'Pending Posts', icon: <MessageSquare className="w-5 h-5" /> },
-  { type: 'marketplace', count: 8, label: 'Marketplace Items', icon: <ShoppingBag className="w-5 h-5" /> },
-  { type: 'reports', count: 3, label: 'Reported Content', icon: <AlertCircle className="w-5 h-5" /> },
-];
-
 export function PendingApprovals() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const approvals = [
+    { type: 'feed', count: 12, label: t('dashboard.pendingPosts'), icon: <MessageSquare className="w-5 h-5" /> },
+    { type: 'marketplace', count: 8, label: t('dashboard.marketplaceItems'), icon: <ShoppingBag className="w-5 h-5" /> },
+    { type: 'reports', count: 3, label: t('dashboard.reportedContent'), icon: <AlertCircle className="w-5 h-5" /> },
+  ];
+
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl" style={{ color: '#333' }}>Pending Approvals</h2>
+        <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.pendingApprovals')}</h2>
       </div>
 
       <div className="space-y-4">
@@ -43,8 +46,8 @@ export function PendingApprovals() {
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <div className="mb-1">Action Required</div>
-            <div style={{ color: '#666' }}>Review and moderate pending content to maintain community standards.</div>
+            <div className="mb-1">{t('dashboard.actionRequired')}</div>
+            <div style={{ color: '#666' }}>{t('dashboard.actionRequiredBody')}</div>
           </div>
         </div>
       </div>

@@ -242,16 +242,29 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
-    
-    console.log('🚀 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`,
-      params: config.params,
-      hasAuth: !!config.headers.Authorization,
-    });
-    
+
+    // Multi-language: inject locale into URL path (/v1/en/... or /v1/ar/...)
+    const locale = localStorage.getItem('locale') || 'en';
+    const lang = locale === 'ar' ? 'ar' : 'en';
+    config.headers['Accept-Language'] = lang;
+
+    // Rewrite /v1/... → /v1/{lang}/... (skip auth endpoints — they don't need localization)
+    const isAuthUrl = config.url?.includes('/auth/');
+    if (!isAuthUrl && config.url && /^\/v1\//.test(config.url) && !/^\/v1\/(en|ar)\//.test(config.url)) {
+      config.url = config.url.replace(/^\/v1\//, `/v1/${lang}/`);
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('🚀 API Request:', {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL}${config.url}`,
+        params: config.params,
+        hasAuth: !!config.headers.Authorization,
+      });
+    }
+
     return config;
   },
   (error) => {
@@ -263,11 +276,13 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.config.url,
-    });
+    if (import.meta.env.DEV) {
+      console.log('✅ API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.config.url,
+      });
+    }
     return response;
   },
   async (error: AxiosError) => {

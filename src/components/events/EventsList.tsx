@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { UserRole } from '../../App';
 import { Plus, Search, Calendar, Users, MapPin, Star, Edit, Eye, UserCheck, Trophy, Ban, Archive } from 'lucide-react';
 import { availableCategories, availableCities } from '../../data/eventsData';
 import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
 import { toast } from 'sonner';
+import { CardSkeleton } from '../ui/skeleton';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 
@@ -16,6 +18,7 @@ interface EventsListProps {
 
 export function EventsList({ role }: EventsListProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const [events, setEvents] = useState<IEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,20 +46,29 @@ export function EventsList({ role }: EventsListProps) {
   const [demoTracks, setDemoTracks] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchMetaData = async () => {
+    const fetchAll = async () => {
       try {
-        const [communityData, trackData] = await Promise.all([
+        setIsLoading(true);
+
+        const apiStatus = statusFilter === 'all' ? undefined : statusFilter;
+
+        const [communityData, trackData, eventsResponse] = await Promise.all([
           getAllCommunities(),
           getAllTracks(),
+          getAllEvents({ status: apiStatus, page: 1, limit: 100 }),
         ]);
-  
-        setCommunities(communityData.communities);
-        setTracks(trackData.tracks);
+
+        setCommunities(Array.isArray(communityData) ? communityData : []);
+        setTracks(Array.isArray(trackData) ? trackData : []);
+        setEvents((eventsResponse as any)?.events || eventsResponse || []);
       } catch (error) {
-        toast.error('Failed to load communities or tracks');
+        toast.error(t('events.toasts.loadError'));
+      } finally {
+        setIsLoading(false);
       }
     };
-  },[]);
+    fetchAll();
+  }, [statusFilter]);
 
   const toggleCategory = (category: string) => {
     setCategoryFilter(prev =>
@@ -72,32 +84,6 @@ export function EventsList({ role }: EventsListProps) {
     completed: events.filter(e => e.status === 'Completed').length,
     participants: events.reduce((sum, e) => sum + e.currentParticipants, 0),
   };
-
-  useEffect(() => {
-    loadEvents();
-  }, [statusFilter]);
-
-
-  const loadEvents = async () => {
-  try {
-    setIsLoading(true);
-
-    const apiStatus =
-      statusFilter === 'all' ? undefined : statusFilter;
-
-    const response = await getAllEvents({
-      status: apiStatus,
-      page: 1,
-      limit: 100,
-    });
-
-    setEvents(response?.events || response || []);
-  } catch (error) {
-    toast.error('Failed to load events');
-  } finally {
-    setIsLoading(false);
-  }
-};
 
 
   const filteredEvents = useMemo(() => {
@@ -154,11 +140,11 @@ export function EventsList({ role }: EventsListProps) {
   try {
     await deleteEventApi(eventToDelete);
 
-    setEvents(prev => prev.filter(e => e._id !== eventToDelete));
+    setEvents(prev => prev.filter(e => ((e as any)._id ?? (e as any).id) !== eventToDelete));
 
-    toast.success('Event deleted successfully');
+    toast.success(t('events.toasts.deleteSuccess'));
   } catch (error: any) {
-    toast.error(error?.response?.data?.message || 'Delete failed');
+    toast.error(error?.response?.data?.message || t('events.toasts.deleteError'));
   } finally {
     setShowDeleteModal(false);
     setEventToDelete(null);
@@ -173,8 +159,8 @@ export function EventsList({ role }: EventsListProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Events Management</h1>
-          <p style={{ color: '#666' }}>Manage cycling events, races, and community rides</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('events.title')}</h1>
+          <p style={{ color: '#666' }}>{t('events.subtitle')}</p>
         </div>
         <button
           onClick={() => navigate('/events/create')}
@@ -182,7 +168,7 @@ export function EventsList({ role }: EventsListProps) {
           style={{ backgroundColor: '#C12D32' }}
         >
           <Plus className="w-5 h-5" />
-          Create Event
+          {t('events.createButton')}
         </button>
       </div>
 
@@ -190,7 +176,7 @@ export function EventsList({ role }: EventsListProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm" style={{ color: '#666' }}>Total Events</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.totalEvents')}</span>
             <Calendar className="w-5 h-5" style={{ color: '#C12D32' }} />
           </div>
           <p className="text-3xl mb-1" style={{ color: '#333' }}>{stats.total}</p>
@@ -198,7 +184,7 @@ export function EventsList({ role }: EventsListProps) {
 
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm" style={{ color: '#666' }}>Open for Registration</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.openForRegistration')}</span>
             <Calendar className="w-5 h-5" style={{ color: '#10B981' }} />
           </div>
           <p className="text-3xl mb-1" style={{ color: '#333' }}>{stats.open}</p>
@@ -206,7 +192,7 @@ export function EventsList({ role }: EventsListProps) {
 
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm" style={{ color: '#666' }}>Completed</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.completed')}</span>
             <Trophy className="w-5 h-5" style={{ color: '#F59E0B' }} />
           </div>
           <p className="text-3xl mb-1" style={{ color: '#333' }}>{stats.completed}</p>
@@ -214,7 +200,7 @@ export function EventsList({ role }: EventsListProps) {
 
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm" style={{ color: '#666' }}>Total Participants</span>
+            <span className="text-sm" style={{ color: '#666' }}>{t('events.totalParticipants')}</span>
             <Users className="w-5 h-5" style={{ color: '#3B82F6' }} />
           </div>
           <p className="text-3xl mb-1" style={{ color: '#333' }}>{stats.participants}</p>
@@ -223,14 +209,14 @@ export function EventsList({ role }: EventsListProps) {
 
       {/* Filters */}
       <div className="p-6 rounded-2xl shadow-sm bg-white space-y-4">
-        <h3 className="text-lg" style={{ color: '#333' }}>Filters</h3>
+        <h3 className="text-lg" style={{ color: '#333' }}>{t('events.filters.title', 'Filters')}</h3>
 
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
           <input
             type="text"
-            placeholder="Search by event name, community, or track..."
+            placeholder={t('events.filters.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
@@ -240,13 +226,13 @@ export function EventsList({ role }: EventsListProps) {
         {/* Filter Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div>
-            <label className="block text-sm mb-2" style={{ color: '#666' }}>Community</label>
+            <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.filters.community')}</label>
             <select
               value={communityFilter}
               onChange={(e) => setCommunityFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="">All Communities</option>
+              <option value="">{t('events.filters.allCommunities')}</option>
               {communities.map(community => (
                 <option key={community.id} value={community.id}>{community.name}</option>
               ))}
@@ -254,7 +240,7 @@ export function EventsList({ role }: EventsListProps) {
           </div>
 
           <div>
-            <label className="block text-sm mb-2" style={{ color: '#666' }}>City</label>
+            <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.filters.city')}</label>
             <select
               value={cityFilter}
               onChange={(e) => {
@@ -263,7 +249,7 @@ export function EventsList({ role }: EventsListProps) {
               }}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="">All Cities</option>
+              <option value="">{t('events.filters.allCities')}</option>
               {availableCities.map(city => (
                 <option key={city} value={city}>{city}</option>
               ))}
@@ -271,49 +257,49 @@ export function EventsList({ role }: EventsListProps) {
           </div>
 
           <div>
-            <label className="block text-sm mb-2" style={{ color: '#666' }}>Track</label>
+            <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.filters.track')}</label>
             <select
               value={trackFilter}
               onChange={(e) => setTrackFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               disabled={!cityFilter && tracks.length > 20}
             >
-              <option value="">All Tracks</option>
+              <option value="">{t('events.filters.allTracks')}</option>
               {tracks.map(track => (
                 <option key={track.id} value={track.id}>{track.name}</option>
               ))}
             </select>
             {!cityFilter && tracks.length > 20 && (
-              <p className="text-xs mt-1" style={{ color: '#999' }}>Select a city first</p>
+              <p className="text-xs mt-1" style={{ color: '#999' }}>{t('events.filters.selectCityFirst')}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm mb-2" style={{ color: '#666' }}>Status</label>
+            <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.filters.status')}</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="">All Status</option>
-              <option value="Draft">Draft</option>
-              <option value="Open">Open</option>
-              <option value="Full">Full</option>
-              <option value="Completed">Completed</option>
-              <option value="Archived">Archived</option>
+              <option value="">{t('events.filters.allStatus')}</option>
+              <option value="Draft">{t('events.filters.draft')}</option>
+              <option value="Open">{t('events.filters.open')}</option>
+              <option value="Full">{t('events.filters.full')}</option>
+              <option value="Completed">{t('events.filters.completed')}</option>
+              <option value="Archived">{t('events.filters.archived')}</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm mb-2" style={{ color: '#666' }}>Featured</label>
+            <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.filters.featured')}</label>
             <select
               value={featuredFilter}
               onChange={(e) => setFeaturedFilter(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
-              <option value="">All</option>
-              <option value="yes">Featured Only</option>
-              <option value="no">Not Featured</option>
+              <option value="">{t('events.filters.featuredAll')}</option>
+              <option value="yes">{t('events.filters.featuredOnly')}</option>
+              <option value="no">{t('events.filters.notFeatured')}</option>
             </select>
           </div>
 
@@ -331,14 +317,14 @@ export function EventsList({ role }: EventsListProps) {
               className="w-full px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
               style={{ color: '#666' }}
             >
-              Clear Filters
+              {t('events.filters.clearFilters')}
             </button>
           </div>
         </div>
 
         {/* Category Multi-Select */}
         <div>
-          <label className="block text-sm mb-2" style={{ color: '#666' }}>Categories</label>
+          <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.card.categories')}</label>
           <div className="flex flex-wrap gap-2">
             {availableCategories.map(category => (
               <button
@@ -358,10 +344,19 @@ export function EventsList({ role }: EventsListProps) {
       </div>
 
       {/* Events Grid */}
-      <div className="grid grid-cols-1 gap-4">
-        {filteredEvents.map((event) => (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredEvents.map((event) => {
+          const eventId = (event as any)._id ?? (event as any).id;
+          return (
           <div
-            key={event.id}
+            key={eventId}
             className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all relative"
           >
             <div className="flex items-start gap-6">
@@ -397,10 +392,10 @@ export function EventsList({ role }: EventsListProps) {
                       >
                         {event.category}
                       </span>
-                      <span className="text-sm" style={{ color: '#666' }}>{event.communityId?.title || 'No community'}</span>
+                      <span className="text-sm" style={{ color: '#666' }}>{event.communityId?.title || t('events.card.noCommunity')}</span>
                       <span className="text-sm" style={{ color: '#666' }}>|</span>
                       <span className="text-sm" style={{ color: '#666' }}>
-                        {event.trackId?.title || 'No Track'}
+                        {event.trackId?.title || t('events.card.noTrack')}
                         {(() => {
                           const trackId = event.trackId?._id || event.trackId?.id;
                           const stats = trackId ? trackStats[trackId] : null;
@@ -446,40 +441,40 @@ export function EventsList({ role }: EventsListProps) {
                 {/* Actions */}
                 <div className="flex flex-wrap items-center gap-2 mt-4">
                   <button
-                    onClick={() => navigate(`/events/${event._id }`)}
+                    onClick={() => navigate(`/events/${eventId}`)}
                     className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
                     <Eye className="w-4 h-4" />
-                    View
+                    {t('events.card.view')}
                   </button>
 
                   <button
-                    onClick={() => navigate(`/events/${event._id}/edit`)}
+                    onClick={() => navigate(`/events/${eventId}/edit`)}
                     className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#E5E7EB', color: '#333' }}
                   >
                     <Edit className="w-4 h-4" />
-                    Edit
+                    {t('events.card.edit')}
                   </button>
 
                   <button
-                    onClick={() => navigate('event-participants', { selectedEventId: event.id })}
+                    onClick={() => navigate('event-participants', { selectedEventId: eventId })}
                     className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#E5E7EB', color: '#333' }}
                   >
                     <UserCheck className="w-4 h-4" />
-                    Participants
+                    {t('events.card.participants')}
                   </button>
 
                   {event.category === 'Race' && (
                     <button
-                      onClick={() => navigate('event-results', { selectedEventId: event.id })}
+                      onClick={() => navigate('event-results', { selectedEventId: eventId })}
                       className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                       style={{ backgroundColor: '#E5E7EB', color: '#333' }}
                     >
                       <Trophy className="w-4 h-4" />
-                      Results
+                      {t('events.card.results')}
                     </button>
                   )}
 
@@ -489,23 +484,25 @@ export function EventsList({ role }: EventsListProps) {
                       style={{ backgroundColor: '#FEE2E2', color: '#C12D32' }}
                     >
                       <Ban className="w-4 h-4" />
-                      Disable
+                      {t('events.card.disable')}
                     </button>
                   )}
                 </div>
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
 
         {filteredEvents.length === 0 && (
           <div className="p-12 rounded-2xl bg-white text-center">
             <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-            <p className="text-lg mb-2" style={{ color: '#666' }}>No events found</p>
-            <p className="text-sm" style={{ color: '#999' }}>Try adjusting your filters or create a new event</p>
+            <p className="text-lg mb-2" style={{ color: '#666' }}>{t('events.empty.noResults')}</p>
+            <p className="text-sm" style={{ color: '#999' }}>{t('events.empty.tryFilters')}</p>
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

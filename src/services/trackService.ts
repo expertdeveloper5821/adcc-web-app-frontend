@@ -1,4 +1,5 @@
 import { api } from './api';
+import { getCached, setCache, invalidateCache } from '../utils/apiCache';
 
 export type FacilityType =
   | 'water'
@@ -99,6 +100,8 @@ export const UAE_CITIES = [
 export interface Track {
   id: string;
   title: string;
+  titleAr?: string;
+  descriptionAr?: string;
   city: string;
   area: string;
   distance: number;
@@ -152,17 +155,26 @@ export interface TrackValidationRules {
 }
 
 
-// Get all tracks
-export const getAllTracks = async (): Promise<Track[]> => {
+// Get all tracks (optionally with pagination; default limit 500 for dropdowns)
+export const getAllTracks = async (params?: { page?: number; limit?: number }): Promise<Track[]> => {
+  const cacheKey = `tracks:${params?.page || 1}:${params?.limit || 500}`;
+  const cached = getCached<Track[]>(cacheKey);
+  if (cached) return cached;
+
   try {
-    const response = await api.get('/v1/tracks');
+    const response = await api.get('/v1/tracks', { params: { limit: params?.limit ?? 500, page: params?.page ?? 1 } });
     const body = response.data as { data?: Track[] | { tracks?: Track[] }; tracks?: Track[] };
-    if (Array.isArray(body?.data)) return body.data;
-    const data = body?.data as { tracks?: Track[] } | undefined;
-    if (data && Array.isArray(data.tracks)) return data.tracks;
-    if (Array.isArray(body?.tracks)) return body.tracks;
-    if (Array.isArray(body)) return body;
-    return [];
+    let result: Track[];
+    if (Array.isArray(body?.data)) result = body.data;
+    else {
+      const data = body?.data as { tracks?: Track[] } | undefined;
+      if (data && Array.isArray(data.tracks)) result = data.tracks;
+      else if (Array.isArray(body?.tracks)) result = body.tracks;
+      else if (Array.isArray(body)) result = body;
+      else result = [];
+    }
+    setCache(cacheKey, result);
+    return result;
   } catch (error) {
     console.error('Error fetching tracks:', error);
     throw error;
@@ -185,11 +197,9 @@ export const getTrackById = async (trackId: string): Promise<Track> => {
   }
 };
 
-/**
- * Create track – POST {{baseUrl}}/v1/tracks
- * Sends payload in backend ITrack format (CreateTrackRequest).
- */
+// Create track
 export const createTrack = async (trackData: CreateTrackRequest | TrackFormData): Promise<Track & { success?: boolean; message?: string }> => {
+  invalidateCache('tracks');
   try {
     const response = await api.post<{ data?: Track; success?: boolean; message?: string }>('/v1/tracks', trackData);
     const body = response.data as { data?: Track; success?: boolean; message?: string };
@@ -203,10 +213,15 @@ export const createTrack = async (trackData: CreateTrackRequest | TrackFormData)
   }
 };
 
-// Update track
+// Update track (ensures galleryImages is always an array when provided)
 export const updateTrack = async (trackId: string, trackData: Partial<TrackFormData>): Promise<Track> => {
+  invalidateCache('tracks');
   try {
-    const response = await api.patch<any>(`/v1/tracks/${trackId}`, trackData);
+    const payload =
+      trackData.galleryImages !== undefined
+        ? { ...trackData, galleryImages: trackData.galleryImages ?? [] }
+        : trackData;
+    const response = await api.patch<any>(`/v1/tracks/${trackId}`, payload);
     // console.log('updateTrack response:', response.data);
     if ((response.data as any).data) {
         return (response.data as any).data;
@@ -220,6 +235,7 @@ export const updateTrack = async (trackId: string, trackData: Partial<TrackFormD
 
 // Delete track
 export const deleteTrack = async (id: string): Promise<void> => {
+  invalidateCache('tracks');
   try {
         await api.delete(`/v1/tracks/${id}`);
     } catch (error) {

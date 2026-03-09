@@ -1,17 +1,44 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, UseFormReturn, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CommunityFormData, GCCCountry, CommunityType } from '../../types/community';
 import type { CommunityApiResponse } from '../../services/communitiesApi';
-import { getAllTracks } from '../../services/trackService';
+
 import { gccCountries, getCitiesByCountry } from '../../data/gccLocations';
+import { getAllTracks, type Track as ApiTrack } from '../../services/trackService';
 import { compressImage } from '../../utils/imageUtils';
 
+/** Map API track to TrackSelector shape and normalize id (_id from MongoDB). */
+function toSelectorTrack(t: ApiTrack & { _id?: string }) {
+  const id = t.id ?? t._id ?? '';
+  const difficulty = t.difficulty ? String(t.difficulty).charAt(0).toUpperCase() + String(t.difficulty).slice(1) : '';
+  return {
+    id,
+    name: t.title ?? '',
+    description: t.shortDescription ?? '',
+    distance: t.distance ?? 0,
+    difficulty,
+    trackType: t.trackType ?? '',
+  };
+}
+
+// Coerce empty string from number inputs to undefined so optional number fields don't fail and scroll to this section
+const optionalNumber = (schema: z.ZodNumber) =>
+  z.preprocess(
+    (val) => {
+      if (val === '' || val === undefined || val === null) return undefined;
+      const n = Number(val);
+      return Number.isNaN(n) ? undefined : n;
+    },
+    schema.nullable().optional()
+  );
 // Validation schema using Zod
 const communityFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(100, 'Title too long'),
+  titleAr: z.string().optional(),
   description: z.string().min(10, 'Description must be at least 10 characters').max(2000, 'Description too long'),
+  descriptionAr: z.string().optional(),
   country: z.enum(['UAE', 'Saudi Arabia', 'Kuwait', 'Qatar', 'Bahrain', 'Oman']),
   city: z.string().min(1, 'City is required'),
   area: z.string().optional(),
@@ -57,13 +84,21 @@ const communityFormSchema = z.object({
   status: z.enum(['active', 'inactive']),
   visibility: z.enum(['public', 'private']),
   joinMode: z.enum(['open', 'approval', 'invite']),
-  displayPriority: z.number().min(0),
+  displayPriority: z.coerce.number().min(0),
   isFeatured: z.boolean(),
   allowPosts: z.boolean(),
   allowGallery: z.boolean(),
 }).passthrough(); // Allow legacy fields
 
 type CommunityFormSchema = z.infer<typeof communityFormSchema>;
+
+type CommunityFormValues = Omit<CommunityFormSchema, 'foundedYear' | 'ridesThisMonth' | 'weeklyRides' | 'fundsRaised' | 'displayPriority'> & {
+  foundedYear?: number | null;
+  ridesThisMonth?: number | null;
+  weeklyRides?: number | null;
+  fundsRaised?: number | null;
+  displayPriority: number;
+};
 
 interface UseCommunityFormProps {
   initialData?: CommunityApiResponse | null;
@@ -78,12 +113,16 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [allTracks, setAllTracks] = useState<(ApiTrack & { _id?: string })[]>([]);
+  const [tracksLoading, setTracksLoading] = useState(true);
 
-  const form = useForm<CommunityFormSchema>({
-    resolver: zodResolver(communityFormSchema),
+  const form = useForm<CommunityFormValues>({
+    resolver: zodResolver(communityFormSchema) as unknown as Resolver<CommunityFormValues>,
     defaultValues: {
       title: '',
+      titleAr: '',
       description: '',
+      descriptionAr: '',
       country: 'UAE',
       city: 'Abu Dhabi',
       area: '',
@@ -144,7 +183,9 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
 
       reset({
         title: initialData.title || '',
+        titleAr: (initialData as any).titleAr || '',
         description: initialData.description || '',
+        descriptionAr: (initialData as any).descriptionAr || '',
         country: country as GCCCountry,
         city,
         area: (initialData as any).area || '',
@@ -188,11 +229,30 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
     setValue('primaryTrackIds', selectedTrackIds);
   }, [selectedTrackIds, setValue]);
 
+  // Fetch tracks from API (dynamic instead of hardcoded)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTracks = async () => {
+      try {
+        setTracksLoading(true);
+        const data = await getAllTracks();
+        if (!cancelled && Array.isArray(data)) {
+          setAllTracks(data);
+        }
+      } catch {
+        if (!cancelled) setAllTracks([]);
+      } finally {
+        if (!cancelled) setTracksLoading(false);
+      }
+    };
+    fetchTracks();
+    return () => { cancelled = true; };
+  }, []);
+
   const availableCities = getCitiesByCountry(selectedCountry);
 
   // Load tracks from database (API)
   const [tracksFromApi, setTracksFromApi] = useState<any[]>([]);
-  const [tracksLoading, setTracksLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
     setTracksLoading(true);

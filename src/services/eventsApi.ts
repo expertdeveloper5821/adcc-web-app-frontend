@@ -1,9 +1,12 @@
 import api from './api';
+import { getCached, setCache, invalidateCache } from '../utils/apiCache';
 export interface EventApiResponse {
   _id?: string;
   id?: string;
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
   mainImage?: string;
   eventImage?: string;
   eventDate: string;
@@ -71,53 +74,37 @@ export const availableCategories = [
 
 // Get all events with optional filtering and pagination
 export const getAllEvents = async (params?: GetEventsParams): Promise<EventApiResponse[]> => {
-  console.log('📋 getAllEvents called with params:', params);
+  const cacheKey = `events:${params?.status || 'all'}:${params?.page || 1}:${params?.limit || 10}`;
+  const cached = getCached<EventApiResponse[]>(cacheKey);
+  if (cached) return cached;
+
   try {
     const requestParams = {
       status: params?.status,
       page: params?.page || 1,
       limit: params?.limit || 10,
     };
-    console.log('📤 Making API request with params:', requestParams);
-    
+
     const response = await api.get<GetEventsResponse | EventApiResponse[]>('/v1/events', {
       params: requestParams,
     });
-    
-    console.log('📥 Response data:', response.data);
-    console.log('📥 Response data type:', Array.isArray(response.data) ? 'Array' : 'Object');
-    
+
     // Handle different response formats
     let events: EventApiResponse[] = [];
-    
+
     if (Array.isArray(response.data)) {
-      // Direct array response
       events = response.data;
-      console.log('✅ Response is array, events count:', events.length);
     } else if ((response.data as any).data?.events) {
-      // Nested structure: { success, message, data: { events, pagination } }
       const apiResponse = response.data as GetEventsResponse;
       events = apiResponse.data.events || [];
-      console.log('✅ Response has nested data.events, events count:', events.length);
-      console.log('📊 Pagination info:', apiResponse.data.pagination);
     } else if ((response.data as any).events) {
-      // Direct events property: { events, pagination }
       events = (response.data as any).events || [];
-      console.log('✅ Response has direct events property, events count:', events.length);
-    } else {
-      console.warn('⚠️ Unexpected response structure:', response.data);
-      events = [];
     }
-    
-    console.log('📊 Final events array:', events);
+
+    setCache(cacheKey, events);
     return events;
   } catch (error) {
-    console.error('❌ Error in getAllEvents:', error);
-    console.error('❌ Error details:', {
-      message: (error as any)?.message,
-      response: (error as any)?.response,
-      request: (error as any)?.request,
-    });
+    console.error('Error in getAllEvents:', error);
     throw error;
   }
 };
@@ -159,11 +146,9 @@ export const createEvent = async (eventData: Partial<EventApiResponse>): Promise
 //         "status": "upcoming"
 //     }
 
-    console.log(eventData ,'event')
-    try {
-    console.log('📋 createEvent called with data:', eventData);
+  invalidateCache('events');
+  try {
     const response = await api.post<any>('/v1/events', eventData);
-    console.log('📥 createEvent response:', response.data);
     
     // Handle nested response structure
     if ((response.data as any).data) {
@@ -178,10 +163,9 @@ export const createEvent = async (eventData: Partial<EventApiResponse>): Promise
 
 // Update event
 export const updateEvent = async (id: string, eventData: Partial<EventApiResponse>): Promise<EventApiResponse> => {
+  invalidateCache('events');
   try {
-    console.log('📋 updateEvent called with id:', id, 'data:', eventData);
     const response = await api.patch<any>(`/v1/events/${id}`, eventData);
-    console.log('📥 updateEvent response:', response.data);
     
     // Handle nested response structure
     if ((response.data as any).data) {
@@ -196,6 +180,7 @@ export const updateEvent = async (id: string, eventData: Partial<EventApiRespons
 
 // Delete event
 export const deleteEvent = async (id: string): Promise<void> => {
+  invalidateCache('events');
   try {
     await api.delete(`/v1/events/${id}`);
   } catch (error) {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Bell, TrendingUp, Eye, MousePointerClick } from 'lucide-react';
 
@@ -10,16 +11,17 @@ const campaigns = [
 
 export function PushPerformance() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl" style={{ color: '#333' }}>Push Campaign Performance</h2>
+        <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.pushPerformance')}</h2>
         <button
           onClick={() => navigate('/push')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
         >
-          View All
+          {t('dashboard.viewAll')}
         </button>
       </div>
 
@@ -35,15 +37,15 @@ export function PushPerformance() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center">
-                <div className="text-xs mb-1" style={{ color: '#999' }}>Sent</div>
+                <div className="text-xs mb-1" style={{ color: '#999' }}>{t('dashboard.sent')}</div>
                 <div className="text-sm" style={{ color: '#333' }}>{campaign.sent.toLocaleString()}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs mb-1" style={{ color: '#999' }}>Opened</div>
+                <div className="text-xs mb-1" style={{ color: '#999' }}>{t('dashboard.opened')}</div>
                 <div className="text-sm" style={{ color: '#333' }}>{campaign.opened.toLocaleString()}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs mb-1" style={{ color: '#999' }}>Clicked</div>
+                <div className="text-xs mb-1" style={{ color: '#999' }}>{t('dashboard.clicked')}</div>
                 <div className="text-sm" style={{ color: '#333' }}>{campaign.clicked.toLocaleString()}</div>
               </div>
             </div>

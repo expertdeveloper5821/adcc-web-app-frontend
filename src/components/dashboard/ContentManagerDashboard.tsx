@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, MessageSquare, ShoppingBag, TrendingUp, Image } from 'lucide-react';
 import { StatCard } from './StatCard';
@@ -9,6 +10,7 @@ interface ContentManagerDashboardProps {
 
 export function ContentManagerDashboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const banners = [
     { title: 'Homepage Hero', status: 'Active', clicks: 1247, ctr: '3.2%' },
     { title: 'Event Promotion', status: 'Active', clicks: 892, ctr: '2.8%' },
@@ -18,35 +20,35 @@ export function ContentManagerDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Content Dashboard</h1>
-        <p style={{ color: '#666' }}>Manage marketing content and campaigns</p>
+        <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('dashboard.contentManager.title')}</h1>
+        <p style={{ color: '#666' }}>{t('dashboard.contentManager.subtitle')}</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Active Banners"
+          label={t('dashboard.contentManager.activeBanners')}
           value="8"
           icon={<Image className="w-6 h-6" />}
           trend="+2"
           onClick={() => navigate('/cms')}
         />
         <StatCard
-          label="Events Promoted"
+          label={t('dashboard.contentManager.eventsPromoted')}
           value="12"
           icon={<Calendar className="w-6 h-6" />}
           trend="+4"
           onClick={() => navigate('events')}
         />
         <StatCard
-          label="Feed Posts"
+          label={t('dashboard.contentManager.feedPosts')}
           value="47"
           icon={<MessageSquare className="w-6 h-6" />}
           trend="+8"
           onClick={() => navigate('/feed')}
         />
         <StatCard
-          label="Featured Items"
+          label={t('dashboard.contentManager.featuredItems')}
           value="15"
           icon={<ShoppingBag className="w-6 h-6" />}
           trend="+3"
@@ -57,13 +59,13 @@ export function ContentManagerDashboard() {
       {/* Homepage Banners */}
       <div className="p-6 rounded-2xl shadow-sm bg-white">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl" style={{ color: '#333' }}>Homepage Banners</h2>
+          <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.contentManager.homepageBanners')}</h2>
           <button
             onClick={() => navigate('/cms')}
             className="px-4 py-2 rounded-lg text-white text-sm"
             style={{ backgroundColor: '#C12D32' }}
           >
-            Manage Content
+            {t('dashboard.contentManager.manageContent')}
           </button>
         </div>
 
@@ -81,11 +83,11 @@ export function ContentManagerDashboard() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <div className="text-xs mb-1" style={{ color: '#999' }}>Clicks</div>
+                  <div className="text-xs mb-1" style={{ color: '#999' }}>{t('dashboard.contentManager.clicks')}</div>
                   <div className="text-sm" style={{ color: '#333' }}>{banner.clicks.toLocaleString()}</div>
                 </div>
                 <div>
-                  <div className="text-xs mb-1" style={{ color: '#999' }}>CTR</div>
+                  <div className="text-xs mb-1" style={{ color: '#999' }}>{t('dashboard.contentManager.ctr')}</div>
                   <div className="text-sm" style={{ color: '#333' }}>{banner.ctr}</div>
                 </div>
               </div>
@@ -97,7 +99,7 @@ export function ContentManagerDashboard() {
       {/* Campaign Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Event Promotions</h2>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('dashboard.contentManager.eventPromotions')}</h2>
           <div className="space-y-3">
             {[
               { name: 'Al Wathba Morning Ride', views: 3420, registrations: 124 },
@@ -107,8 +109,8 @@ export function ContentManagerDashboard() {
               <div key={index} className="p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
                 <div className="text-sm mb-2" style={{ color: '#333' }}>{event.name}</div>
                 <div className="flex items-center justify-between text-xs" style={{ color: '#666' }}>
-                  <span>{event.views.toLocaleString()} views</span>
-                  <span>{event.registrations} registrations</span>
+                  <span>{event.views.toLocaleString()} {t('dashboard.contentManager.views')}</span>
+                  <span>{event.registrations} {t('dashboard.contentManager.registrations')}</span>
                 </div>
               </div>
             ))}
@@ -116,7 +118,7 @@ export function ContentManagerDashboard() {
         </div>
 
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Feed Engagement</h2>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('dashboard.contentManager.feedEngagement')}</h2>
           <div className="space-y-3">
             {[
               { type: 'Club Announcement', likes: 342, comments: 67, shares: 23 },
@@ -126,9 +128,9 @@ export function ContentManagerDashboard() {
               <div key={index} className="p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
                 <div className="text-sm mb-2" style={{ color: '#333' }}>{post.type}</div>
                 <div className="flex items-center justify-between text-xs" style={{ color: '#666' }}>
-                  <span>{post.likes} likes</span>
-                  <span>{post.comments} comments</span>
-                  <span>{post.shares} shares</span>
+                  <span>{post.likes} {t('dashboard.contentManager.likes')}</span>
+                  <span>{post.comments} {t('dashboard.contentManager.comments')}</span>
+                  <span>{post.shares} {t('dashboard.contentManager.shares')}</span>
                 </div>
               </div>
             ))}

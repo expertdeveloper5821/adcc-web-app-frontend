@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Users, MessageSquare, ShoppingBag, UserPlus, Star } from 'lucide-react';
 
 const activities = [
@@ -53,9 +54,10 @@ const activities = [
 ];
 
 export function RecentActivity() {
+  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
-      <h2 className="text-xl mb-6" style={{ color: '#333' }}>Recent Activity</h2>
+      <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('dashboard.recentActivity')}</h2>
       
       <div className="space-y-4">
         {activities.map((activity) => (

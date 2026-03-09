@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, MapPin, Users, Calendar, Trophy, CheckCircle, XCircle, AlertTriangle, AlertCircle, Activity, Shield, Trash2 } from 'lucide-react';
+import { Activity, ArrowLeft, Edit, MapPin, Users, Calendar, Trash2, AlertCircle, Shield, Trophy, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { UserRole } from '../../App';
 import { getTrack, updateTrack } from '../../data/tracksData';
-import { toast } from 'sonner@2.0.3';
-import { getTrackById, getTrackResults, trackCommunityResults, deleteTrack as deleteTrackApi } from '../../services/trackService';
 
+import { getTrackById, getTrackResults, trackCommunityResults, deleteTrack as deleteTrackApi } from '../../services/trackService';
+import { toast } from 'sonner';
+import { DetailPageSkeleton } from '../ui/skeleton';
+import { any } from 'zod';
 interface TrackDetailProps {
   navigate: (page: string, params?: any) => void;
   role: UserRole;
@@ -14,6 +17,7 @@ interface TrackDetailProps {
 type TabType = 'overview' | 'events' | 'safety' | 'media' | 'communities';
 
 export function TrackDetail({  role }: TrackDetailProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -84,23 +88,19 @@ export function TrackDetail({  role }: TrackDetailProps) {
 
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-lg" style={{ color: '#666' }}>Loading track...</div>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
-  if (!track) {
+  if (!trackId || !track) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[200px] gap-4">
-        <div className="text-lg" style={{ color: '#666' }}>Track not found</div>
+        <div className="text-lg" style={{ color: '#666' }}>{t('tracks.detail.notFound')}</div>
         <button
           onClick={() => navigate('/tracks')}
           className="px-4 py-2 rounded-lg text-white"
           style={{ backgroundColor: '#C12D32' }}
         >
-          Back to Tracks
+          {t('tracks.detail.backToTracks')}
         </button>
       </div>
     );
@@ -126,9 +126,9 @@ export function TrackDetail({  role }: TrackDetailProps) {
   };
 
   const handleUnpublish = () => {
-    if (confirm('Are you sure you want to unpublish this track?')) {
+    if (confirm(t('tracks.detail.unpublishConfirm'))) {
       updateTrack(trackId!, { status: 'Draft' });
-      toast.success('Track unpublished successfully');
+      toast.success(t('tracks.detail.toasts.unpublishSuccess'));
     }
   };
 
@@ -184,7 +184,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                 borderBottom: activeTab === tab ? '2px solid #C12D32' : '2px solid transparent',
               }}
             >
-              {tab === 'events' ? 'Events Using Track' : tab === 'communities' ? 'Communities' : tab}
+              {t(`tracks.detail.tabs.${tab}`)}
             </button>
           ))}
         </div>
@@ -202,21 +202,21 @@ export function TrackDetail({  role }: TrackDetailProps) {
 
             {/* Track Info */}
             <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h2 className="text-xl mb-4" style={{ color: '#333' }}>Track Details</h2>
+              <h2 className="text-xl mb-4" style={{ color: '#333' }}>{t('tracks.detail.trackDetails')}</h2>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
                 <div>
-                  <div className="text-sm mb-1" style={{ color: '#999' }}>Distance</div>
+                  <div className="text-sm mb-1" style={{ color: '#999' }}>{t('tracks.detail.labels.distance')}</div>
                   <div className="text-2xl" style={{ color: '#333' }}>{track.distance} km</div>
                 </div>
                 {track.elevation && (
                   <div>
-                    <div className="text-sm mb-1" style={{ color: '#999' }}>Elevation</div>
+                    <div className="text-sm mb-1" style={{ color: '#999' }}>{t('tracks.detail.labels.elevation')}</div>
                     <div className="text-2xl" style={{ color: '#333' }}>{track.elevation} m</div>
                   </div>
                 )}
                 <div>
-                  <div className="text-sm mb-1" style={{ color: '#999' }}>Events</div>
+                  <div className="text-sm mb-1" style={{ color: '#999' }}>{t('tracks.detail.labels.events')}</div>
                   <div className="text-2xl" style={{ color: '#333' }}>{track.eventsCount ?? linkedEvents.length}</div>
                 </div>
               </div>
@@ -225,15 +225,15 @@ export function TrackDetail({  role }: TrackDetailProps) {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#C12D32' }} />
                   <div>
-                    <div className="text-sm mb-1" style={{ color: '#666' }}>Location</div>
+                    <div className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.detail.labels.location')}</div>
                     <div className="text-sm" style={{ color: '#333' }}>{track.area}, {track.city}</div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Activity className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#C12D32' }} />
+                 <Activity className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#C12D32' }} /> 
                   <div>
-                    <div className="text-sm mb-1" style={{ color: '#666' }}>Track Type</div>
+                    <div className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.detail.labels.trackType')}</div>
                     <div className="flex items-center gap-3">
                       <span
                         className="px-3 py-1 rounded-full text-xs text-white"
@@ -245,7 +245,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                       >
                         {track.difficulty}
                       </span>
-                      <span className="text-sm" style={{ color: '#666' }}>{track.surfaceType} Surface</span>
+                      <span className="text-sm" style={{ color: '#666' }}>{t('tracks.detail.surfaceLabel', { type: track.surfaceType })}</span>
                     </div>
                   </div>
                 </div>
@@ -253,12 +253,12 @@ export function TrackDetail({  role }: TrackDetailProps) {
                 <div className="flex items-center gap-2">
                   {track.hasLighting && (
                     <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: '#ECC180', color: '#333' }}>
-                      Lighting Available
+                      {t('tracks.detail.lightingAvailable')}
                     </span>
                   )}
                   {track.nightRidingAllowed && (
                     <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: '#E1C06E', color: '#333' }}>
-                      Night Riding
+                      {t('tracks.detail.nightRiding')}
                     </span>
                   )}
                 </div>
@@ -268,16 +268,16 @@ export function TrackDetail({  role }: TrackDetailProps) {
             {/* Map Preview */}
             {track.mapPreview && (
               <div className="p-6 rounded-2xl shadow-sm bg-white">
-                <h2 className="text-xl mb-4" style={{ color: '#333' }}>Route Map</h2>
+                <h2 className="text-xl mb-4" style={{ color: '#333' }}>{t('tracks.detail.routeMap')}</h2>
                 <div className="rounded-lg overflow-hidden">
-                  <img src={track.mapPreview} alt="Route map" className="w-full h-64 object-cover" />
+                  <img src={track.mapPreview} alt={t('tracks.detail.routeMap')} className="w-full h-64 object-cover" />
                 </div>
               </div>
             )}
 
             {/* Facilities */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Available Facilities</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('tracks.detail.facilitiesHeading')}</h3>
               <div className="flex flex-wrap gap-2">
                 {track.facilities?.length ? track.facilities.map((facility: string) => (
                   <span
@@ -287,9 +287,9 @@ export function TrackDetail({  role }: TrackDetailProps) {
                   >
                     {facility}
                   </span>
-                )) : (<p className="text-sm" style={{ color: '#999' }}>No facilities listed</p>)}
+                )) : (<p className="text-sm" style={{ color: '#999' }}>{t('tracks.detail.noFacilities')}</p>)}
                 {track.facilities.length === 0 && (
-                  <p className="text-sm" style={{ color: '#999' }}>No facilities listed</p>
+                  <p className="text-sm" style={{ color: '#999' }}>{t('tracks.detail.noFacilities')}</p>
                 )}
               </div>
             </div>
@@ -300,14 +300,14 @@ export function TrackDetail({  role }: TrackDetailProps) {
             {/* Quick Actions */}
             {canEdit && (
               <div className="p-6 rounded-2xl shadow-sm bg-white">
-                <h3 className="text-lg mb-4" style={{ color: '#333' }}>Quick Actions</h3>
+                <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('tracks.detail.quickActions')}</h3>
                 <div className="space-y-2">
                   <button
                     className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
                     <Edit className="w-4 h-4" />
-                    <span>Edit Track</span>
+                    <span>{t('tracks.detail.editTrack')}</span>
                   </button>
                   {track.status === 'Active' && (
                     <button
@@ -315,7 +315,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                       className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
                       style={{ backgroundColor: '#E1C06E', color: '#333' }}
                     >
-                      <span>Unpublish</span>
+                      <span>{t('tracks.detail.unpublish')}</span>
                     </button>
                   )}
                   <button
@@ -324,7 +324,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                     style={{ backgroundColor: '#C12D32' }}
                   >
                     <Trash2 className="w-4 h-4" />
-                    <span>Delete</span>
+                    <span>{t('tracks.detail.deleteTrack')}</span>
                   </button>
                 </div>
               </div>
@@ -332,10 +332,10 @@ export function TrackDetail({  role }: TrackDetailProps) {
 
             {/* Track Status */}
             <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Status</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('tracks.detail.statusLabel')}</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Status</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('tracks.detail.statusLabel')}</span>
                   <span
                     className="px-3 py-1 rounded-full text-xs text-white"
                     style={{ backgroundColor: track.status === 'Active' ? '#CF9F0C' : '#999' }}
@@ -344,11 +344,11 @@ export function TrackDetail({  role }: TrackDetailProps) {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Events</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('tracks.detail.eventsLabel')}</span>
                   <span className="text-sm" style={{ color: '#333' }}>{track.eventsCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Safety Level</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('tracks.detail.safetyLevel')}</span>
                   <div className="flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" style={{ 
                       color: track.safetyLevel === 'High' ? '#CF9F0C' : track.safetyLevel === 'Medium' ? '#E1C06E' : '#C12D32'
@@ -364,7 +364,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
 
       {activeTab === 'events' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Events Using This Track ({linkedEvents.length})</h2>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('tracks.detail.eventsTab.heading', { count: linkedEvents.length })}</h2>
           
           <div className="space-y-3">
             {linkedEvents.length > 0 ? (
@@ -397,7 +397,55 @@ export function TrackDetail({  role }: TrackDetailProps) {
             ) : (
               <div className="p-8 text-center" style={{ color: '#666' }}>
                 <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No events using this track</p>
+                <p>{t('tracks.detail.eventsTab.noEvents')}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'media' && (
+        <div className="p-6 rounded-2xl shadow-sm bg-white">
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('tracks.detail.mediaTab.heading')}</h2>
+
+          {/* Cover / main image */}
+          {(track.coverImage || track.image) && (
+            <div className="mb-8">
+              <h3 className="text-sm font-medium mb-3" style={{ color: '#666' }}>{t('tracks.detail.mediaTab.coverImage')}</h3>
+              <div className="rounded-xl overflow-hidden shadow-sm">
+                <img
+                  src={track.coverImage || track.image}
+                  alt={track.title || track.name}
+                  className="w-full h-72 object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Gallery images */}
+          <div>
+            <h3 className="text-sm font-medium mb-3" style={{ color: '#666' }}>
+              {t('tracks.detail.mediaTab.gallery', { count: track.galleryImages?.length ?? 0 })}
+            </h3>
+            {track.galleryImages?.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {track.galleryImages.map((url: string, index: number) => (
+                  <div
+                    key={index}
+                    className="rounded-xl overflow-hidden shadow-sm bg-gray-100 aspect-square"
+                  >
+                    <img
+                      src={url}
+                      alt={`${track.title || track.name} gallery ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center rounded-xl" style={{ backgroundColor: '#F9FAFB' }}>
+                <p className="text-sm" style={{ color: '#999' }}>{t('tracks.detail.mediaTab.noGallery')}</p>
+                <p className="text-xs mt-1" style={{ color: '#999' }}>{t('tracks.detail.mediaTab.noGalleryBody')}</p>
               </div>
             )}
           </div>
@@ -408,30 +456,30 @@ export function TrackDetail({  role }: TrackDetailProps) {
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="flex items-center gap-3 mb-6">
             <Shield className="w-6 h-6" style={{ color: '#C12D32' }} />
-            <h2 className="text-xl" style={{ color: '#333' }}>Safety Information</h2>
+            <h2 className="text-xl" style={{ color: '#333' }}>{t('tracks.detail.safetyTab.heading')}</h2>
           </div>
 
           <div className="space-y-6">
             <div>
-              <div className="text-sm mb-3" style={{ color: '#999' }}>Safety Requirements</div>
+              <div className="text-sm mb-3" style={{ color: '#999' }}>{t('tracks.detail.safetyTab.requirements')}</div>
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded flex items-center justify-center ${track.helmetRequired ? 'bg-green-500' : 'bg-gray-300'}`}>
                     {track.helmetRequired && <span className="text-white text-xs">✓</span>}
                   </div>
-                  <span className="text-sm" style={{ color: '#333' }}>Helmet Required</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{t('tracks.detail.safetyTab.helmetRequired')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded flex items-center justify-center ${track.nightRidingAllowed ? 'bg-green-500' : 'bg-gray-300'}`}>
                     {track.nightRidingAllowed && <span className="text-white text-xs">✓</span>}
                   </div>
-                  <span className="text-sm" style={{ color: '#333' }}>Night Riding Allowed</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{t('tracks.detail.safetyTab.nightRidingAllowed')}</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <div className="text-sm mb-2" style={{ color: '#999' }}>Traffic Level</div>
+              <div className="text-sm mb-2" style={{ color: '#999' }}>{t('tracks.detail.safetyTab.trafficLevel')}</div>
               <div className="flex items-center gap-2">
                 <span
                   className="px-3 py-1 rounded text-sm text-white"
@@ -448,7 +496,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
 
             {track.safetyNotes && (
               <div>
-                <div className="text-sm mb-2" style={{ color: '#999' }}>Safety Notes</div>
+                <div className="text-sm mb-2" style={{ color: '#999' }}>{t('tracks.detail.safetyTab.safetyNotes')}</div>
                 <div className="p-4 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
                   <p className="text-sm" style={{ color: '#333' }}>{track.safetyNotes}</p>
                 </div>
@@ -497,11 +545,12 @@ export function TrackDetail({  role }: TrackDetailProps) {
       )}
 
       {/* Upcoming Events (same list, detailed cards) */}
-      {activeTab === 'events' && linkedEvents.length > 0 && (
+      {activeTab === 'events' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm mt-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg" style={{ color: '#333' }}>Upcoming Events on this Track</h3>
+            <h3 className="text-lg" style={{ color: '#333' }}>{t('tracks.detail.eventsTab.upcomingHeading')}</h3>
           </div>
+          {linkedEvents.length > 0 ? (
           <div className="space-y-4">
             {linkedEvents.map((event: any) => {
               const eventId = event.id ?? event._id;
@@ -565,7 +614,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                         className="px-4 py-2 rounded-lg transition-all hover:shadow-md"
                         style={{ backgroundColor: '#ECC180', color: '#333' }}
                       >
-                        View Event
+                        {t('tracks.detail.eventsTab.viewEvent')}
                       </button>
                     )}
                   </div>
@@ -573,6 +622,13 @@ export function TrackDetail({  role }: TrackDetailProps) {
               );
             })}
           </div>
+          ) : (
+            <div className="p-12 text-center">
+              <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+              <p className="text-lg mb-2" style={{ color: '#666' }}>{t('tracks.detail.eventsTab.noUpcoming')}</p>
+              <p className="text-sm" style={{ color: '#999' }}>{t('tracks.detail.eventsTab.noUpcomingBody')}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -580,7 +636,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
       {activeTab === 'communities' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg" style={{ color: '#333' }}>Communities Using this Track</h3>
+            <h3 className="text-lg" style={{ color: '#333' }}>{t('tracks.detail.communitiesSection.heading')}</h3>
           </div>
 
           {linkedCommunities.length > 0 ? (
@@ -599,7 +655,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
                           <Users className="w-3 h-3" style={{ color: '#999' }} />
-                          <span className="text-xs" style={{ color: '#666' }}>{community.stats.members} members</span>
+                          <span className="text-xs" style={{ color: '#666' }}>{t('tracks.detail.communitiesSection.members', { count: community.stats.members })}</span>
                         </div>
                         <span
                           className="px-2 py-0.5 rounded-full text-xs capitalize"
@@ -616,8 +672,8 @@ export function TrackDetail({  role }: TrackDetailProps) {
           ) : (
             <div className="p-12 text-center">
               <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-              <p className="text-lg mb-2" style={{ color: '#666' }}>No communities linked</p>
-              <p className="text-sm" style={{ color: '#999' }}>No communities have selected this as a primary track</p>
+              <p className="text-lg mb-2" style={{ color: '#666' }}>{t('tracks.detail.communitiesSection.noCommunities')}</p>
+              <p className="text-sm" style={{ color: '#999' }}>{t('tracks.detail.communitiesSection.noCommunitiesBody')}</p>
             </div>
           )}
         </div>
@@ -629,10 +685,10 @@ export function TrackDetail({  role }: TrackDetailProps) {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-6 h-6" style={{ color: '#EF4444' }} />
-              <h3 className="text-xl" style={{ color: '#333' }}>Delete Track?</h3>
+              <h3 className="text-xl" style={{ color: '#333' }}>{t('tracks.detail.deleteModal.title')}</h3>
             </div>
             <p className="mb-6" style={{ color: '#666' }}>
-              This will permanently delete &quot;{track.title ?? track.name}&quot;. This action cannot be undone.
+              {t('tracks.detail.deleteModal.body', { name: track.title ?? track.name })}
             </p>
             <div className="flex gap-3">
               <button
@@ -641,19 +697,19 @@ export function TrackDetail({  role }: TrackDetailProps) {
                 className="flex-1 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md disabled:opacity-60"
                 style={{ backgroundColor: '#EF4444' }}
               >
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? t('tracks.detail.deleteModal.deleting') : t('tracks.detail.deleteModal.confirm')}
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                 style={{ color: '#666' }}
               >
-                Cancel
+                {t('tracks.detail.deleteModal.cancel')}
               </button>
             </div>
             {track.mapPreview && (
               <div className="aspect-video rounded-lg overflow-hidden">
-                <img src={track.mapPreview} alt="Map" className="w-full h-full object-cover" />
+                <img src={track.mapPreview} alt={t('tracks.detail.routeMap')} className="w-full h-full object-cover" />
               </div>
             )}
           </div>

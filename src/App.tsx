@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LocaleProvider } from './contexts/LocaleContext';
 import { Login } from './components/auth/Login';
 import { Register } from './components/auth/Register';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -86,8 +87,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppContent />
-        <Toaster position="top-right" />
+        <LocaleProvider>
+          <AppContent />
+          <Toaster position="top-right" />
+        </LocaleProvider>
       </AuthProvider>
     </BrowserRouter>
   );

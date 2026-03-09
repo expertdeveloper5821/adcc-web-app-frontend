@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, Globe } from 'lucide-react';
 import { addEvent, Event, availableCategories } from '../../data/eventsData';
 import { getTracksByCountryAndCity } from '../../data/tracksData';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { createEvent, EventApiResponse } from '../../services/eventsApi';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { Input } from '../ui/input';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useLocale } from '../../contexts/LocaleContext';
+import { useTranslation } from 'react-i18next';
 
 interface EventCreateProps {
   navigate: (page: string, params?: any) => void;
@@ -16,8 +18,9 @@ interface EventCreateProps {
 }
 
 export function EventCreate({ role }: EventCreateProps) {
-  
+
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const [thumbnailImage, setThumbnailImage] = useState<File | null>(null);
   const [coverImage, setCoverImage] = useState<File | null>(null);
@@ -27,6 +30,7 @@ export function EventCreate({ role }: EventCreateProps) {
   const [tracks, setTracks] = useState<any[]>([]);
   const [communities, setCommunities] = useState<any[]>([]);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const { locale } = useLocale();
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (e.target.files?.[0]) {
@@ -49,7 +53,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     // Optional: limit max images (10)
     if (galleryImages.length + files.length > 10) {
-      alert("Maximum 10 images allowed");
+      alert(t('events.create.maxImagesAlert'));
       return;
     }
 
@@ -79,10 +83,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const [formData, setFormData] = useState<{
     title: string;
+    titleAr: string;
     slug: string;
     category: string;
     communityId: string;
     description: string;
+    descriptionAr: string;
     country: string;
     city: string;
     trackId: string;
@@ -104,10 +110,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     allowCancellation: boolean;
   }>({
     title: '',
+    titleAr: '',
     slug: '',
     category: 'Community Ride',
     communityId: '',
     description: '',
+    descriptionAr: '',
     country: 'UAE',
     city: 'Abu Dhabi',
     trackId: '',
@@ -134,24 +142,24 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   // const tracks = getTracksByCountryAndCity(formData.country, formData.city);
   // const selectedCommunity = communities.find(c => c.id === formData.communityId);
 
-  // Community and track records – APIs return arrays directly
-  useEffect(() => {
-    const fetchMetaData = async () => {
-      try {
-        const [communityList, trackList] = await Promise.all([
-          getAllCommunities(),
-          getAllTracks(),
-        ]);
-
-        setCommunities(Array.isArray(communityList) ? communityList : []);
-        setTracks(Array.isArray(trackList) ? trackList : []);
-      } catch (error) {
-        toast.error('Failed to load communities or tracks');
-      }
-    };
-
-    fetchMetaData();
-  }, []);
+  // Community records 
+    useEffect(() => {
+      const fetchMetaData = async () => {
+        try {
+          const [communityData, trackData] = await Promise.all([
+            getAllCommunities(),
+            getAllTracks(),
+          ]);
+  
+          setCommunities(Array.isArray(communityData) ? communityData : []);
+          setTracks(Array.isArray(trackData) ? trackData : []);
+        } catch (error) {
+          toast.error(t('events.create.toasts.loadError'));
+        }
+      };
+  
+      fetchMetaData();
+    }, []);
 
   // Predefined amenities that appear as checkboxes
   const predefinedAmenities = ['water', 'toilets', 'parking', 'lighting', 'medical support', 'bike service'];
@@ -202,7 +210,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   // Helper function to compress and resize image before converting to base64
   // More aggressive compression to prevent payload too large errors
   const compressImage = (file: File, maxWidth: number = 1200, maxHeight: number = 800, maxBase64Size: number = 500 * 1024): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         reject(new Error('Please select a valid image file'));
@@ -297,9 +305,9 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
-    if (!formData.title.trim()) errors.title = 'Event title is required';
-    if (!formData.description.trim()) errors.description = 'Event description is required';
-    if (!formData.eventDate) errors.eventDate = 'Invalid event date';
+    if (!formData.title.trim()) errors.title = t('events.create.toasts.missingRequired');
+    if (!formData.description.trim()) errors.description = t('events.create.toasts.missingRequired');
+    if (!formData.eventDate) errors.eventDate = t('events.create.toasts.missingRequired');
     return errors;
   };
 
@@ -307,7 +315,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      toast.error('Please fill all required fields');
+      toast.error(t('events.create.toasts.missingRequired'));
       return;
     } else {
       setFormErrors({});
@@ -327,10 +335,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       // Prepare payload with correct types and only allowed fields
       const payload: Partial<EventApiResponse> = {
         title: formData.title,
+        ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
         slug: formData.slug,
         category: formData.category,
         communityId: formData.communityId,
         description: formData.description,
+        ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
         address: `${formData.city}, ${formData.country}`,
         trackId: formData.trackId,
         eventDate: formData.eventDate,
@@ -339,7 +349,9 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         distance: Number(formData.distance),
         difficulty: formData.difficulty,
         maxParticipants: Number(formData.maxParticipants),
-        schedule: Array.isArray(formData.schedule) ? formData.schedule : [],
+        schedule: Array.isArray(formData.schedule)
+          ? formData.schedule.filter((s) => s.time && s.title?.trim())
+          : [],
         amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
         mainImage: coverBase64 || undefined,
         galleryImages: galleryBase64,
@@ -349,10 +361,10 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       };
 
       await createEvent(payload);
-      toast.success('Event created successfully');
+      toast.success(t('events.create.toasts.createSuccess'));
       navigate('/events');
     } catch (error) {
-      toast.error('Failed to create event');
+      toast.error(t('events.create.toasts.createError'));
     }
   };
 
@@ -367,8 +379,8 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Create Event</h1>
-          <p style={{ color: '#666' }}>Create a new cycling event or race</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('events.create.title')}</h1>
+          <p style={{ color: '#666' }}>{t('events.create.subtitle')}</p>
         </div>
       </div>
 
@@ -377,28 +389,32 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         <div className="lg:col-span-2 space-y-6">
           {/* SECTION A - Basic Information */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Calendar className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.basicInfo')}</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>A. Basic Information</h2>
+
             </div>
 
-            <div className="space-y-4">
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Name *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.eventName')}</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Abu Dhabi Night Race Series – Round 3"
+                  placeholder={t('events.create.placeholders.eventName')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
                 {formErrors.title && <div className="text-xs text-red-600 mt-1">{formErrors.title}</div>}
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug (auto-generated)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.slug')}</label>
                 <input
                   type="text"
                   value={formData.slug}
@@ -409,7 +425,71 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Category *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.description')}</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder={t('events.create.placeholders.description')}
+                  rows={4}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+                {formErrors.description && <div className="text-xs text-red-600 mt-1">{formErrors.description}</div>}
+              </div>
+            </div>
+
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم الحدث <span className="text-gray-400">(Event Name)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="سلسلة سباقات أبوظبي الليلية - الجولة 3"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <textarea
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  rows={4}
+                  placeholder="وصف الحدث..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              {/* English reference */}
+              {formData.title && (
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
+                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>{t('common.englishReference')}</span>
+                  </div>
+                  <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
+                  {formData.description && (
+                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{formData.description}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Common fields always visible */}
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.category')}</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -422,30 +502,18 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community * (mandatory)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.community')}</label>
                 <select
                   value={formData.communityId}
                   onChange={(e) => setFormData({ ...formData, communityId: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="">Select community...</option>
-                  {communities?.map(community => (
+                  <option value="">{t('events.create.placeholders.community')}</option>
+                  {communities.map(community => (
                     <option key={community.id || community._id} value={community.id || community._id}>{community.title || community.name}</option>
                   ))}
                 </select>
                 {formErrors.communityId && <div className="text-xs text-red-600 mt-1">{formErrors.communityId}</div>}
-              </div>
-
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the event..."
-                  rows={4}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                />
-                {formErrors.description && <div className="text-xs text-red-600 mt-1">{formErrors.description}</div>}
               </div>
             </div>
           </div>
@@ -456,18 +524,18 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <MapPin className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>B. Location & Track</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.locationTrack')}</h2>
             </div>
 
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#666' }}>Track *</label>
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.track')}</label>
               <select
                 value={formData.trackId}
                 onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               >
-                <option value="">Select track...</option>
-                {tracks?.map(track => (
+                <option value="">{t('events.create.placeholders.track')}</option>
+                {tracks.map(track => (
                   <option key={track.id || track._id} value={track.id || track._id}>{track.title}</option>
                 ))}
                 
@@ -481,12 +549,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Calendar className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>C. Date & Time</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.dateTime')}</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Date *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.eventDate')}</label>
                 <input
                   type="date"
                   value={formData.eventDate}
@@ -497,7 +565,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Start Time *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.startTime')}</label>
                 <input
                   type="time"
                   value={formData.eventTime}
@@ -507,7 +575,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>End Time *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.endTime')}</label>
                 <input
                   type="time"
                   value={formData.endTime}
@@ -524,52 +592,52 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Settings className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>D. Ride Details</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.rideDetails')}</h2>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Distance (km)</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.distance')}</label>
                   <input
                     type="number"
                     value={formData.distance}
                     onChange={(e) => setFormData({ ...formData, distance: parseInt(e.target.value) || 0 })}
-                    placeholder="25"
+                    placeholder={t('events.create.placeholders.distance')}
                     min="1"
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Difficulty</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.difficulty')}</label>
                   <select
                     value={formData.difficulty}
                     onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as any })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                   >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
+                    <option value="Easy">{t('events.create.difficultyOptions.easy')}</option>
+                    <option value="Medium">{t('events.create.difficultyOptions.medium')}</option>
+                    <option value="Hard">{t('events.create.difficultyOptions.hard')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Max Participants *</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.maxParticipants')}</label>
                   <input
                     type="number"
                     value={formData.maxParticipants}
                     onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) || 0 })}
-                    placeholder="100"
+                    placeholder={t('events.create.placeholders.maxParticipants')}
                     min="1"
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Registration Fee</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.registrationFee')}</label>
                   <input
                     type="text"
                     value="FREE"
@@ -588,7 +656,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Calendar className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>E. Event Schedule</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.schedule')}</h2>
             </div>
 
             <div className="space-y-3">
@@ -605,7 +673,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     type="text"
                     value={item.title}
                     onChange={(e) => updateScheduleRow(index, 'title', e.target.value)}
-                    placeholder="Activity title"
+                    placeholder={t('events.create.placeholders.scheduleActivity')}
                     className="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                   />
                   {formData.schedule.length > 1 && (
@@ -625,7 +693,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 style={{ backgroundColor: '#ECC180', color: '#333' }}
               >
                 <Plus className="w-4 h-4" />
-                Add schedule row
+                {t('events.create.addScheduleRow')}
               </button>
             </div>
           </div>
@@ -636,7 +704,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Settings className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>F. Amenities</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.amenities')}</h2>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -659,7 +727,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 type="text"
                 value={customAmenityInput}
                 onChange={(e) => setCustomAmenityInput(e.target.value)}
-                placeholder="Add custom amenity"
+                placeholder={t('events.create.placeholders.customAmenity')}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
               <button
@@ -672,13 +740,13 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 className="mt-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
                 style={{ backgroundColor: '#ECC180', color: '#333' }}
               >
-                Add
+                {t('events.create.addCustomAmenity')}
               </button>
             </div>
 
             {customAmenities.length > 0 && (
               <div className="mt-4">
-                <h3 className="text-sm font-bold" style={{ color: '#333' }}>Custom Amenities:</h3>
+                <h3 className="text-sm font-bold" style={{ color: '#333' }}>{t('events.create.customAmenities')}</h3>
                 <div className="space-y-2">
                   {customAmenities.map((amenity, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -702,42 +770,42 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Users className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>G. Eligibility</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.eligibility')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Age Requirement</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.ageRequirement')}</label>
                 <input
                   type="text"
                   value={formData.eligibilityAge}
                   onChange={(e) => setFormData({ ...formData, eligibilityAge: Number(e.target.value) })}
-                  placeholder="18+"
+                  placeholder={t('events.create.placeholders.ageRequirement')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Bike Type</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.bikeType')}</label>
                 <input
                   type="text"
                   value={formData.eligibilityBike}
                   onChange={(e) => setFormData({ ...formData, eligibilityBike: e.target.value })}
-                  placeholder="Road bike, Mountain bike, Any..."
+                  placeholder={t('events.create.placeholders.bikeType')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Experience Level</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.experienceLevel')}</label>
                 <select
                   value={formData.eligibilityExperience}
                   onChange={(e) => setFormData({ ...formData, eligibilityExperience: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
+                  <option value="Beginner">{t('events.create.experienceOptions.beginner')}</option>
+                  <option value="Intermediate">{t('events.create.experienceOptions.intermediate')}</option>
+                  <option value="Advanced">{t('events.create.experienceOptions.advanced')}</option>
                 </select>
               </div>
             </div>
@@ -749,42 +817,42 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Award className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>H. Rewards & Badges</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.rewards')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Points Reward</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.pointsReward')}</label>
                 <input
                   type="number"
                   value={formData.rewardPoints}
                   onChange={(e) => setFormData({ ...formData, rewardPoints: Number(e.target.value) || 0 })}
-                  placeholder="50"
+                  placeholder={t('events.create.placeholders.pointsReward')}
                   min="0"
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Badge Name</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.badgeName')}</label>
                 <input
                   type="text"
                   value={formData.rewardBadge}
                   onChange={(e) => setFormData({ ...formData, rewardBadge: e.target.value })}
-                  placeholder="Night Racer Champion"
+                  placeholder={t('events.create.placeholders.badgeName')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Badge Image</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.badgeImage')}</label>
                 <div
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   style={{ borderColor: '#ECC180' }}
                 >
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload badge image</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, SVG - Square format recommended</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('events.create.badgeUpload')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('events.create.badgeHint')}</p>
                 </div>
               </div>
             </div>
@@ -796,20 +864,20 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <ImageIcon className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>I. Media</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.media')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Cover Image</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.coverImage')}</label>
                 <label
                   htmlFor="coverUpload"
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors block"
                   style={{ borderColor: '#ECC180' }}
                 >
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload cover image</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 16:9 format recommended</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('events.create.coverUpload')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('events.create.coverHint')}</p>
 
                   <input
                   id="coverUpload"
@@ -832,15 +900,15 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Gallery Images (optional)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.galleryImages')}</label>
                 <label 
                 htmlFor="galleryUpload" 
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors block"
                 style={{ borderColor: '#ECC180' }}
                 >
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload gallery images</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>Multiple images supported</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('events.create.galleryUpload')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('events.create.galleryHint')}</p>
                 </label>
 
                 <input
@@ -884,18 +952,18 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         <div className="space-y-6">
           {/* SECTION J - Visibility & Rules */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>J. Visibility & Rules</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.create.visibilityRules')}</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Status</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('common.status')}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="Draft">Draft</option>
-                  <option value="Open">Open</option>
+                  <option value="Draft">{t('events.create.statusOptions.draft')}</option>
+                  <option value="Open">{t('events.create.statusOptions.open')}</option>
                 </select>
               </div>
 
@@ -908,7 +976,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Featured Event</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.create.featuredEvent')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -919,7 +987,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Allow Cancellation</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.create.allowCancellation')}</span>
                 </label>
               </div>
             </div>
@@ -927,7 +995,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
           {/* SECTION K - Save Actions */}
           <div className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>K. Save Actions</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.create.saveActions')}</h3>
 
             <button
               onClick={() => handleSubmit('publish')}
@@ -935,7 +1003,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               style={{ backgroundColor: '#C12D32' }}
             >
               <Save className="w-5 h-5" />
-              Publish Event
+              {t('events.create.publish')}
             </button>
 
             <button
@@ -943,7 +1011,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               className="w-full px-4 py-3 rounded-lg transition-all hover:shadow-md"
               style={{ backgroundColor: '#ECC180', color: '#333' }}
             >
-              Save as Draft
+              {t('events.create.saveAsDraft')}
             </button>
 
             <button
@@ -951,7 +1019,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>

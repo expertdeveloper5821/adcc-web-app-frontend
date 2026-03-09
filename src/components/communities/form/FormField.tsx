@@ -1,5 +1,6 @@
 import React from 'react';
 import { UseFormRegister, FieldError } from 'react-hook-form';
+import { useLocale } from '../../../contexts/LocaleContext';
 
 interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> {
   label: string;
@@ -22,6 +23,9 @@ export const FormField: React.FC<FormFieldProps> = ({
   className = '',
   ...props
 }) => {
+  const { locale, isRtl } = useLocale();
+  const dir = isRtl ? 'rtl' : 'ltr';
+  const lang = locale;
   const baseClassName = `w-full px-4 py-2 rounded-lg border ${
     error ? 'border-red-500' : 'border-gray-200'
   } focus:outline-none focus:ring-2 focus:ring-red-600 ${className}`;
@@ -34,6 +38,8 @@ export const FormField: React.FC<FormFieldProps> = ({
             {...register(name)}
             {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
             className={baseClassName}
+            dir={dir}
+            lang={lang}
           />
         );
       case 'select':
@@ -42,6 +48,8 @@ export const FormField: React.FC<FormFieldProps> = ({
             {...register(name)}
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
             className={baseClassName}
+            dir={dir}
+            lang={lang}
           >
             {children}
           </select>
@@ -52,6 +60,8 @@ export const FormField: React.FC<FormFieldProps> = ({
             {...register(name)}
             {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
             className={baseClassName}
+            dir={dir}
+            lang={lang}
           />
         );
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Upload, Users, MapPin, Tag, Settings, Shield, Image as ImageIcon, Save, AlertTriangle, Archive, Trash2 } from 'lucide-react';
 import { deleteCommunity } from '../../data/communitiesData';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getCommunityById, updateCommunity, CommunityApiResponse, getAvailableCities, getAvailableCategories, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
@@ -17,6 +18,7 @@ interface CommunityEditProps {
 
 export function CommunityEdit({ role }: CommunityEditProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { id } = useParams<{ id: string }>();
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +48,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
         setExistingCommunity(response);
       } catch (error) {
-        toast.error('Community not found');
+        toast.error(t('communities.edit.toasts.notFound'));
         // navigate('/events');
       } finally {
         setIsLoading(false);
@@ -62,8 +64,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
         const list = await getAllTracks();
         setTracks(Array.isArray(list) ? list : []);
       } catch (error) {
-        toast.error('Failed to load tracks');
-        setTracks([]);
+        toast.error(t('communities.edit.toasts.trackNotFound'));
       } finally {
         setIsLoading(false);
       }
@@ -225,7 +226,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   if (isLoading || isMetadataLoading) {
     return (
       <div className="p-6 rounded-2xl bg-white">
-        <p style={{ color: '#666' }}>Loading...</p>
+        <p style={{ color: '#666' }}>{t('common.loading')}</p>
       </div>
     );
   }
@@ -233,7 +234,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   if (!existingCommunity) {
     return (
       <div className="p-6 rounded-2xl bg-white">
-        <p style={{ color: '#666' }}>Community not found</p>
+        <p style={{ color: '#666' }}>{t('communities.edit.notFound')}</p>
       </div>
     );
   }
@@ -334,8 +335,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
   const handleUpdate = async () => {
     if (!formData.title || !formData.description || !formData.city) {
-      console.log(formData );
-      toast.error('Please fill in all required fields');
+      toast.error(t('communities.edit.toasts.missingRequired'));
       return;
     }
 
@@ -344,8 +344,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     //   return;
     // }
 
-    if (formData.communityType === 'purpose-based' && !formData.purposeType) {
-      toast.error('Please select a purpose type');
+    if (formData.communityType === 'special' && !formData.specialType) {
+      toast.error(t('communities.edit.toasts.missingSpecialType'));
       return;
     }
 
@@ -374,21 +374,21 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       fundsRaised: String(formData.fundsRaised ?? ''),
     };
 
-    await updateCommunity(id, communityData);
-    toast.success('Community updated successfully');
+    updateCommunity(id, communityData);
+    toast.success(t('communities.edit.toasts.updateSuccess'));
     // navigate(`/communities/${id}`);
   };
 
   const handleDisable = () => {
     updateCommunity(id, { isActive: false });
-    toast.success('Community disabled');
+    toast.success(t('communities.edit.toasts.disabled'));
     setShowDisableModal(false);
     navigate(`/communities/${id}`);
   };
 
   const handleArchive = () => {
     deleteCommunity(id);
-    toast.success('Community archived');
+    toast.success(t('communities.edit.toasts.archived'));
     setShowArchiveModal(false);
     navigate('/communities');
   };
@@ -404,8 +404,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Edit Community</h1>
-          <p style={{ color: '#666' }}>Update community information and settings</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('communities.edit.title')}</h1>
+          <p style={{ color: '#666' }}>{t('communities.edit.subtitle')}</p>
         </div>
       </div>
 
@@ -414,19 +414,19 @@ export function CommunityEdit({ role }: CommunityEditProps) {
         <div className="lg:col-span-2 space-y-6">
           {/* Current Stats (Read-only) */}
           <div className="p-6 rounded-2xl shadow-sm" style={{ backgroundColor: '#FFF9EF' }}>
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>Current Stats (Read-only)</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.edit.currentStats')}</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-sm mb-1" style={{ color: '#666' }}>Members</p>
-                <p className="text-2xl" style={{ color: '#333' }}>{(() => { const m = existingCommunity.stats?.members ?? (existingCommunity as any).memberCount; return typeof m === 'number' ? m.toLocaleString() : (m ?? 0); })()}</p>
+                <p className="text-sm mb-1" style={{ color: '#666' }}>{t('communities.edit.members')}</p>
+                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.stats?.members?.toLocaleString() || 0}</p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: '#666' }}>Events</p>
-                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.stats?.upcomingEvents ?? (existingCommunity as any).upcomingEventCount ?? existingCommunity.eventsCount ?? 0}</p>
+                <p className="text-sm mb-1" style={{ color: '#666' }}>{t('communities.edit.events')}</p>
+                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.stats?.upcomingEvents || 0}</p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: '#666' }}>Posts</p>
-                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.postsCount ?? 0}</p>
+                <p className="text-sm mb-1" style={{ color: '#666' }}>{t('communities.edit.posts')}</p>
+                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.postsCount || 0}</p>
               </div>
             </div>
           </div>
@@ -437,23 +437,23 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Users className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.edit.basicInfo')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Name *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.communityName')}</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Abu Dhabi Road Racers"
+                  placeholder={t('communities.edit.placeholders.communityName')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.slug')}</label>
                 <input
                   type="text"
                   value={formData.slug}
@@ -463,59 +463,34 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe your community..."
+                  placeholder={t('communities.edit.placeholders.description')}
                   rows={4}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>City *</label>
-                  <select
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                  >
-                    <option value="">Select city...</option>
-                    {(availableCities.length ? availableCities : COMMUNITY_LOCATION_OPTIONS).map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Country</label>
-                  <select
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                  >
-                    <option value="UAE">UAE</option>
-                    <option value="Saudi Arabia">Saudi Arabia</option>
-                    <option value="Kuwait">Kuwait</option>
-                    <option value="Qatar">Qatar</option>
-                    <option value="Bahrain">Bahrain</option>
-                    <option value="Oman">Oman</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Area / Zone</label>
-                  <input
-                    type="text"
-                    value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    placeholder="e.g. Al Reem Island"
-                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.country')}</label>
+                <select
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="UAE">{t('common.country.uae')}</option>
+                  <option value="Saudi Arabia">{t('common.country.saudiArabia')}</option>
+                  <option value="Kuwait">{t('common.country.kuwait')}</option>
+                  <option value="Bahrain">{t('common.country.bahrain')}</option>
+                  <option value="Oman">{t('common.country.oman')}</option>
+                  <option value="Qatar">{t('common.country.qatar')}</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Category</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.city')}</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -529,93 +504,156 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Type</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.area')}</label>
+                <input
+                  type="text"
+                  value={formData.area}
+                  onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                  placeholder={t('communities.edit.placeholders.area')}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2 - Community Classification */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <Tag className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.edit.classification')}</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.communityType')}</label>
                 <select
                   value={formData.communityType}
                   onChange={(e) => setFormData({ ...formData, communityType: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="city">City</option>
-                  <option value="type">Type</option>
-                  <option value="purpose-based">Purpose-based</option>
+                  <option value="city">{t('communities.edit.typeOptions.city')}</option>
+                  <option value="type">{t('communities.edit.typeOptions.interest')}</option>
+                  <option value="special">{t('communities.edit.typeOptions.specialPurpose')}</option>
                 </select>
               </div>
 
-              {formData.communityType === 'purpose-based' && (
+              <div>
+                <label className="block text-sm mb-3" style={{ color: '#666' }}>{t('communities.edit.category')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {availableCategories.map((item) => {
+                    const isSelected = formData.type?.includes(item) || false;
+
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => toggleCategory(item)}
+                        className="px-3 py-2 rounded-lg text-sm transition-all"
+                        style={{
+                          backgroundColor: isSelected ? '#C12D32' : '#F3F4F6',
+                          color: isSelected ? '#fff' : '#666',
+                        }}
+                      >
+                        {item}
+                      </button>
+                    );
+                  })}
+
+
+                </div>
+              </div>
+
+              {formData.communityType === 'special' && (
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Purpose Type</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.specialPurposeType')}</label>
                   <select
                     value={formData.purposeType}
                     onChange={(e) => setFormData({ ...formData, purposeType: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                   >
-                    <option value="">Select purpose...</option>
-                    <option value="Awareness">Awareness</option>
-                    <option value="Charity">Charity</option>
-                    <option value="Corporate">Corporate</option>
-                    <option value="Education">Education</option>
-                    <option value="Health">Health</option>
-                    <option value="National">National</option>
+                    <option value="">{t('communities.create.specialPurposeOptions.select')}</option>
+                    <option value="awareness">{t('communities.create.specialPurposeOptions.awareness')}</option>
+                    <option value="charity">{t('communities.create.specialPurposeOptions.charity')}</option>
+                    <option value="corporate">{t('communities.create.specialPurposeOptions.corporate')}</option>
+                    <option value="education">{t('communities.create.specialPurposeOptions.education')}</option>
+                    <option value="health">{t('communities.create.specialPurposeOptions.health')}</option>
+                    <option value="national-events">{t('communities.create.specialPurposeOptions.nationalEvents')}</option>
                   </select>
                 </div>
               )}
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Primary Track</label>
-                {filteredTracks.length > 0 ? (
-                  filteredTracks.map((track) => (
-                    <label
-                      key={track._id ?? track.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.primaryTrack === (track._id ?? track.id)}
-                        onChange={() => toggleTrack(track._id ?? track.id)}
-                        className="mt-1 w-4 h-4"
-                        style={{ accentColor: '#C12D32' }}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium" style={{ color: '#333' }}>
-                          {track.title ?? track.name}
-                        </p>
-                        <div className="flex items-center gap-4 mt-1">
-                          <span className="text-sm" style={{ color: '#666' }}>
-                            {track.city}
-                          </span>
-                          <span className="text-sm" style={{ color: '#666' }}>
-                            {track.distance} km
-                          </span>
-                          <span
-                            className="px-2 py-1 rounded-full text-xs"
-                            style={{
-                              backgroundColor:
-                                track.difficulty === 'Easy'
-                                  ? '#10B981'
-                                  : track.difficulty === 'Medium'
-                                    ? '#F59E0B'
-                                    : '#EF4444',
-                              color: '#fff'
-                            }}
-                          >
-                            {track.difficulty}
-                          </span>
-                        </div>
-                      </div>
-                    </label>
-                  ))
-                ) : (
-                  <p className="text-sm text-center py-4" style={{ color: '#999' }}>
-                    No tracks available in {formData.city}
-                  </p>
-                )}
+          {/* SECTION 3 - Tracks Mapping */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                <MapPin className="w-5 h-5" />
               </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.edit.tracks')}</h2>
+            </div>
+
+            <div className="space-y-3">
+              {filteredTracks.length > 0 ? (
+                filteredTracks.map(track => (
+                  <label
+                    key={track._id}
+                    className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="radio"
+                      name="primaryTrack"
+                      checked={formData.primaryTrack === track._id}
+                      onChange={() => toggleTrack(track._id)}
+                      className="mt-1 w-4 h-4"
+                      style={{ accentColor: '#C12D32' }}
+                    />
+
+                    <div className="flex-1">
+                      <p className="font-medium" style={{ color: '#333' }}>
+                        {track.title}
+                      </p>
+
+                      <div className="flex items-center gap-4 mt-1">
+                        <span className="text-sm" style={{ color: '#666' }}>
+                          {track.city}
+                        </span>
+
+                        <span className="text-sm" style={{ color: '#666' }}>
+                          {track.distance} km
+                        </span>
+
+                        <span
+                          className="px-2 py-1 rounded-full text-xs"
+                          style={{
+                            backgroundColor:
+                              track.difficulty === 'Easy'
+                                ? '#10B981'
+                                : track.difficulty === 'Medium'
+                                  ? '#F59E0B'
+                                  : '#EF4444',
+                            color: '#fff'
+                          }}
+                        >
+                          {track.difficulty}
+                        </span>
+                      </div>
+                    </div>
+                  </label>
+                ))
+              ) : (
+                <p className="text-sm text-center py-4" style={{ color: '#999' }}>
+                  {t('communities.edit.noTracksInCity', { city: formData.city })}
+                </p>
+              )}
 
               {/* Keep your assigned count block exactly as is */}
               {formData.primaryTrack && (
                 <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
                   <p className="text-sm" style={{ color: '#666' }}>
-                    1 track assigned
+                    {t('communities.edit.oneTrackAssigned')}
                   </p>
                 </div>
               )}
@@ -637,12 +675,12 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Settings className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>4. Community Stats</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.edit.communityStats')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Founded Year</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.foundedYear')}</label>
                 <input
                   type="number"
                   value={formData.foundedYear || ''}
@@ -656,7 +694,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
               {formData.communityType === 'city' && (
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Rides This Month</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.ridesThisMonth')}</label>
                   <input
                     type="number"
                     value={formData.ridesThisMonth || ''}
@@ -670,7 +708,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
               {formData.communityType === 'type' && (
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Weekly Rides</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.weeklyRides')}</label>
                   <input
                     type="number"
                     value={formData.weeklyRides || ''}
@@ -684,7 +722,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
               {(formData.communityType === 'purpose-based' || formData.communityType === 'special') && (
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Funds Raised (AED)</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.fundsRaised')}</label>
                   <input
                     type="number"
                     value={formData.fundsRaised || ''}
@@ -704,12 +742,12 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <ImageIcon className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>5. Media</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.edit.media')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Logo</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.communityLogo')}</label>
                 <div className="mb-3">
                   {(existingCommunity.logo || formData.logo) ? (
                     <img src={existingCommunity.logo || formData.logo} alt="Current logo" className="w-20 h-20 rounded-lg object-cover" />
@@ -727,13 +765,19 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                   style={{ borderColor: '#ECC180' }}
                 >
                   <Upload className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload new logo</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - Square format recommended</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('communities.edit.uploadLogo')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('communities.edit.logoHint')}</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoChange}
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Cover Image</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.coverImage')}</label>
                 <div className="mb-3">
                   {(existingCommunity.image || formData.image) ? (
                     <img src={existingCommunity.image || formData.image} alt="Current cover" className="w-full h-32 rounded-lg object-cover" />
@@ -751,8 +795,14 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                   style={{ borderColor: '#ECC180' }}
                 >
                   <Upload className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload new cover image</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 16:9 format recommended</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('communities.edit.uploadCover')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('communities.edit.coverHint')}</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
                 </div>
               </div>
             </div>
@@ -764,24 +814,24 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Shield className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>7. Admin Assignment</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.edit.adminAssignment')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Manager</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.communityManager')}</label>
                 <input
                   type="text"
                   value={formData.manager}
                   onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-                  placeholder="Manager name"
+                  placeholder={t('communities.edit.placeholders.manager')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Moderators (multi-select)</label>
-                <p className="text-xs mb-2" style={{ color: '#999' }}>Feature coming soon</p>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.moderators')}</label>
+                <p className="text-xs mb-2" style={{ color: '#999' }}>{t('communities.edit.featureComingSoon')}</p>
               </div>
             </div>
           </div>
@@ -792,7 +842,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#FEE2E2' }}>
                 <AlertTriangle className="w-5 h-5" style={{ color: '#C12D32' }} />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>8. Advanced Controls</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('communities.edit.advancedControls')}</h2>
             </div>
 
             <div className="space-y-3">
@@ -802,7 +852,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 style={{ backgroundColor: '#F59E0B' }}
               >
                 <AlertTriangle className="w-5 h-5" />
-                <span>Disable Community</span>
+                <span>{t('communities.edit.disable')}</span>
               </button>
 
               <button
@@ -811,7 +861,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 style={{ borderColor: '#C12D32', color: '#C12D32' }}
               >
                 <Archive className="w-5 h-5" />
-                <span>Archive Community</span>
+                <span>{t('communities.edit.archive')}</span>
               </button>
             </div>
           </div>
@@ -821,48 +871,48 @@ export function CommunityEdit({ role }: CommunityEditProps) {
         <div className="space-y-6">
           {/* SECTION 6 - Visibility & Rules */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>6. Visibility & Rules</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.edit.visibilityRules')}</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Status</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.status')}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="inactive">Draft</option>
-                  <option value="active">Active</option>
+                  <option value="inactive">{t('communities.edit.statusOptions.draft')}</option>
+                  <option value="active">{t('communities.edit.statusOptions.active')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Visibility</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.visibility')}</label>
                 <select
                   value={formData.visibility}
                   onChange={(e) => setFormData({ ...formData, visibility: e.target.value as 'public' | 'private' })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
+                  <option value="public">{t('communities.edit.visibilityOptions.public')}</option>
+                  <option value="private">{t('communities.edit.visibilityOptions.private')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Join Mode</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.joinMode')}</label>
                 <select
                   value={formData.joinMode}
                   onChange={(e) => setFormData({ ...formData, joinMode: e.target.value as 'open' | 'approval' | 'invite' })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="open">Open</option>
-                  <option value="approval">Approval Required</option>
-                  <option value="invite">Invite Only</option>
+                  <option value="open">{t('communities.edit.joinModeOptions.open')}</option>
+                  <option value="approval">{t('communities.edit.joinModeOptions.approvalRequired')}</option>
+                  <option value="invite">{t('communities.edit.joinModeOptions.inviteOnly')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Display Priority</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.displayPriority')}</label>
                 <input
                   type="number"
                   value={formData.displayPriority}
@@ -871,7 +921,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                   min="0"
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
-                <p className="text-xs mt-1" style={{ color: '#999' }}>Higher numbers appear first</p>
+                <p className="text-xs mt-1" style={{ color: '#999' }}>{t('communities.edit.displayPriorityHint')}</p>
               </div>
 
               <div className="pt-4 border-t border-gray-200 space-y-3">
@@ -883,7 +933,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Featured on Homepage</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.edit.featuredHomepage')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -894,7 +944,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Allow Posts</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.edit.allowPosts')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -905,7 +955,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Allow Gallery Uploads</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.edit.allowGallery')}</span>
                 </label>
               </div>
             </div>
@@ -913,7 +963,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
           {/* Actions */}
           <div className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>Actions</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.edit.actions')}</h3>
 
             <button
               onClick={handleUpdate}
@@ -921,7 +971,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               style={{ backgroundColor: '#C12D32' }}
             >
               <Save className="w-5 h-5" />
-              Update Community
+              {t('communities.edit.updateCommunity')}
             </button>
 
             <button
@@ -929,7 +979,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -939,9 +989,9 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       {showDisableModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowDisableModal(false)}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Disable Community?</h3>
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.edit.disableModal.title')}</h3>
             <p className="mb-6" style={{ color: '#666' }}>
-              This will hide the community from public view. Members will not be able to access it. You can re-enable it later.
+              {t('communities.edit.disableModal.body')}
             </p>
             <div className="flex gap-3">
               <button
@@ -949,14 +999,14 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 className="flex-1 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
                 style={{ backgroundColor: '#F59E0B' }}
               >
-                Disable
+                {t('communities.edit.disableModal.confirm')}
               </button>
               <button
                 onClick={() => setShowDisableModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                 style={{ color: '#666' }}
               >
-                Cancel
+                {t('communities.edit.disableModal.cancel')}
               </button>
             </div>
           </div>
@@ -967,9 +1017,9 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       {showArchiveModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowArchiveModal(false)}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Archive Community?</h3>
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.edit.archiveModal.title')}</h3>
             <p className="mb-6" style={{ color: '#666' }}>
-              This will permanently remove the community and all its data. This action cannot be undone.
+              {t('communities.edit.archiveModal.body')}
             </p>
             <div className="flex gap-3">
               <button
@@ -977,14 +1027,14 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 className="flex-1 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                Archive
+                {t('communities.edit.archiveModal.confirm')}
               </button>
               <button
                 onClick={() => setShowArchiveModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                 style={{ color: '#666' }}
               >
-                Cancel
+                {t('communities.edit.archiveModal.cancel')}
               </button>
             </div>
           </div>

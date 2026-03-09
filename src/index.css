@@ -1692,3 +1692,8 @@ html {
   inherits: false;
   initial-value: 1;
 }
+
+.scroller{
+  overflow-x: auto;
+  scroll-behavior: smooth;
+}

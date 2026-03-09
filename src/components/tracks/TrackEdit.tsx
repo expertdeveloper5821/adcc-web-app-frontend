@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Archive, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Archive, AlertTriangle, Globe } from 'lucide-react';
 import { getAllEvents } from '../../data/eventsData';
 import { getAllCommunities } from '../../data/communitiesData';
 import { toast } from 'sonner@2.0.3';
 import { UserRole } from '../../App';
 import { getTrackById, getTrackResults, trackCommunityResults, updateTrack, deleteTrack, disableTrack, enableTrack } from '../../services/trackService';
 import { FacilityType } from '@/types/track.types';
-import { TRACK_FACILITIES } from '@/constants/track.constants';// import { getTrack, updateTrack, Track, availableFacilities, getTrackCommunities, deleteTrack } from '../../data/tracksData';
+import { TRACK_FACILITIES } from '@/constants/track.constants';
+import { useLocale } from '../../contexts/LocaleContext';
+import { useTranslation } from 'react-i18next';
 
 interface TrackEditProps {
   navigate: (page: string, params?: any) => void;
@@ -16,12 +18,14 @@ interface TrackEditProps {
 
 export function TrackEdit({ role }: TrackEditProps) {
   const navigate = useNavigate();
-  
+  const { t } = useTranslation();
+
   const { id } = useParams<{ id: string }>();
   const trackId = id;
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const { locale } = useLocale();
   const [ track, setTrack ] = useState<Track | null >(null);
 
   const [linkedEvents, setLinkedEvents] = useState<any[]>([]);
@@ -41,7 +45,7 @@ export function TrackEdit({ role }: TrackEditProps) {
       const data = await getTrackById(trackId);
       setTrack(data);
     } catch (error) {
-      toast.error('Track not found');
+      toast.error(t('tracks.edit.toasts.notFound'));
     } finally {
       setIsLoading(false);
     }
@@ -113,57 +117,58 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   reader.readAsDataURL(file);
 };
 
-const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    const files: File[] = fileList ? Array.from(fileList) : [];
+    if (!files.length) return;
 
-    const files = Array.from(e.target.files);
-
-    // Optional: limit max images (10)
     if (galleryImages.length + files.length > 10) {
-      alert("Maximum 10 images allowed");
+      toast.error(t('tracks.edit.toasts.maxImages'));
+      e.target.value = '';
       return;
     }
 
-    const newPreviews = files.map(file => URL.createObjectURL(file));
+    const newPreviews = files.map((file: File) => URL.createObjectURL(file));
+    const base64Results = await Promise.all(
+      files.map(
+        (file: File) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          })
+      )
+    );
 
-    setGalleryImages(prev => [...prev, ...files]);
-    setGalleryPreviews(prev => [...prev, ...newPreviews]);
-
-    // convert each file to base64 and add to formData
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          galleryImages: [...prev.galleryImages, reader.result as string],
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Reset input so same file can be selected again
+    setGalleryImages((prev) => [...prev, ...files]);
+    setGalleryPreviews((prev) => [...prev, ...newPreviews]);
+    setFormData((prev) => ({
+      ...prev,
+      galleryImages: [...prev.galleryImages, ...base64Results],
+    }));
     e.target.value = '';
   };
 
 
   const removeGalleryImage = (index: number) => {
-    const updatedImages = [...galleryImages];
-    const updatedPreviews = [...galleryPreviews];
-
-    // Clean memory
-    URL.revokeObjectURL(updatedPreviews[index]);
-
-    updatedImages.splice(index, 1);
-    updatedPreviews.splice(index, 1);
-
+    URL.revokeObjectURL(galleryPreviews[index]);
+    const updatedImages = galleryImages.filter((_, i) => i !== index);
+    const updatedPreviews = galleryPreviews.filter((_, i) => i !== index);
     setGalleryImages(updatedImages);
     setGalleryPreviews(updatedPreviews);
+    setFormData((prev) => ({
+      ...prev,
+      galleryImages: prev.galleryImages.filter((_, i) => i !== index),
+    }));
   };
 
   const [formData, setFormData] = useState({
     title: '',
+    titleAr: '',
     slug: '',
     description: '',
+    descriptionAr: '',
     trackType: 'road' as 'road' | 'circuit' | 'coastal' | 'desert' | 'urban',
     country: 'UAE',
     city: 'Abu Dhabi',
@@ -192,8 +197,10 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   setFormData(prev => ({
     ...prev,
     title: track.title || prev.title,
+    titleAr: (track as any).titleAr || prev.titleAr,
     slug: (track as any).slug || prev.slug,
     description: track.description || prev.description,
+    descriptionAr: (track as any).descriptionAr || prev.descriptionAr,
     city: track.city || prev.city,
     area: track.area || prev.area,
     distance: track.distance ?? prev.distance,
@@ -222,7 +229,7 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (!track) {
     return (
       <div className="p-6 rounded-2xl bg-white">
-        <p style={{ color: '#666' }}>Track not found</p>
+        <p style={{ color: '#666' }}>{t('tracks.edit.trackNotFound')}</p>
       </div>
     );
   }
@@ -277,7 +284,7 @@ const handleImageUpload = (
 
   // Optional: limit size (2MB)
   if (file.size > 2 * 1024 * 1024) {
-    toast.error('Image must be less than 2MB');
+    toast.error(t('tracks.edit.toasts.imageTooLarge'));
     return;
   }
 
@@ -299,9 +306,9 @@ const handleGalleryUpload = (
   const files = event.target.files;
   if (!files) return;
 
-  const fileArray = Array.from(files);
+  const fileArray = Array.from(files) as File[];
 
-  fileArray.forEach(file => {
+  fileArray.forEach((file: File) => {
     if (file.size > 3 * 1024 * 1024) {
       toast.error(`${file.name} is larger than 2MB`);
       return;
@@ -336,22 +343,24 @@ const handleGalleryUpload = (
     if (!trackId) return;
 
     if (!formData.title || !formData.city) {
-      toast.error('Please fill in required fields');
+      toast.error(t('tracks.edit.toasts.requiredFields'));
       return;
     }
 
     if (formData.distance <= 0) {
-      toast.error('Distance must be greater than 0');
+      toast.error(t('tracks.edit.toasts.invalidDistance'));
       return;
     }
 
     try {
-      // Build cleaned payload to match backend expectations
+      // Build cleaned payload to match backend: trackType 'coastal' -> 'costal', galleryImages always array
       const payload: any = {
         title: formData.title,
         slug: formData.slug,
         description: formData.description,
-        trackType: formData.trackType,
+        ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
+        ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
+        trackType: formData.trackType === 'coastal' ? 'costal' : formData.trackType,
         country: formData.country,
         city: formData.city,
         area: formData.area,
@@ -368,7 +377,7 @@ const handleGalleryUpload = (
         status: formData.status,
         image: formData.thumbnailImage,
         coverImage: formData.coverImage,
-        galleryImages: formData.galleryImages,
+        galleryImages: Array.isArray(formData.galleryImages) ? formData.galleryImages : [],
         visibility: formData.visibility,
         displayPriority: Number(formData.displayPriority) || 0,
       };
@@ -377,11 +386,11 @@ const handleGalleryUpload = (
 
       await updateTrack(trackId, payload);
 
-      toast.success('Track updated successfully');
+      toast.success(t('tracks.edit.toasts.updateSuccess'));
       navigate(`/tracks/${trackId}/edit`);
     } catch (error: any) {
       console.error('Update error:', error?.response?.data || error);
-      toast.error('Failed to update track');
+      toast.error(t('tracks.edit.toasts.updateError'));
     }
   };
 
@@ -391,10 +400,10 @@ const handleGalleryUpload = (
 
   try {
     await deleteTrack(trackId);
-    toast.success('Track deleted successfully');
+    toast.success(t('tracks.edit.toasts.deleteSuccess'));
     navigate('/tracks');
   } catch (error) {
-    toast.error('Failed to delete track');
+    toast.error(t('tracks.edit.toasts.deleteError'));
   }
 };
 
@@ -403,10 +412,10 @@ const handleDisable = async (id: string, name: string) => {
 
   try {
     await disableTrack(id);
-    toast.success('Track disabled successfully');
+    toast.success(t('tracks.edit.toasts.disabled'));
     setTrack();
   } catch (error: any) {
-    toast.error(error?.response?.data?.message || 'Failed to disable');
+    toast.error(error?.response?.data?.message || t('tracks.edit.toasts.disableError'));
   }
 };
 
@@ -425,8 +434,8 @@ const handleDisable = async (id: string, name: string) => {
             <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
           </button>
           <div>
-            <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Edit Track</h1>
-            <p style={{ color: '#666' }}>Update track information and settings</p>
+            <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('tracks.edit.title')}</h1>
+            <p style={{ color: '#666' }}>{t('tracks.edit.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -436,20 +445,20 @@ const handleDisable = async (id: string, name: string) => {
         <div className="lg:col-span-2 space-y-6">
           {/* Read-only Stats Panel */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>Track Statistics</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('tracks.edit.statistics')}</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-sm mb-1" style={{ color: '#666' }}>Total Events</p>
+                <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.edit.totalEvents')}</p>
                 <p className="text-2xl" style={{ color: '#333' }}>{linkedEvents.length}</p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: '#666' }}>Upcoming Events</p>
+                <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.edit.upcomingEvents')}</p>
                 <p className="text-2xl" style={{ color: '#10B981' }}>
                   {linkedEvents.filter((e: any) => new Date(e.eventDate) >= new Date()).length}
                 </p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: '#666' }}>Communities</p>
+                <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.edit.communities')}</p>
                 <p className="text-2xl" style={{ color: '#333' }}>{linkedCommunities.length}</p>
               </div>
             </div>
@@ -457,27 +466,31 @@ const handleDisable = async (id: string, name: string) => {
 
           {/* SECTION 1 - Basic Information */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <MapPin className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl" style={{ color: '#333' }}>{t('tracks.edit.basicInfo')}</h2>
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>1. Basic Information</h2>
+
             </div>
 
-            <div className="space-y-4">
+            {/* English Fields */}
+            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Track Name *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.trackName')}</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Yas Marina Circuit"
+                  placeholder={t('tracks.edit.placeholders.trackName')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug (auto-generated)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.slug')}</label>
                 <input
                   type="text"
                   value={formData.slug}
@@ -488,33 +501,85 @@ const handleDisable = async (id: string, name: string) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the track, its features, and what makes it unique..."
+                  placeholder={t('tracks.edit.placeholders.description')}
                   rows={4}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
+            </div>
+
+            {/* Arabic Fields */}
+            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المسار <span className="text-gray-400">(Track Name)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="حلبة مرسى ياس"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Track Type *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Description)</span>
+                </label>
+                <textarea
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  rows={4}
+                  placeholder="وصف المسار..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              {/* English reference */}
+              {formData.title && (
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
+                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>{t('common.englishReference')}</span>
+                  </div>
+                  <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
+                  {formData.description && (
+                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{formData.description}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Common fields always visible */}
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.trackType')}</label>
                 <select
                   value={formData.trackType}
                   onChange={(e) => setFormData({ ...formData, trackType: e.target.value as any })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="road">Road</option>
-                  <option value="circuit">Circuit</option>
-                  <option value="coastal">Coastal</option>
-                  <option value="desert">Desert</option>
-                  <option value="urban">Urban</option>
+                  <option value="road">{t('tracks.edit.trackTypeOptions.road')}</option>
+                  <option value="circuit">{t('tracks.edit.trackTypeOptions.circuit')}</option>
+                  <option value="coastal">{t('tracks.edit.trackTypeOptions.coastal')}</option>
+                  <option value="desert">{t('tracks.edit.trackTypeOptions.desert')}</option>
+                  <option value="urban">{t('tracks.edit.trackTypeOptions.urban')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Country *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.country')}</label>
                 <select
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
@@ -530,7 +595,7 @@ const handleDisable = async (id: string, name: string) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>City *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.city')}</label>
                 <select
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
@@ -543,12 +608,12 @@ const handleDisable = async (id: string, name: string) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Area (optional)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.area')}</label>
                 <input
                   type="text"
                   value={formData.area}
                   onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                  placeholder="e.g., Yas Island, Marina, Corniche..."
+                  placeholder={t('tracks.edit.placeholders.area')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
@@ -561,17 +626,17 @@ const handleDisable = async (id: string, name: string) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Activity className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>2. Route Details</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('tracks.edit.routeDetails')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Total Distance (km) *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.distance')}</label>
                 <input
                   type="number"
                   value={formData.distance}
                   onChange={(e) => setFormData({ ...formData, distance: parseFloat(e.target.value) || 0 })}
-                  placeholder="42"
+                  placeholder={t('tracks.edit.placeholders.distance')}
                   min="0.1"
                   step="0.1"
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
@@ -579,61 +644,61 @@ const handleDisable = async (id: string, name: string) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Difficulty *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.difficulty')}</label>
                 <select
                   value={formData.difficulty}
                   onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as any })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
+                  <option value="easy">{t('tracks.edit.difficultyOptions.easy')}</option>
+                  <option value="medium">{t('tracks.edit.difficultyOptions.medium')}</option>
+                  <option value="hard">{t('tracks.edit.difficultyOptions.hard')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Surface Type *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.surfaceType')}</label>
                 <select
                   value={formData.surfaceType}
                   onChange={(e) => setFormData({ ...formData, surfaceType: e.target.value as any })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="Asphalt">Asphalt</option>
-                  <option value="Concrete">Concrete</option>
-                  <option value="Mixed">Mixed</option>
+                  <option value="Asphalt">{t('tracks.edit.surfaceOptions.asphalt')}</option>
+                  <option value="Concrete">{t('tracks.edit.surfaceOptions.concrete')}</option>
+                  <option value="Mixed">{t('tracks.edit.surfaceOptions.mixed')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Elevation Gain (m)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.elevationGain')}</label>
                 <input
                   type="text"
                   value={formData.elevation}
                   onChange={(e) => setFormData({ ...formData, elevation: e.target.value })}
-                  placeholder="120"
+                  placeholder={t('tracks.edit.placeholders.elevation')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Estimated Ride Time</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.estimatedRideTime')}</label>
                 <input
                   type="text"
                   value={formData.estimatedTime}
                   onChange={(e) => setFormData({ ...formData, estimatedTime: e.target.value })}
-                  placeholder="e.g., 2-3 hours"
+                  placeholder={t('tracks.edit.placeholders.estimatedRideTime')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Loop Options (km)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.loopOptions')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="number"
                     value={formData.loopOptionInput}
                     onChange={(e) => setFormData({ ...formData, loopOptionInput: e.target.value })}
-                    placeholder="e.g., 8, 15, 22, 35"
+                    placeholder={t('tracks.edit.placeholders.loopOptions')}
                     min="0.1"
                     step="0.1"
                     className="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
@@ -645,7 +710,7 @@ const handleDisable = async (id: string, name: string) => {
                     className="px-4 py-2 rounded-lg text-white"
                     style={{ backgroundColor: '#C12D32' }}
                   >
-                    Add
+                    {t('common.create')}
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -676,7 +741,7 @@ const handleDisable = async (id: string, name: string) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Settings className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>3. Facilities</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('tracks.edit.facilities')}</h2>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -710,16 +775,16 @@ const handleDisable = async (id: string, name: string) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Shield className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>4. Safety Information</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('tracks.edit.safetyInfo')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Safety Notes</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.safetyNotes')}</label>
                 <textarea
                   value={formData.safetyNotes}
                   onChange={(e) => setFormData({ ...formData, safetyNotes: e.target.value })}
-                  placeholder="Important safety information for riders..."
+                  placeholder={t('tracks.edit.placeholders.safetyNotes')}
                   rows={4}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
@@ -734,7 +799,7 @@ const handleDisable = async (id: string, name: string) => {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Helmet Required</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('tracks.edit.helmetRequired')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -745,7 +810,7 @@ const handleDisable = async (id: string, name: string) => {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>Night Riding Allowed</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('tracks.edit.nightRiding')}</span>
                 </label>
               </div>
             </div>
@@ -757,13 +822,13 @@ const handleDisable = async (id: string, name: string) => {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <ImageIcon className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>5. Media</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('tracks.edit.media')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  Current Thumbnail
+                  {t('tracks.edit.currentThumbnail')}
                 </label>
 
                 <img
@@ -777,7 +842,7 @@ const handleDisable = async (id: string, name: string) => {
                   style={{ borderColor: '#ECC180' }}
                 >
                   <p className="text-sm" style={{ color: '#666' }}>
-                    Click to replace thumbnail
+                    {t('tracks.edit.replaceThumbnail')}
                   </p>
 
                   <input
@@ -791,15 +856,15 @@ const handleDisable = async (id: string, name: string) => {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Current Cover Image</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.currentCover')}</label>
                 <label
                   htmlFor="coverUpload"
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors block"
                   style={{ borderColor: '#ECC180' }}
                 >
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload cover image (1200x600)</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 2:1 format recommended</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('tracks.edit.uploadCover')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('tracks.edit.coverHint')}</p>
 
                   <input
                     id="coverUpload"
@@ -821,15 +886,15 @@ const handleDisable = async (id: string, name: string) => {
 
               </div>
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Gallery Images (optional)</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.galleryImages')}</label>
                 <label
                   htmlFor="galleryUpload"
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors block"
                   style={{ borderColor: '#ECC180' }}
                 >
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload gallery images</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>Multiple images supported</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('tracks.edit.uploadGallery')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('tracks.edit.galleryHint')}</p>
                 </label>
 
                 <input
@@ -873,36 +938,36 @@ const handleDisable = async (id: string, name: string) => {
         <div className="space-y-6">
           {/* SECTION 6 - Status & Visibility */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>6. Status & Visibility</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('tracks.edit.statusVisibility')}</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Track Status</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.trackStatus')}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="open">Open</option>
-                  <option value="limited">Limited</option>
-                  <option value="closed">Closed</option>
+                  <option value="open">{t('tracks.edit.statusOptions.open')}</option>
+                  <option value="limited">{t('tracks.edit.statusOptions.limited')}</option>
+                  <option value="closed">{t('tracks.edit.statusOptions.closed')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Visibility</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.visibility')}</label>
                 <select
                   value={formData.visibility}
                   onChange={(e) => setFormData({ ...formData, visibility: e.target.value as any })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="Public">Public</option>
-                  <option value="Hidden">Hidden (admin only)</option>
+                  <option value="Public">{t('tracks.edit.visibilityOptions.public')}</option>
+                  <option value="Hidden">{t('tracks.edit.visibilityOptions.hidden')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Display Priority</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.displayPriority')}</label>
                 <input
                   type="number"
                   value={formData.displayPriority}
@@ -911,14 +976,14 @@ const handleDisable = async (id: string, name: string) => {
                   min="0"
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
-                <p className="text-xs mt-1" style={{ color: '#999' }}>Higher numbers appear first</p>
+                <p className="text-xs mt-1" style={{ color: '#999' }}>{t('tracks.edit.priorityHint')}</p>
               </div>
             </div>
           </div>
 
           {/* SECTION 7 - Actions */}
           <div className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
-            <h3 className="text-lg mb-4" style={{ color: '#333' }}>7. Actions</h3>
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('tracks.edit.actions')}</h3>
 
             <button
               onClick={handleSubmit}
@@ -926,7 +991,7 @@ const handleDisable = async (id: string, name: string) => {
               style={{ backgroundColor: '#C12D32' }}
             >
               <Save className="w-5 h-5" />
-              Save Changes
+              {t('tracks.edit.saveChanges')}
             </button>
 
             <button
@@ -934,13 +999,13 @@ const handleDisable = async (id: string, name: string) => {
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
 
           {/* Advanced Controls */}
           <div className="p-6 rounded-2xl shadow-sm bg-white border-2" style={{ borderColor: '#FEE2E2' }}>
-            <h3 className="text-lg mb-3" style={{ color: '#333' }}>Advanced Controls</h3>
+            <h3 className="text-lg mb-3" style={{ color: '#333' }}>{t('tracks.edit.advancedControls')}</h3>
             
             <div className="space-y-3">
               <button
@@ -951,12 +1016,12 @@ const handleDisable = async (id: string, name: string) => {
                     status: isClosed ? 'open' : 'closed',
                   });
 
-                  toast.success(isClosed ? 'Track enabled' : 'Track disabled');
+                  toast.success(isClosed ? t('tracks.edit.toasts.enabled') : t('tracks.edit.toasts.disabled'));
                 }}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                 style={{ color: '#666' }}
               >
-                {track.status === 'closed' ? 'Enable Track' : 'Disable Track'}
+                {track.status === 'closed' ? t('tracks.edit.enableTrack') : t('tracks.edit.disableTrack')}
               </button>
 
               <button
@@ -965,12 +1030,12 @@ const handleDisable = async (id: string, name: string) => {
                 style={{ backgroundColor: '#EF4444' }}
                 disabled={linkedEvents.length > 0}
               >
-                {linkedEvents.length > 0 ? 'Cannot Delete (Has Events)' : 'Delete Track'}
+                {linkedEvents.length > 0 ? t('tracks.edit.cannotDelete') : t('tracks.edit.deleteTrack')}
               </button>
 
               {linkedEvents.length > 0 && (
                 <p className="text-xs" style={{ color: '#EF4444' }}>
-                  This track has {linkedEvents.length} linked event(s).
+                  {t('tracks.edit.linkedEvents', { count: linkedEvents.length })}
                 </p>
               )}
             </div>
@@ -984,10 +1049,10 @@ const handleDisable = async (id: string, name: string) => {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-6 h-6" style={{ color: '#EF4444' }} />
-              <h3 className="text-xl" style={{ color: '#333' }}>Delete Track?</h3>
+              <h3 className="text-xl" style={{ color: '#333' }}>{t('tracks.edit.deleteModal.title')}</h3>
             </div>
             <p className="mb-6" style={{ color: '#666' }}>
-              This will permanently delete "{track.title}". This action cannot be undone.
+              {t('tracks.edit.deleteModal.body', { name: track.title })}
             </p>
             <div className="flex gap-3">
               <button
@@ -995,14 +1060,14 @@ const handleDisable = async (id: string, name: string) => {
                 className="flex-1 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md"
                 style={{ backgroundColor: '#EF4444' }}
               >
-                Delete
+                {t('tracks.edit.deleteModal.confirm')}
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                 style={{ color: '#666' }}
               >
-                Cancel
+                {t('tracks.edit.deleteModal.cancel')}
               </button>
             </div>
           </div>

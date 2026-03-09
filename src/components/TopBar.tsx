@@ -1,20 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { UserRole } from '../App';
 import { Search, Bell, ChevronDown, LogOut, User } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocale } from '../contexts/LocaleContext';
 
 interface TopBarProps {
   currentRole: UserRole;
   setRole: (role: UserRole) => void;
 }
 
-const roleLabels: Record<UserRole, string> = {
-  'super-admin': 'Super Admin',
-  'content-manager': 'Content Manager',
-  'community-manager': 'Community Manager',
-  'moderator': 'Moderator / Support',
+const roleKeys: Record<UserRole, string> = {
+  'super-admin': 'topbar.roles.super-admin',
+  'content-manager': 'topbar.roles.content-manager',
+  'community-manager': 'topbar.roles.community-manager',
+  'moderator': 'topbar.roles.moderator',
 };
 
 export function TopBar({ currentRole, setRole }: TopBarProps) {
@@ -23,6 +25,8 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { userProfile, logout } = useAuth();
+  const { locale, setLocale, isRtl } = useLocale();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,7 +57,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
     setRole(role);
     setDropdownOpen(false);
     navigate('/dashboard'); // Navigate to dashboard when role changes
-    toast.success(`Viewing as ${roleLabels[role]}`);
+    toast.success(t('topbar.viewingAs', { role: t(roleKeys[role]) }));
   };
 
   return (
@@ -63,7 +67,9 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder={t('topbar.search')}
+            dir={isRtl ? 'rtl' : 'ltr'}
+            lang={locale}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
             style={{ focusRing: '#C12D32' }}
           />
@@ -71,6 +77,30 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-6">
+        {/* Language toggle */}
+        <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setLocale('en')}
+            className="px-3 py-1.5 text-xs font-bold transition-all duration-200"
+            style={locale === 'en'
+              ? { backgroundColor: '#C12D32', color: '#fff' }
+              : { backgroundColor: '#fff', color: '#666' }}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocale('ar')}
+            className="px-3 py-1.5 text-xs font-bold transition-all duration-200"
+            style={locale === 'ar'
+              ? { backgroundColor: '#C12D32', color: '#fff' }
+              : { backgroundColor: '#fff', color: '#666' }}
+          >
+            AR
+          </button>
+        </div>
+
         {/* Role Switcher */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -78,13 +108,13 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
             style={{ backgroundColor: '#ECC180', color: '#333' }}
           >
-            <span className="text-sm">View as: {roleLabels[currentRole]}</span>
+            <span className="text-sm">{t('topbar.viewAs')} {t(roleKeys[currentRole])}</span>
             <ChevronDown className="w-4 h-4" />
           </button>
 
           {dropdownOpen && (
             <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-              {(Object.keys(roleLabels) as UserRole[]).map((role) => (
+              {(Object.keys(roleKeys) as UserRole[]).map((role) => (
                 <button
                   key={role}
                   onClick={() => handleRoleChange(role)}
@@ -94,7 +124,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
                     color: '#333',
                   }}
                 >
-                  <div className="text-sm">{roleLabels[role]}</div>
+                  <div className="text-sm">{t(roleKeys[role])}</div>
                 </button>
               ))}
             </div>
@@ -132,7 +162,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
                     {userProfile.email || userProfile.phone}
                   </div>
                   <div className="text-xs mt-1 capitalize" style={{ color: '#999' }}>
-                    Role: {userProfile.role}
+                    {t('topbar.role')} {userProfile.role}
                   </div>
                 </div>
               )}
@@ -142,7 +172,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
                 style={{ color: '#C12D32' }}
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm">Logout</span>
+                <span className="text-sm">{t('topbar.logout')}</span>
               </button>
             </div>
           )}

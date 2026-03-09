@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Users, Plus, Calendar, Image, MessageSquare, Edit, MapPin, Award, Trash2, FileImage, Upload, Route, Activity, } from 'lucide-react';
 import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage } from '../../services/communitiesApi';
@@ -7,12 +8,14 @@ import { getCommunity, getFeedPostsByCommunity, deleteFeedPost, updateFeedPost }
 // import { getAllTracks } from '../../data/tracksData';
 import { getAllTracks, deleteTrack, Track, archiveTrack } from '../../services/trackService';
 import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
+import { DetailPageSkeleton } from '../ui/skeleton';
 
 
 
 type TabType = 'overview' | 'feed' | 'events' | 'gallery' | 'tracks | members';
 
 export function CommunityDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const communityId = id || '';
@@ -37,7 +40,7 @@ export function CommunityDetail() {
         setCommunity(data);
       } catch (error: any) {
         console.error('Error fetching community:', error);
-        toast.error(error?.response?.data?.message || 'Failed to load community');
+        toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadCommunityError'));
       } finally {
         setIsLoading(false);
       }
@@ -47,18 +50,18 @@ export function CommunityDetail() {
       fetchCommunity();
     }
   }, [communityId]);
-  
+
 
   useEffect(() => {
     const fetchTracks = async () => {
       try {
         setIsLoading(true);
         const data = await getAllTracks();
-        setAllTracks(data.tracks);
-        
+        setAllTracks(Array.isArray(data) ? data : []);
+
       } catch (error: any) {
         console.error('Error fetching tracks:', error);
-        toast.error(error?.response?.data?.message || 'Failed to load tracks');
+        toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadTracksError'));
       } finally {
         setIsLoading(false);
       }
@@ -77,7 +80,7 @@ export function CommunityDetail() {
         console.log('Members', data);
       } catch (error: any) {
         console.error('Error fetching community:', error);
-        toast.error(error?.response?.data?.message || 'Failed to load community');
+        toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadCommunityError'));
       } finally {
         setIsLoading(false);
       }
@@ -107,7 +110,7 @@ export function CommunityDetail() {
         setCommunityEvents(filtered);
       } catch (error: any) {
         console.error('Error fetching events:', error);
-        toast.error(error?.response?.data?.message || 'Failed to load events');
+        toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadEventsError'));
       }
     };
 
@@ -160,11 +163,11 @@ export function CommunityDetail() {
           name: `Image ${idx + 1}`,
         }));
         setGalleryImages([...galleryImages, ...newImages]);
-        toast.success(`Successfully added ${result.addedImages.length} image(s) to gallery`);
+        toast.success(t('communities.detail.toasts.galleryImagesAdded', { count: result.addedImages.length }));
       }
     } catch (error: any) {
       console.error('Error uploading images:', error);
-      toast.error(error?.response?.data?.message || 'Failed to upload images');
+      toast.error(error?.response?.data?.message || t('communities.detail.toasts.uploadError'));
     } finally {
       setUploading(false);
     }
@@ -176,10 +179,10 @@ export function CommunityDetail() {
     try {
       await deleteGalleryImage(communityId, imageUrl);
       setGalleryImages(galleryImages.filter(img => img.id !== id));
-      toast.success('Image removed successfully');
+      toast.success(t('communities.detail.toasts.imageRemoved'));
     } catch (error: any) {
       console.error('Error deleting image:', error);
-      toast.error(error?.response?.data?.message || 'Failed to delete image');
+      toast.error(error?.response?.data?.message || t('communities.detail.toasts.deleteImageError'));
     }
   };
 
@@ -188,11 +191,11 @@ export function CommunityDetail() {
   const handleDelete = async () => {
     try {
       await deleteCommunityApi(communityId);
-      toast.success('Community deleted successfully');
+      toast.success(t('communities.detail.toasts.deleteSuccess'));
       navigate('/communities');
     } catch (error: any) {
       console.error('Error deleting community:', error);
-      toast.error(error?.response?.data?.message || 'Failed to delete community');
+      toast.error(error?.response?.data?.message || t('communities.detail.toasts.deleteError'));
       setShowDeleteModal(false);
     }
   };
@@ -202,17 +205,13 @@ export function CommunityDetail() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg" style={{ color: '#666' }}>Loading community...</div>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (!community) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg" style={{ color: '#666' }}>Community not found</div>
+        <div className="text-lg" style={{ color: '#666' }}>{t('communities.detail.notFound')}</div>
       </div>
     );
   }
@@ -251,8 +250,8 @@ export function CommunityDetail() {
                 {/* <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
                   {Array.isArray(community.category) ? community.category.join(', ') : community.category}
                 </span> */}
-                <span className="text-sm">{(community.membersCount ?? 3420).toLocaleString()} members</span>
-                <span className="text-sm">{community.eventsCount ?? 18} events</span>
+                <span className="text-sm">{(community.membersCount ?? 3420).toLocaleString()} {t('communities.detail.members')}</span>
+                <span className="text-sm">{community.eventsCount ?? 18} {t('communities.detail.events')}</span>
               </div>
             </div>
             <button
@@ -261,7 +260,7 @@ export function CommunityDetail() {
               style={{ backgroundColor: '#C12D32' }}
             >
               <Edit className="w-4 h-4" />
-              <span>Edit Community</span>
+              <span>{t('communities.detail.editCommunity')}</span>
             </button>
           </div>
         </div>
@@ -280,7 +279,7 @@ export function CommunityDetail() {
                 borderBottom: activeTab === tab ? '2px solid #C12D32' : '2px solid transparent',
               }}
             >
-              {tab}
+              {t(`communities.detail.tabs.${tab}`)}
             </button>
           ))}
         </div>
@@ -291,20 +290,20 @@ export function CommunityDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h2 className="text-xl mb-4" style={{ color: '#333' }}>About</h2>
+              <h2 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.detail.aboutHeading')}</h2>
               <p className="text-base leading-relaxed" style={{ color: '#666' }}>{community.description}</p>
             </div>
 
             {/* About */}
             <div className="rounded-2xl p-6 bg-white shadow-sm">
-              <h2 className="text-xl font-semibold mb-4" style={{ color: '#333' }}>About</h2>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: '#333' }}>{t('communities.detail.aboutHeading')}</h2>
               <p className="leading-relaxed" style={{ color: '#666' }}>{community.description}</p>
             </div>
 
             {/* Associated Teams */}
             
               <div className="rounded-2xl p-6 bg-white shadow-sm">
-                <h2 className="text-xl font-semibold mb-4" style={{ color: '#333' }}>Associated Teams</h2>
+                <h2 className="text-xl font-semibold mb-4" style={{ color: '#333' }}>{t('communities.detail.associatedTeams')}</h2>
                 {community.teams && community.teams.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {community.teams.map((team) => (
@@ -323,7 +322,7 @@ export function CommunityDetail() {
 
           <div className="space-y-6">
             <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Quick Actions</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.detail.quickActions')}</h3>
               <div className="space-y-2">
                 <button
                   onClick={handleEdit}
@@ -331,22 +330,22 @@ export function CommunityDetail() {
                   style={{ backgroundColor: '#ECC180', color: '#333' }}
                 >
                   <Edit className="w-4 h-4" />
-                  <span>Edit Community</span>
+                  <span>{t('communities.detail.editCommunity')}</span>
                 </button>
                 <button
                   className="w-full px-4 py-2 rounded-lg transition-all hover:shadow-md"
                   style={{ backgroundColor: '#E1C06E', color: '#333' }}
                 >
-                  Feature on Homepage
+                  {t('communities.detail.featureOnHomepage')}
                 </button>
               </div>
             </div>
 
             <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>Details</h3>
+              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.detail.details')}</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Status</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.statusLabel')}</span>
                   <span
                     className="px-3 py-1 rounded-full text-xs font-medium text-white capitalize"
                     style={{
@@ -354,19 +353,19 @@ export function CommunityDetail() {
                         community.isActive === 'active' ? '#10B981' : '#EF4444'
                     }}
                   >
-                    {community.isActive === 'active' ? 'Active' : 'Inactive'}
+                    {community.isActive === 'active' ? t('common.active') : t('common.inactive')}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Visibility</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.visibility ?? 'Public'}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.visibilityLabel')}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.visibility ?? t('common.public')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Featured</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.featured ?? true ? 'Yes' : 'No'}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.featuredLabel')}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.featured ?? true ? t('common.yes') : t('common.no')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Manager</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.managerLabel')}</span>
                   <span className="text-sm" style={{ color: '#333' }}>{community.manager ?? 'Ahmed Al Mansoori'}</span>
                 </div>
               </div>
@@ -380,8 +379,8 @@ export function CommunityDetail() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>Feed Posts</h2>
-              <p style={{ color: '#666' }}>Manage community announcements and updates</p>
+              <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.feed.heading')}</h2>
+              <p style={{ color: '#666' }}>{t('communities.detail.feed.subheading')}</p>
             </div>
             <button
               onClick={() => setShowCreatePost(true)}
@@ -389,7 +388,7 @@ export function CommunityDetail() {
               style={{ backgroundColor: '#C12D32' }}
             >
               <Plus className="w-5 h-5" />
-              <span>Create Post</span>
+              <span>{t('communities.detail.feed.createPost')}</span>
             </button>
           </div>
 
@@ -428,26 +427,26 @@ export function CommunityDetail() {
                     <p className="mb-3" style={{ color: '#666' }}>{post.caption}</p>
                     <div className="flex items-center justify-between">
                       <div className="text-sm" style={{ color: '#999' }}>
-                        By {post.createdBy} • {new Date(post.createdAt).toLocaleDateString()}
+                        {t('communities.detail.byAuthor', { author: post.createdBy })} • {new Date(post.createdAt).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handlePinPost(post.id)}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          title={post.isPinned ? 'Unpin' : 'Pin to top'}
+                          title={post.isPinned ? t('communities.detail.feed.unpin') : t('communities.detail.feed.pin')}
                         >
                           <Pin className="w-4 h-4" style={{ color: '#666' }} />
                         </button>
                         <button
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Edit"
+                          title={t('communities.detail.feed.editPost')}
                         >
                           <Edit className="w-4 h-4" style={{ color: '#666' }} />
                         </button>
                         <button
                           onClick={() => handleDeletePost(post.id)}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Delete"
+                          title={t('communities.detail.feed.deletePost')}
                         >
                           <Trash2 className="w-4 h-4" style={{ color: '#C12D32' }} />
                         </button>
@@ -461,14 +460,14 @@ export function CommunityDetail() {
             {feedPosts.length === 0 && (
               <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
                 <MessageSquare className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-                <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>No posts yet</h3>
-                <p className="mb-6" style={{ color: '#666' }}>Create your first community post to engage with members</p>
+                <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.feed.noPosts')}</h3>
+                <p className="mb-6" style={{ color: '#666' }}>{t('communities.detail.feed.noPostsBody')}</p>
                 <button
                   onClick={() => setShowCreatePost(true)}
                   className="px-6 py-3 rounded-xl text-white transition-all"
                   style={{ backgroundColor: '#C12D32' }}
                 >
-                  Create Post
+                  {t('communities.detail.feed.createPost')}
                 </button>
               </div>
             )}
@@ -481,8 +480,8 @@ export function CommunityDetail() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>Community Events</h2>
-              <p style={{ color: '#666' }}>{communityEvents.length} total events</p>
+              <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.eventsTab.heading')}</h2>
+              <p style={{ color: '#666' }}>{t('communities.detail.eventsTab.totalEvents', { count: communityEvents.length })}</p>
             </div>
             <div className="flex gap-3">
               <button
@@ -491,7 +490,7 @@ export function CommunityDetail() {
                 style={{ backgroundColor: '#C12D32' }}
               >
                 <Plus className="w-5 h-5" />
-                <span>Create Event</span>
+                <span>{t('communities.detail.eventsTab.createEvent')}</span>
               </button>
             </div>
           </div>
@@ -550,10 +549,10 @@ export function CommunityDetail() {
                           backgroundColor: event.status === 'active' || event.isActive ? '#10B981' : '#6B7280',
                         }}
                       >
-                        {event.status === 'active' || event.isActive ? 'Active' : 'Inactive'}
+                        {event.status === 'active' || event.isActive ? t('common.active') : t('common.inactive')}
                       </span>
                       <span className="text-xs" style={{ color: '#999' }}>
-                        {event.participants?.length || 0} participants
+                        {t('communities.detail.eventsTab.participants', { count: event.participants?.length || 0 })}
                       </span>
                     </div>
                   </div>
@@ -563,14 +562,14 @@ export function CommunityDetail() {
           ) : (
             <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
               <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-              <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>No events yet</h3>
-              <p className="mb-6" style={{ color: '#666' }}>Create your first event to engage with community members</p>
+              <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.eventsTab.noEvents')}</h3>
+              <p className="mb-6" style={{ color: '#666' }}>{t('communities.detail.eventsTab.noEventsBody')}</p>
               <button
                 onClick={() => navigate(`/events/create?communityId=${communityId}`)}
                 className="px-6 py-3 rounded-xl text-white transition-all"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                Create Event
+                {t('communities.detail.eventsTab.createEvent')}
               </button>
             </div>
           )}
@@ -581,8 +580,8 @@ export function CommunityDetail() {
       {activeTab === 'tracks' && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>Assign Tracks</h2>
-            <p style={{ color: '#666' }}>Select tracks to associate with this community</p>
+            <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.tracksTab.assignTracks')}</h2>
+            <p style={{ color: '#666' }}>{t('communities.detail.tracksTab.tracksHint')}</p>
           </div>
 
           <div className="rounded-2xl p-6 bg-white shadow-sm">
@@ -616,11 +615,11 @@ export function CommunityDetail() {
             </div>
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => toast.success('Track assignments saved')}
+                onClick={() => toast.success(t('communities.detail.toasts.tracksAssigned'))}
                 className="px-6 py-3 rounded-xl text-white transition-all"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                Save Changes
+                {t('communities.detail.tracksTab.saveChanges')}
               </button>
             </div>
           </div>
@@ -632,12 +631,12 @@ export function CommunityDetail() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>Gallery</h2>
-              <p style={{ color: '#666' }}>Manage community photos and videos ({galleryImages.length} items)</p>
+              <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.gallery.heading')}</h2>
+              <p style={{ color: '#666' }}>{t('communities.detail.gallery.subheading', { count: galleryImages.length })}</p>
             </div>
             <label className="flex items-center gap-2 px-6 py-3 rounded-xl text-white transition-all cursor-pointer hover:opacity-90" style={{ backgroundColor: '#C12D32' }}>
               <Upload className="w-5 h-5" />
-              <span>{uploading ? 'Uploading...' : 'Upload Media'}</span>
+              <span>{uploading ? t('communities.detail.gallery.uploading') : t('communities.detail.gallery.uploadMedia')}</span>
               <input
                 type="file"
                 multiple
@@ -670,7 +669,7 @@ export function CommunityDetail() {
                   <button
                     onClick={() => handleGalleryDelete(image.id, image.url)}
                     className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete image"
+                    title={t('communities.detail.gallery.deleteImage')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -680,10 +679,10 @@ export function CommunityDetail() {
           ) : (
             <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
               <FileImage className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-              <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>No media uploaded yet</h3>
-              <p className="mb-6" style={{ color: '#666' }}>Upload photos and videos to build your community gallery</p>
+              <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.gallery.noMedia')}</h3>
+              <p className="mb-6" style={{ color: '#666' }}>{t('communities.detail.gallery.noMediaBody')}</p>
               <label className="px-6 py-3 rounded-xl text-white transition-all cursor-pointer inline-block" style={{ backgroundColor: '#C12D32' }}>
-                <span>Upload Media</span>
+                <span>{t('communities.detail.gallery.uploadMedia')}</span>
                 <input
                   type="file"
                   multiple
@@ -702,29 +701,29 @@ export function CommunityDetail() {
       {/* Members Tab */}
       {activeTab === 'members' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Members</h2>
-          <p style={{ color: '#666' }}>Member management interface would go here</p>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.membersTab.heading')}</h2>
+          <p style={{ color: '#666' }}>{t('communities.detail.membersTab.placeholder')}</p>
         </div>
       )}
 
       {activeTab === 'events' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Community Events</h2>
-          <p style={{ color: '#666' }}>Community events list would go here</p>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.eventsFallback.heading')}</h2>
+          <p style={{ color: '#666' }}>{t('communities.detail.eventsFallback.placeholder')}</p>
         </div>
       )}
 
       {activeTab === 'gallery' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Gallery</h2>
-          <p style={{ color: '#666' }}>Community photo gallery would go here</p>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.galleryFallback.heading')}</h2>
+          <p style={{ color: '#666' }}>{t('communities.detail.galleryFallback.placeholder')}</p>
         </div>
       )}
 
       {activeTab === 'feed' && (
         <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>Community Feed</h2>
-          <p style={{ color: '#666' }}>Community feed posts would go here</p>
+          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.feedFallback.heading')}</h2>
+          <p style={{ color: '#666' }}>{t('communities.detail.feedFallback.placeholder')}</p>
         </div>
       )}
 
@@ -732,9 +731,9 @@ export function CommunityDetail() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Delete Community</h3>
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.detail.deleteModal.title')}</h3>
             <p className="mb-6" style={{ color: '#666' }}>
-              Are you sure you want to delete "{community.title}"? This action cannot be undone.
+              {t('communities.detail.deleteModal.body', { name: community.title })}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -742,14 +741,14 @@ export function CommunityDetail() {
                 className="px-4 py-2 rounded-lg"
                 style={{ backgroundColor: '#ECC180', color: '#333' }}
               >
-                Cancel
+                {t('communities.detail.deleteModal.cancel')}
               </button>
               <button
                 onClick={handleDelete}
                 className="px-4 py-2 rounded-xl text-white"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                Delete
+                {t('communities.detail.deleteModal.confirm')}
               </button>
             </div>
           </div>
@@ -768,7 +767,7 @@ export function CommunityDetail() {
   }
 
   function handlePinPost(postId: string) {
-    toast.success('Post pinned successfully');
+    toast.success(t('communities.detail.toasts.postPinned'));
   }
 
   function handleDeletePost(postId: string) {

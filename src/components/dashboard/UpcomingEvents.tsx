@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Star } from 'lucide-react';
 
@@ -42,16 +43,17 @@ const events = [
 ];
 
 export function UpcomingEvents({ navigate }: UpcomingEventsProps) {
+  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl" style={{ color: '#333' }}>Upcoming Events</h2>
+        <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.upcomingEvents')}</h2>
         <button
           onClick={() => navigate('/events')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
         >
-          View All
+          {t('dashboard.viewAll')}
         </button>
       </div>
 
@@ -59,12 +61,12 @@ export function UpcomingEvents({ navigate }: UpcomingEventsProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>Event</th>
-              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>City</th>
-              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>Date</th>
-              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>Track</th>
-              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>Registrations</th>
-              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>Rating</th>
+              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>{t('dashboard.event')}</th>
+              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>{t('dashboard.city')}</th>
+              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>{t('dashboard.date')}</th>
+              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>{t('dashboard.track')}</th>
+              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>{t('dashboard.registrations')}</th>
+              <th className="text-left py-3 px-2 text-sm" style={{ color: '#666' }}>{t('dashboard.rating')}</th>
             </tr>
           </thead>
           <tbody>
