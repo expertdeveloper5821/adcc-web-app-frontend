@@ -1,30 +1,54 @@
 import api from './api';
 
 export interface CommunityApiResponse {
+  id?: string;
   title: string;
+  name?: string;
   description: string;
-  type: string;
+  slug?: string;
+  type: string | string[];
   category: string;
   location: string;
+  city?: string;
+  country?: string;
+  area?: string;
   image?: string;
+  logo?: string;
   trackId?: string;
+  primaryTracks?: string[];
   trackName?: string;
   distance?: number;
   terrain?: string;
   isActive: boolean;
-  isFeatured: boolean;
-  createdAt?: string;
-  // updatedAt?: string;
-  associatedTeams?: string[];
+  isFeatured?: boolean;
+  status?: string;
   visibility?: string;
+  joinMode?: string;
+  displayPriority?: number;
+  allowPosts?: boolean;
+  allowGallery?: boolean;
+  createdAt?: string;
+  associatedTeams?: string[];
   featured?: boolean;
   memberCount?: string;
   upcomingEventCount?: string;
   manager?: string;
-  // membersCount?: number;
   eventsCount?: number;
   foundedYear?: number;
+  purposeType?: string;
+  ridesThisMonth?: number | string;
+  weeklyRides?: number | string;
+  fundsRaised?: number | string;
+  communityType?: string;
   gallery?: string[];
+  stats?: {
+    members?: number;
+    upcomingEvents?: number;
+    ridesThisMonth?: number;
+    weeklyRides?: number;
+    fundsRaised?: number;
+  };
+  postsCount?: number;
 }
 
 /** Backend-allowed location values */

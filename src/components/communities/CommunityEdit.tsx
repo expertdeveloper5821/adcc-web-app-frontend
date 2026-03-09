@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Upload, Users, MapPin, Tag, Settings, Shield, Image as ImageIcon, Save, AlertTriangle, Archive, Trash2 } from 'lucide-react';
 import { deleteCommunity } from '../../data/communitiesData';
 import { toast } from 'sonner';
@@ -19,6 +19,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   const navigate = useNavigate();
 
   const { id } = useParams<{ id: string }>();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMetadataLoading, setIsMetadataLoading] = useState(true);
 
@@ -90,29 +92,62 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
 
 
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<{
+    title: string;
+    slug: string;
+    description: string;
+    city: string;
+    location: string;
+    communityType: string;
+    category: string;
+    type: string[];
+    country: string;
+    area: string;
+    primaryTrack: string;
+    foundedYear: number | string | null;
+    ridesThisMonth: number | string | null;
+    weeklyRides: number | string | null;
+    fundsRaised: number | string | null;
+    purposeType: string;
+    specialType: string;
+    status: string;
+    visibility: string;
+    joinMode: string;
+    displayPriority: number;
+    isFeatured: boolean;
+    allowPosts: boolean;
+    allowGallery: boolean;
+    manager: string;
+    image: string;
+    logo: string;
+  }>({
     title: '',
     slug: '',
     description: '',
     city: '',
+    location: '',
     communityType: 'city',
     category: '',
-    type: [] as string[],
-    country: '',
+    type: [],
+    country: 'UAE',
     area: '',
-    primaryTrack: null,
-    foundedYear: '',
-    // ridesThisMonth: null,
-    // weeklyRides: null,
-    // fundsRaised: null,
+    primaryTrack: '',
+    foundedYear: null,
+    ridesThisMonth: null,
+    weeklyRides: null,
+    fundsRaised: null,
+    purposeType: '',
+    specialType: '',
     status: 'active',
     visibility: 'public',
-    // joinMode: 'open',
-    // isFeatured: false,
-    // allowPosts: true,
-    // allowGallery: true,
-    // displayPriority: 0,
+    joinMode: 'open',
+    displayPriority: 0,
+    isFeatured: false,
+    allowPosts: true,
+    allowGallery: true,
     manager: '',
+    image: '',
+    logo: '',
   });
 
 
@@ -134,34 +169,56 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   useEffect(() => {
     if (!existingCommunity) return;
 
+    const loc = existingCommunity.location ?? (existingCommunity as any).city ?? '';
+    const [cityFromLocation = '', countryFromLocation = ''] = typeof loc === 'string' ? loc.split(',').map((s: string) => s.trim()) : ['', ''];
+    const city = existingCommunity.city ?? cityFromLocation ?? loc ?? '';
+    const country = existingCommunity.country ?? countryFromLocation ?? 'UAE';
+
+    const typeArr = Array.isArray(existingCommunity.type)
+      ? existingCommunity.type
+      : typeof existingCommunity.type === 'string'
+        ? [existingCommunity.type]
+        : [];
+
+    const raw = existingCommunity as unknown as Record<string, unknown>;
+    const trackIdRaw = existingCommunity.trackId ?? (Array.isArray(raw.primaryTracks) ? raw.primaryTracks[0] : null) ?? raw.primaryTrackId ?? raw.track_id ?? (raw.track && typeof raw.track === 'object' ? (raw.track as { id?: string; _id?: string }).id ?? (raw.track as { _id?: string })._id : null) ?? raw.primaryTrackIds?.[0] ?? null;
+    const primaryTrackStr =
+      trackIdRaw == null
+        ? ''
+        : typeof trackIdRaw === 'string'
+          ? trackIdRaw
+          : (trackIdRaw as { _id?: string; id?: string })._id ?? (trackIdRaw as { id?: string }).id ?? '';
+
+    const stats = existingCommunity.stats ?? (existingCommunity as any).stats;
+
     setFormData({
       title: existingCommunity.title ?? (existingCommunity as any).name ?? '',
-      slug: (existingCommunity as any).slug ?? '',
+      slug: existingCommunity.slug ?? '',
       description: existingCommunity.description ?? '',
-      city: (existingCommunity as any).city ?? existingCommunity.location ?? '',
-      category: existingCommunity.category,
-      type: Array.isArray(existingCommunity.type)
-        ? existingCommunity.type
-          : [],
-      // specialType: existingCommunity.specialType || null,
-      country: existingCommunity.country,
-      area: existingCommunity.area || '',
-      primaryTrack: existingCommunity.primaryTracks ? existingCommunity.primaryTracks[0] : null,
-      foundedYear: existingCommunity.foundedYear,
-      // ridesThisMonth: existingCommunity.stats?.ridesThisMonth || null,
-      // weeklyRides: existingCommunity.stats?.weeklyRides || null,
-      // fundsRaised: existingCommunity.stats?.fundsRaised || null,
-      status: existingCommunity.status,
-      visibility: existingCommunity.visibility,
-      // joinMode: 'open', // Default value - extend data model if needed
-      isFeatured: existingCommunity.isFeatured,
-      logo: existingCommunity.logo,
-      image: existingCommunity.image,
-      // allowPosts: existingCommunity.allowPosts,
-      // allowGallery: existingCommunity.allowGallery,
-      // displayPriority: 0, // Default value - extend data model if needed
-      // tags: [],
-      manager: existingCommunity.manager || '',
+      city: city || '',
+      location: typeof loc === 'string' ? loc : `${city}, ${country}`,
+      communityType: (existingCommunity as any).communityType ?? typeArr[0] ?? 'city',
+      category: typeof existingCommunity.category === 'string' ? existingCommunity.category : (existingCommunity.category?.[0] ?? ''),
+      type: typeArr,
+      country: country || 'UAE',
+      area: existingCommunity.area ?? '',
+      primaryTrack: primaryTrackStr,
+      foundedYear: existingCommunity.foundedYear ?? null,
+      ridesThisMonth: existingCommunity.ridesThisMonth ?? stats?.ridesThisMonth ?? null,
+      weeklyRides: existingCommunity.weeklyRides ?? stats?.weeklyRides ?? null,
+      fundsRaised: existingCommunity.fundsRaised ?? stats?.fundsRaised ?? null,
+      purposeType: (existingCommunity as any).purposeType ?? existingCommunity.purposeType ?? '',
+      specialType: (existingCommunity as any).specialType ?? '',
+      status: existingCommunity.status ?? (existingCommunity.isActive ? 'active' : 'inactive'),
+      visibility: existingCommunity.visibility ?? 'public',
+      joinMode: (existingCommunity as any).joinMode ?? 'open',
+      displayPriority: (existingCommunity as any).displayPriority ?? 0,
+      isFeatured: existingCommunity.isFeatured ?? false,
+      allowPosts: (existingCommunity as any).allowPosts ?? true,
+      allowGallery: (existingCommunity as any).allowGallery ?? true,
+      manager: existingCommunity.manager ?? '',
+      image: existingCommunity.image ?? '',
+      logo: existingCommunity.logo ?? '',
     });
   }, [existingCommunity]);
 
@@ -181,7 +238,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     );
   }
 
-  const mapCommunityToForm = (data: CommunityFormData) => ({
+  const mapCommunityToForm = (data: CommunityFormData & { slug?: string }) => ({
     title: data.title ?? '',
     slug: data.slug ?? '',
     description: data.description ?? '',
@@ -235,7 +292,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   const toggleTrack = (trackId: string) => {
     setFormData(prev => ({
       ...prev,
-      primaryTrack: prev.primaryTrack === trackId ? null : trackId,
+      primaryTrack: prev.primaryTrack === trackId ? '' : trackId,
     }));
   };
 
@@ -287,8 +344,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     //   return;
     // }
 
-    if (formData.communityType === 'special' && !formData.specialType) {
-      toast.error('Please select a special community type');
+    if (formData.communityType === 'purpose-based' && !formData.purposeType) {
+      toast.error('Please select a purpose type');
       return;
     }
 
@@ -301,12 +358,13 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     const communityData = {
       title: formData.title,
       description: formData.description,
-      type: Array.isArray(formData.type) ? formData.type : [formData.communityType ?? formData.type ?? 'city'],
-      category: typeof formData.category === 'string' ? formData.category : (formData.category?.[0] ?? ''),
+      type: Array.isArray(formData.type) && formData.type.length > 0 ? formData.type : [formData.communityType ?? 'city'],
+      category: typeof formData.category === 'string' ? formData.category : (Array.isArray(formData.category) ? formData.category[0] : ''),
       location,
       area: formData.area || undefined,
-      foundedYear: formData.foundedYear ?? undefined,
+      foundedYear: formData.foundedYear != null && formData.foundedYear !== '' ? Number(formData.foundedYear) : undefined,
       image: formData.image || formData.logo || undefined,
+      logo: formData.logo || undefined,
       isFeatured: formData.isFeatured ?? false,
       isActive: formData.status === 'active',
       trackId: formData.primaryTrack ?? undefined,
@@ -360,15 +418,15 @@ export function CommunityEdit({ role }: CommunityEditProps) {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-sm mb-1" style={{ color: '#666' }}>Members</p>
-                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.stats?.members?.toLocaleString() || 0}</p>
+                <p className="text-2xl" style={{ color: '#333' }}>{(() => { const m = existingCommunity.stats?.members ?? (existingCommunity as any).memberCount; return typeof m === 'number' ? m.toLocaleString() : (m ?? 0); })()}</p>
               </div>
               <div>
                 <p className="text-sm mb-1" style={{ color: '#666' }}>Events</p>
-                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.stats?.upcomingEvents || 0}</p>
+                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.stats?.upcomingEvents ?? (existingCommunity as any).upcomingEventCount ?? existingCommunity.eventsCount ?? 0}</p>
               </div>
               <div>
                 <p className="text-sm mb-1" style={{ color: '#666' }}>Posts</p>
-                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.postsCount || 0}</p>
+                <p className="text-2xl" style={{ color: '#333' }}>{existingCommunity.postsCount ?? 0}</p>
               </div>
             </div>
           </div>
@@ -400,8 +458,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                   type="text"
                   value={formData.slug}
                   readOnly
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
-                  style={{ color: '#999' }}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none"
                 />
               </div>
 
@@ -410,186 +467,149 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the community..."
+                  placeholder="Describe your community..."
                   rows={4}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Country *</label>
-                <select
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                >
-                  <option value="UAE">United Arab Emirates</option>
-                  <option value="Saudi Arabia">Saudi Arabia</option>
-                  <option value="Kuwait">Kuwait</option>
-                  <option value="Bahrain">Bahrain</option>
-                  <option value="Oman">Oman</option>
-                  <option value="Qatar">Qatar</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>City *</label>
+                  <select
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  >
+                    <option value="">Select city...</option>
+                    {(availableCities.length ? availableCities : COMMUNITY_LOCATION_OPTIONS).map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Country</label>
+                  <select
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  >
+                    <option value="UAE">UAE</option>
+                    <option value="Saudi Arabia">Saudi Arabia</option>
+                    <option value="Kuwait">Kuwait</option>
+                    <option value="Qatar">Qatar</option>
+                    <option value="Bahrain">Bahrain</option>
+                    <option value="Oman">Oman</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Area / Zone</label>
+                  <input
+                    type="text"
+                    value={formData.area}
+                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                    placeholder="e.g. Al Reem Island"
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>City *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Category</label>
                 <select
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  {availableCities.map(city => (
-                    <option key={city} value={city}>{city}</option>
+                  <option value="">Select category...</option>
+                  {availableCategories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Area (optional)</label>
-                <input
-                  type="text"
-                  value={formData.area}
-                  onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                  placeholder="e.g., Yas Island, Corniche, Marina..."
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 2 - Community Classification */}
-          <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <Tag className="w-5 h-5" />
-              </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>2. Community Classification</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Type *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Type</label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as 'city' | 'type' | 'special' })}
+                  value={formData.communityType}
+                  onChange={(e) => setFormData({ ...formData, communityType: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="city">City Community</option>
-                  <option value="type">Interest / Type Community</option>
-                  <option value="special">Special Purpose Community</option>
+                  <option value="city">City</option>
+                  <option value="type">Type</option>
+                  <option value="purpose-based">Purpose-based</option>
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm mb-3" style={{ color: '#666' }}>Category (multi-select) *</label>
-                <div className="flex flex-wrap gap-2">
-                  {availableCategories.map((item) => {
-                    const isSelected = formData.type?.includes(item) || false;
-
-                    return (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => toggleCategory(item)}
-                        className="px-3 py-2 rounded-lg text-sm transition-all"
-                        style={{
-                          backgroundColor: isSelected ? '#C12D32' : '#F3F4F6',
-                          color: isSelected ? '#fff' : '#666',
-                        }}
-                      >
-                        {item}
-                      </button>
-                    );
-                  })}
-
-
-                </div>
-              </div>
-
-              {formData.communityType === 'special' && (
+              {formData.communityType === 'purpose-based' && (
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Special Purpose Type *</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Purpose Type</label>
                   <select
-                    value={formData.specialType || ''}
-                    onChange={(e) => setFormData({ ...formData, specialType: (e.target.value as any) || null })}
+                    value={formData.purposeType}
+                    onChange={(e) => setFormData({ ...formData, purposeType: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                   >
-                    <option value="">Select special type...</option>
-                    <option value="awareness">Awareness</option>
-                    <option value="charity">Charity</option>
-                    <option value="corporate">Corporate</option>
-                    <option value="education">Education</option>
-                    <option value="health">Health</option>
-                    <option value="national-events">National Events</option>
+                    <option value="">Select purpose...</option>
+                    <option value="Awareness">Awareness</option>
+                    <option value="Charity">Charity</option>
+                    <option value="Corporate">Corporate</option>
+                    <option value="Education">Education</option>
+                    <option value="Health">Health</option>
+                    <option value="National">National</option>
                   </select>
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* SECTION 3 - Tracks Mapping */}
-          <div className="p-6 rounded-2xl shadow-sm bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
-                <MapPin className="w-5 h-5" />
-              </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>3. Assign Primary Tracks</h2>
-            </div>
-
-            <div className="space-y-3">
-              {filteredTracks.length > 0 ? (
-                filteredTracks.map(track => (
-                  <label
-                    key={track._id}
-                    className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="radio"
-                      name="primaryTrack"
-                      checked={formData.primaryTrack === track._id}
-                      onChange={() => toggleTrack(track._id)}
-                      className="mt-1 w-4 h-4"
-                      style={{ accentColor: '#C12D32' }}
-                    />
-
-                    <div className="flex-1">
-                      <p className="font-medium" style={{ color: '#333' }}>
-                        {track.title}
-                      </p>
-
-                      <div className="flex items-center gap-4 mt-1">
-                        <span className="text-sm" style={{ color: '#666' }}>
-                          {track.city}
-                        </span>
-
-                        <span className="text-sm" style={{ color: '#666' }}>
-                          {track.distance} km
-                        </span>
-
-                        <span
-                          className="px-2 py-1 rounded-full text-xs"
-                          style={{
-                            backgroundColor:
-                              track.difficulty === 'Easy'
-                                ? '#10B981'
-                                : track.difficulty === 'Medium'
-                                  ? '#F59E0B'
-                                  : '#EF4444',
-                            color: '#fff'
-                          }}
-                        >
-                          {track.difficulty}
-                        </span>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Primary Track</label>
+                {filteredTracks.length > 0 ? (
+                  filteredTracks.map((track) => (
+                    <label
+                      key={track._id ?? track.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.primaryTrack === (track._id ?? track.id)}
+                        onChange={() => toggleTrack(track._id ?? track.id)}
+                        className="mt-1 w-4 h-4"
+                        style={{ accentColor: '#C12D32' }}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium" style={{ color: '#333' }}>
+                          {track.title ?? track.name}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-sm" style={{ color: '#666' }}>
+                            {track.city}
+                          </span>
+                          <span className="text-sm" style={{ color: '#666' }}>
+                            {track.distance} km
+                          </span>
+                          <span
+                            className="px-2 py-1 rounded-full text-xs"
+                            style={{
+                              backgroundColor:
+                                track.difficulty === 'Easy'
+                                  ? '#10B981'
+                                  : track.difficulty === 'Medium'
+                                    ? '#F59E0B'
+                                    : '#EF4444',
+                              color: '#fff'
+                            }}
+                          >
+                            {track.difficulty}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </label>
-                ))
-              ) : (
-                <p className="text-sm text-center py-4" style={{ color: '#999' }}>
-                  No tracks available in {formData.city}
-                </p>
-              )}
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm text-center py-4" style={{ color: '#999' }}>
+                    No tracks available in {formData.city}
+                  </p>
+                )}
+              </div>
 
               {/* Keep your assigned count block exactly as is */}
               {formData.primaryTrack && (
@@ -662,7 +682,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 </div>
               )}
 
-              {formData.communityType === 'special' && (
+              {(formData.communityType === 'purpose-based' || formData.communityType === 'special') && (
                 <div>
                   <label className="block text-sm mb-2" style={{ color: '#666' }}>Funds Raised (AED)</label>
                   <input
@@ -691,42 +711,48 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Community Logo</label>
                 <div className="mb-3">
-                  <img src={existingCommunity.logo || formData.logo} alt="Current logo" className="w-20 h-20 rounded-lg object-cover" />
+                  {(existingCommunity.logo || formData.logo) ? (
+                    <img src={existingCommunity.logo || formData.logo} alt="Current logo" className="w-20 h-20 rounded-lg object-cover" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-xs" style={{ color: '#999' }}>No logo</div>
+                  )}
                 </div>
+                <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
                 <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => logoInputRef.current?.click()}
+                  onKeyDown={(e) => e.key === 'Enter' && logoInputRef.current?.click()}
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   style={{ borderColor: '#ECC180' }}
                 >
                   <Upload className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
                   <p className="text-sm" style={{ color: '#666' }}>Upload new logo</p>
                   <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - Square format recommended</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoChange}
-                  />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>Cover Image</label>
                 <div className="mb-3">
-                  <img src={existingCommunity.image || formData.image} alt="Current cover" className="w-full h-32 rounded-lg object-cover" />
+                  {(existingCommunity.image || formData.image) ? (
+                    <img src={existingCommunity.image || formData.image} alt="Current cover" className="w-full h-32 rounded-lg object-cover" />
+                  ) : (
+                    <div className="w-full h-32 rounded-lg bg-gray-100 flex items-center justify-center text-sm" style={{ color: '#999' }}>No cover image</div>
+                  )}
                 </div>
+                <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                 <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => coverInputRef.current?.click()}
+                  onKeyDown={(e) => e.key === 'Enter' && coverInputRef.current?.click()}
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   style={{ borderColor: '#ECC180' }}
                 >
                   <Upload className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
                   <p className="text-sm" style={{ color: '#666' }}>Upload new cover image</p>
                   <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, JPG - 16:9 format recommended</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
                 </div>
               </div>
             </div>
