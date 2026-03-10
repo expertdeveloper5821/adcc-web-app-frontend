@@ -369,9 +369,14 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       fundsRaised: String(formData.fundsRaised ?? ''),
     };
 
-    updateCommunity(id, communityData);
-    toast.success(t('communities.edit.toasts.updateSuccess'));
-    // navigate(`/communities/${id}`);
+    try {
+      await updateCommunity(id, communityData);
+      toast.success(t('communities.edit.toasts.updateSuccess'));
+      navigate(`/communities/${id}`);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message ?? t('communities.edit.toasts.loadError', { defaultValue: 'Failed to update community' }));
+    }
   };
 
   const handleEnable = async () => {
@@ -625,7 +630,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                     className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
                   >
                     <input
-                      type="radio"
+                      type="checkbox"
                       name="primaryTrack"
                       checked={formData.primaryTrack === track._id}
                       onChange={() => toggleTrack(track._id)}

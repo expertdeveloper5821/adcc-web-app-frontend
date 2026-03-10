@@ -69,7 +69,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       type: normalizeToArray(apiCommunity.type || apiCommunity.types || apiCommunity.tags),
       description: apiCommunity.description || '',
       isActive: apiCommunity.isActive ?? false,
-      isFeatured: apiCommunity.isFeatured ?? false,
+      isFeatured: apiCommunity.isFeatured ?? apiCommunity.featured ?? false,
       logo: apiCommunity.image || 'https://images.unsplash.com/photo-1584981401957-03158e43750d?w=200',
       coverImage: apiCommunity.image || 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?w=800',
       membersCount: parseInt(String(apiCommunity.memberCount || apiCommunity.membersCount || 0)) || 0,
@@ -386,11 +386,11 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
             onClick={() => navigate(`/communities/${community.id}`)}
             className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all cursor-pointer relative"
           >
-            {/* Featured Badge */}
+            {/* Featured Badge - only show when backend isFeatured/featured is true */}
             {community.isFeatured && (
-              <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: '#C12D32' }}>
-                <Star className="w-3 h-3" />
-                {t('communities.card.featured')}
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: '#C12D32' }}>
+                <Star className="w-4 h-4 flex-shrink-0" />
+                <span>{t('communities.card.featured', 'Featured')}</span>
               </div>
             )}
 

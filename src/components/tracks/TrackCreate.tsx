@@ -763,7 +763,7 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
 
             <button
               type="button"
-              onClick={() => navigate('tracks')}
+              onClick={() => navigate('/tracks')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >

@@ -10,6 +10,7 @@ import { FacilityType } from '@/types/track.types';
 import { TRACK_FACILITIES } from '@/constants/track.constants';
 import { useLocale } from '../../contexts/LocaleContext';
 import { useTranslation } from 'react-i18next';
+import { DetailPageSkeleton } from '../ui/skeleton';
 
 interface TrackEditProps {
   navigate: (page: string, params?: any) => void;
@@ -56,20 +57,17 @@ export function TrackEdit({ role }: TrackEditProps) {
 
 
   useEffect(() => {
-      if(!trackId) return;
-  
-      const fetchEvent = async () => {
-        try{
-          const data = await getTrackResults(trackId);
-          setLinkedEvents(data || [])
-        }catch (error) {
-          console.error(error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchEvent();
-    },[trackId])
+    if (!trackId) return;
+    const fetchEvent = async () => {
+      try {
+        const data = await getTrackResults(trackId);
+        setLinkedEvents(data || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchEvent();
+  }, [trackId]);
 
     useEffect(() => {
   if (!trackId) return;
@@ -226,10 +224,21 @@ const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 }, [track]);
 
 
+  if (isLoading) {
+    return <DetailPageSkeleton />;
+  }
+
   if (!track) {
     return (
       <div className="p-6 rounded-2xl bg-white">
         <p style={{ color: '#666' }}>{t('tracks.edit.trackNotFound')}</p>
+        <button
+          onClick={() => navigate('/tracks')}
+          className="mt-4 px-4 py-2 rounded-lg text-white"
+          style={{ backgroundColor: '#C12D32' }}
+        >
+          {t('tracks.detail.backToTracks', 'Back to Tracks')}
+        </button>
       </div>
     );
   }
@@ -387,7 +396,7 @@ const handleGalleryUpload = (
       await updateTrack(trackId, payload);
 
       toast.success(t('tracks.edit.toasts.updateSuccess'));
-      navigate(`/tracks/${trackId}/edit`);
+      navigate(`/tracks/${trackId}`);
     } catch (error: any) {
       console.error('Update error:', error?.response?.data || error);
       toast.error(t('tracks.edit.toasts.updateError'));
@@ -744,7 +753,7 @@ const handleDisable = async (id: string, name: string) => {
               <h2 className="text-xl" style={{ color: '#333' }}>{t('tracks.edit.facilities')}</h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {TRACK_FACILITIES.map((facility) => {
                 const isChecked = formData.facilities.includes(facility.value);
 
@@ -755,12 +764,13 @@ const handleDisable = async (id: string, name: string) => {
                       ${isChecked ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}
                     `}
                   >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleFacility(facility.value)}
-                      className="w-5 h-5 accent-red-600"
-                    />
+                   <input
+                    type="checkbox"
+                    checked={formData.facilities.includes(facility)}
+                    onChange={() => toggleFacility(facility)}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
                     <span className="font-medium">{facility.label}</span>
                   </label>
                 );
@@ -857,6 +867,13 @@ const handleDisable = async (id: string, name: string) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.currentCover')}</label>
+                {coverPreview && (
+                  <img
+                    src={coverPreview}
+                    alt="Preview"
+                    className="mt-4 rounded-lg w-full h-48 object-cover"
+                  />
+                )}
                 <label
                   htmlFor="coverUpload"
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors block"
@@ -874,16 +891,6 @@ const handleDisable = async (id: string, name: string) => {
                     onChange={handleCoverChange}
                   />
                 </label>
-
-                {coverPreview && (
-                  <img
-                    src={coverPreview}
-                    alt="Preview"
-                    className="mt-4 rounded-lg w-full h-48 object-cover"
-                  />
-                )}
-
-
               </div>
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.galleryImages')}</label>
@@ -995,7 +1002,8 @@ const handleDisable = async (id: string, name: string) => {
             </button>
 
             <button
-              onClick={() => navigate('track-detail', { selectedTrackId: trackId })}
+              type="button"
+              onClick={() => navigate(`/tracks/${trackId}`)}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >
