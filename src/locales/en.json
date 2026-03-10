@@ -608,6 +608,7 @@
       "categories": "Categories",
       "noCommunity": "No community",
       "noTrack": "No Track",
+      "trackStats": "{{events}} events, {{communities}} communities",
       "view": "View",
       "edit": "Edit",
       "participants": "Participants",
@@ -642,7 +643,11 @@
       "description": "Description *",
       "category": "Category *",
       "community": "Community * (mandatory)",
+      "country": "Country *",
+      "city": "City *",
       "track": "Track *",
+      "tracksAvailable_one": "1 track available",
+      "tracksAvailable_other": "{{count}} tracks available",
       "eventDate": "Event Date *",
       "startTime": "Start Time *",
       "endTime": "End Time *",
@@ -662,6 +667,8 @@
         "eventName": "Abu Dhabi Night Race Series – Round 3",
         "description": "Describe the event...",
         "community": "Select community...",
+        "country": "Select country...",
+        "city": "Select city...",
         "track": "Select track...",
         "distance": "25",
         "maxParticipants": "100",
@@ -684,7 +691,10 @@
       },
       "statusOptions": {
         "draft": "Draft",
-        "open": "Open"
+        "open": "Open",
+        "full": "Full",
+        "completed": "Completed",
+        "archived": "Archived"
       },
       "featuredEvent": "Featured Event",
       "allowCancellation": "Allow Cancellation",
@@ -1370,6 +1380,14 @@
       "Corporate Events": "Corporate Events",
       "National Events": "National Events"
     },
+    "countries": {
+      "UAE": "United Arab Emirates",
+      "Saudi Arabia": "Saudi Arabia",
+      "Kuwait": "Kuwait",
+      "Bahrain": "Bahrain",
+      "Oman": "Oman",
+      "Qatar": "Qatar"
+    },
     "locations": {
       "Abu Dhabi": "Abu Dhabi",
       "Al Ain": "Al Ain",
@@ -1390,7 +1408,10 @@
       "Limited": "Limited",
       "Closed": "Closed",
       "Active": "Active",
-      "Disabled": "Disabled"
+      "Disabled": "Disabled",
+      "upcoming": "Upcoming",
+      "cancelled": "Cancelled",
+      "ongoing": "Ongoing"
     },
     "difficulties": {
       "Easy": "Easy",

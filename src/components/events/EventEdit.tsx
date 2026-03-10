@@ -195,7 +195,7 @@ export function EventEdit({ role }: EventEditProps) {
     categories: string;
     rewardPoints: number;
     rewardBadge: string;
-    status: 'draft' | 'open' | 'full' | 'completed' | 'archived';
+    status: 'Draft' | 'Open' | 'Full' | 'Completed' | 'Archived';
     isFeatured: boolean;
     allowCancellation: boolean;
     galleryImages: string[];
@@ -229,7 +229,7 @@ export function EventEdit({ role }: EventEditProps) {
     categories: '',
     rewardPoints: 50,
     rewardBadge: '',
-    status: 'draft',
+    status: 'Draft',
     galleryImages: [],
     isFeatured: false,
     allowCancellation: false,
@@ -259,9 +259,14 @@ export function EventEdit({ role }: EventEditProps) {
       };
       const communityId = resolveId(ev.communityId ?? ev.community);
       const trackId = resolveId(ev.trackId ?? ev.track);
-      const status = ev.status === 'cancelled' || ev.status === 'reoprn' || ev.status === 'disable'
-        ? 'archived' as const
-        : (ev.status as 'draft' | 'open' | 'full' | 'completed' | 'archived');
+      const statusMap: Record<string, 'Draft' | 'Open' | 'Full' | 'Completed' | 'Archived'> = {
+        'Draft': 'Draft', 'draft': 'Draft',
+        'Open': 'Open', 'open': 'Open',
+        'Full': 'Full', 'full': 'Full',
+        'Completed': 'Completed', 'completed': 'Completed',
+        'Archived': 'Archived', 'archived': 'Archived',
+      };
+      const status = statusMap[ev.status] ?? 'Archived';
       setFormData({
         title: ev.title,
         titleAr: (ev as any).titleAr || '',
@@ -489,9 +494,13 @@ export function EventEdit({ role }: EventEditProps) {
         //   points: formData.rewardPoints,
         //   badgeName: formData.rewardBadge,
         // },
-        // status: formData.status,
+        status: formData.status,
         isFeatured: formData.isFeatured,
         allowCancellation: formData.allowCancellation,
+        address: formData.address,
+        country: formData.country,
+        maxAge: formData.maxAge,
+        youtubeLink: formData.youtubeLink || undefined,
       };
 
       await updateEventApi(id, payload);
@@ -1264,11 +1273,58 @@ export function EventEdit({ role }: EventEditProps) {
             </div>
           </div>
 
+          {/* Visibility & Rules */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white">
+            <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.create.visibilityRules')}</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('common.status')}</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="Draft">{t('events.create.statusOptions.draft')}</option>
+                  <option value="Open">{t('events.create.statusOptions.open')}</option>
+                  <option value="Full">{t('events.create.statusOptions.full')}</option>
+                  <option value="Completed">{t('events.create.statusOptions.completed')}</option>
+                  <option value="Archived">{t('events.create.statusOptions.archived')}</option>
+                </select>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isFeatured}
+                    onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.create.featuredEvent')}</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowCancellation}
+                    onChange={(e) => setFormData({ ...formData, allowCancellation: e.target.checked })}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.create.allowCancellation')}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="p-6 rounded-2xl shadow-sm bg-white space-y-3">
             <button
               onClick={handleSave}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg"
+              disabled={isSaving}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#C12D32' }}
             >
               <Save className="w-4 h-4" />

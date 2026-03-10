@@ -24,8 +24,8 @@ export function EventsList({ role }: EventsListProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [cityFilter, setCityFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
 
   const [communities, setCommunities] = useState<any[]>([]);
   const [tracks, setTracks] = useState<any[]>([]);
@@ -34,12 +34,10 @@ export function EventsList({ role }: EventsListProps) {
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState('');
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [communityFilter, setCommunityFilter] = useState('');
   const [trackFilter, setTrackFilter] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('');
-  // const [filteredEvents, setFilteredEvents] = useState('');
 
   // DEMO ONLY: temporary state for rating display - remove when real rating from API is available
   // DEMO ONLY: temporary state for track - remove when event.track or API is available
@@ -50,7 +48,7 @@ export function EventsList({ role }: EventsListProps) {
       try {
         setIsLoading(true);
 
-        const apiStatus = statusFilter === 'all' ? undefined : statusFilter;
+        const apiStatus = statusFilter || undefined;
 
         const [communityData, trackData, eventsResponse] = await Promise.all([
           getAllCommunities(),
@@ -76,7 +74,7 @@ export function EventsList({ role }: EventsListProps) {
       const fetchAll = async () => {
         try {
           setIsLoading(true);
-          const apiStatus = statusFilter === 'all' ? undefined : statusFilter;
+          const apiStatus = statusFilter || undefined;
           const [communityData, trackData, eventsResponse] = await Promise.all([
             getAllCommunities(),
             getAllTracks(),
@@ -114,17 +112,34 @@ export function EventsList({ role }: EventsListProps) {
 
 
   const filteredEvents = useMemo(() => {
-  return events.filter((event) => {
-    const matchesSearch =
-      event.title?.toLowerCase().includes(searchTerm.toLowerCase());
+    return events.filter((event) => {
+      const matchesSearch =
+        !searchTerm || event.title?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCity =
-      cityFilter === 'all' ||
-      event.address?.toLowerCase().includes(cityFilter.toLowerCase());
+      const matchesCity =
+        !cityFilter || event.city?.toLowerCase() === cityFilter.toLowerCase() ||
+        event.address?.toLowerCase().includes(cityFilter.toLowerCase());
 
-    return matchesSearch && matchesCity;
-  });
-}, [events, searchTerm, cityFilter]);
+      const matchesCommunity =
+        !communityFilter ||
+        (event.communityId?._id || event.communityId?.id) === communityFilter;
+
+      const matchesTrack =
+        !trackFilter ||
+        (event.trackId?._id || event.trackId?.id) === trackFilter;
+
+      const matchesCategory =
+        categoryFilter.length === 0 ||
+        categoryFilter.includes(event.category || '');
+
+      const matchesFeatured =
+        !featuredFilter ||
+        (featuredFilter === 'yes' && event.isFeatured) ||
+        (featuredFilter === 'no' && !event.isFeatured);
+
+      return matchesSearch && matchesCity && matchesCommunity && matchesTrack && matchesCategory && matchesFeatured;
+    });
+  }, [events, searchTerm, cityFilter, communityFilter, trackFilter, categoryFilter, featuredFilter]);
 
   const trackStats = useMemo(() => {
     const stats: Record<string, { eventsCount: number; communitiesCount: number }> = {};
@@ -244,8 +259,8 @@ export function EventsList({ role }: EventsListProps) {
           <input
             type="text"
             placeholder={t('events.filters.search')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
           />
         </div>
@@ -261,7 +276,7 @@ export function EventsList({ role }: EventsListProps) {
             >
               <option value="">{t('events.filters.allCommunities')}</option>
               {communities.map(community => (
-                <option key={community.id} value={community.id}>{community.name}</option>
+                <option key={community._id || community.id} value={community._id || community.id}>{community.title || community.name}</option>
               ))}
             </select>
           </div>
@@ -293,7 +308,7 @@ export function EventsList({ role }: EventsListProps) {
             >
               <option value="">{t('events.filters.allTracks')}</option>
               {tracks.map(track => (
-                <option key={track.id} value={track.id}>{track.name}</option>
+                <option key={track._id || track.id} value={track._id || track.id}>{track.title || track.name}</option>
               ))}
             </select>
             {!cityFilter && tracks.length > 20 && (
@@ -333,7 +348,7 @@ export function EventsList({ role }: EventsListProps) {
           <div className="flex items-end">
             <button
               onClick={() => {
-                setSearchQuery('');
+                setSearchTerm('');
                 setCategoryFilter([]);
                 setCommunityFilter('');
                 setCityFilter('');
@@ -426,7 +441,7 @@ export function EventsList({ role }: EventsListProps) {
                         {(() => {
                           const trackId = event.trackId?._id || event.trackId?.id;
                           const stats = trackId ? trackStats[trackId] : null;
-                          return stats ? ` (${stats.eventsCount} events, ${stats.communitiesCount} communities)` : '';
+                          return stats ? ` (${t('events.card.trackStats', { events: stats.eventsCount, communities: stats.communitiesCount })})` : '';
                         })()}
                       </span>
                     </div>

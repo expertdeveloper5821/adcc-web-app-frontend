@@ -13,11 +13,13 @@ export interface EventApiResponse {
   eventTime: string;
   endTime: string;
   address: string;
+  country?: string;
+  city?: string;
   maxParticipants: number;
   minAge?: number;
   maxAge?: number;
   youtubeLink?: string;
-  status: 'draft' | 'open' | 'full' | 'completed' | 'archived' |  'cancelled' | 'reoprn' | 'disable';
+  status: 'Draft' | 'Open' | 'Full' | 'Completed' | 'Archived' | 'draft' | 'open' | 'full' | 'completed' | 'archived' | 'cancelled' | 'reoprn' | 'disable';
   createdAt?: string;
   updatedAt?: string;
   views?: number;
@@ -25,9 +27,12 @@ export interface EventApiResponse {
   rating?: number;
   shares?: number;
   difficulty?: string;
+  distance?: number;
   featured?: boolean;
   amenities?: string[];
+  schedule?: { time: string; title: string; titleAr?: string; description?: string; descriptionAr?: string; order?: number }[];
   registrationOpen?: boolean;
+  category?: string;
   categories?: 'race' | 'community Ride' | 'Training & Clinics' | 'Awareness Rides' | 'Family & Kids' | 'Corporate Events' | 'National Events';
   rewards: {
     points: number;

@@ -567,6 +567,7 @@
       "categories": "الفئات",
       "noCommunity": "بدون مجتمع",
       "noTrack": "بدون مسار",
+      "trackStats": "{{events}} فعاليات، {{communities}} مجتمعات",
       "view": "عرض",
       "edit": "تعديل",
       "participants": "المشاركون",
@@ -601,7 +602,11 @@
       "description": "الوصف *",
       "category": "الفئة *",
       "community": "المجتمع * (إلزامي)",
+      "country": "الدولة *",
+      "city": "المدينة *",
       "track": "المسار *",
+      "tracksAvailable_one": "مسار واحد متاح",
+      "tracksAvailable_other": "{{count}} مسارات متاحة",
       "eventDate": "تاريخ الفعالية *",
       "startTime": "وقت البدء *",
       "endTime": "وقت الانتهاء *",
@@ -621,6 +626,8 @@
         "eventName": "سلسلة سباقات أبوظبي الليلية – الجولة 3",
         "description": "وصف الفعالية...",
         "community": "اختر المجتمع...",
+        "country": "اختر الدولة...",
+        "city": "اختر المدينة...",
         "track": "اختر المسار...",
         "distance": "25",
         "maxParticipants": "100",
@@ -643,7 +650,10 @@
       },
       "statusOptions": {
         "draft": "مسودة",
-        "open": "مفتوح"
+        "open": "مفتوح",
+        "full": "مكتمل العدد",
+        "completed": "منتهي",
+        "archived": "مؤرشف"
       },
       "featuredEvent": "فعالية مميزة",
       "allowCancellation": "السماح بالإلغاء",
@@ -1329,6 +1339,14 @@
       "Corporate Events": "فعاليات مؤسسية",
       "National Events": "فعاليات وطنية"
     },
+    "countries": {
+      "UAE": "الإمارات العربية المتحدة",
+      "Saudi Arabia": "المملكة العربية السعودية",
+      "Kuwait": "الكويت",
+      "Bahrain": "البحرين",
+      "Oman": "عُمان",
+      "Qatar": "قطر"
+    },
     "locations": {
       "Abu Dhabi": "أبوظبي",
       "Al Ain": "العين",
@@ -1349,7 +1367,10 @@
       "Limited": "محدود",
       "Closed": "مغلق",
       "Active": "نشط",
-      "Disabled": "معطل"
+      "Disabled": "معطل",
+      "upcoming": "قادم",
+      "cancelled": "ملغي",
+      "ongoing": "جارٍ"
     },
     "difficulties": {
       "Easy": "سهل",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, Globe } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, Globe, Send } from 'lucide-react';
 import { addEvent, Event, availableCategories } from '../../data/eventsData';
 import { getTracksByCountryAndCity } from '../../data/tracksData';
 import { toast } from 'sonner';
@@ -30,6 +30,7 @@ export function EventCreate({ role }: EventCreateProps) {
   const [tracks, setTracks] = useState<any[]>([]);
   const [communities, setCommunities] = useState<any[]>([]);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { locale } = useLocale();
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +106,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     eligibilityExperience: string;
     rewardPoints: number;
     rewardBadge: string;
-    status: 'Draft' | 'Open';
+    status: 'Draft' | 'Open' | 'Full' | 'Completed' | 'Archived';
     isFeatured: boolean;
     allowCancellation: boolean;
   }>({
@@ -139,11 +140,36 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const [customAmenityInput, setCustomAmenityInput] = useState('');
 
-  // const tracks = getTracksByCountryAndCity(formData.country, formData.city);
-  // const selectedCommunity = communities.find(c => c.id === formData.communityId);
+  // Fixed list of countries (GCC) so dropdown always shows all; cities/tracks still filter by data
+  const AVAILABLE_COUNTRIES = ['UAE', 'Saudi Arabia', 'Kuwait', 'Bahrain', 'Oman', 'Qatar'];
+  const availableCountries = AVAILABLE_COUNTRIES;
 
-  // Community records 
-    useEffect(() => {
+  const availableCities = React.useMemo(() => {
+    if (!formData.country) return [];
+    const country = formData.country.trim();
+    const cities = Array.from(
+      new Set(
+        tracks
+          .filter((t: { country?: string }) => (t.country || 'UAE').trim() === country)
+          .map((t: { city?: string }) => (t.city || '').trim())
+          .filter(Boolean)
+      )
+    );
+    return cities.sort();
+  }, [tracks, formData.country]);
+
+  const filteredTracks = React.useMemo(() => {
+    if (!formData.country || !formData.city) return [];
+    const country = formData.country.trim();
+    const city = formData.city.trim();
+    return tracks.filter(
+      (t: { country?: string; city?: string }) =>
+        (t.country || 'UAE').trim() === country && (t.city || '').trim() === city
+    );
+  }, [tracks, formData.country, formData.city]);
+
+  // Community records
+  useEffect(() => {
       const fetchMetaData = async () => {
         try {
           const [communityData, trackData] = await Promise.all([
@@ -157,9 +183,27 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           toast.error(t('events.create.toasts.loadError'));
         }
       };
-  
+
       fetchMetaData();
     }, []);
+
+  // Keep city/trackId valid when tracks load: if current city not in available cities for selected country, clear city and trackId
+  useEffect(() => {
+    if (tracks.length === 0 || !formData.country) return;
+    setFormData((prev) => {
+      const cities = Array.from(
+        new Set(
+          tracks
+            .filter((t: { country?: string }) => (t.country || 'UAE').trim() === prev.country.trim())
+            .map((t: { city?: string }) => (t.city || '').trim())
+            .filter(Boolean)
+        )
+      );
+      const cityValid = !prev.city || cities.includes(prev.city);
+      if (cityValid) return prev;
+      return { ...prev, city: '', trackId: '' };
+    });
+  }, [tracks, formData.country]);
 
   // Predefined amenities that appear as checkboxes
   const predefinedAmenities = ['water', 'toilets', 'parking', 'lighting', 'medical support', 'bike service'];
@@ -320,6 +364,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     } else {
       setFormErrors({});
     }
+    setIsSubmitting(true);
     try {
       // Convert images to base64
       let coverBase64 = '';
@@ -342,6 +387,8 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         description: formData.description,
         ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
         address: `${formData.city}, ${formData.country}`,
+        country: formData.country,
+        city: formData.city,
         trackId: formData.trackId,
         eventDate: formData.eventDate,
         eventTime: formData.eventTime,
@@ -355,7 +402,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
         mainImage: coverBase64 || undefined,
         galleryImages: galleryBase64,
-        status: action === 'draft' ? 'Draft' : 'Open',
+        status: action === 'draft' ? 'Draft' : formData.status,
         isFeatured: !!formData.isFeatured,
         allowCancellation: !!formData.allowCancellation,
       };
@@ -365,6 +412,8 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       navigate('/events');
     } catch (error) {
       toast.error(t('events.create.toasts.createError'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -527,19 +576,94 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.locationTrack')}</h2>
             </div>
 
-            <div>
-              <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.track')}</label>
-              <select
-                value={formData.trackId}
-                onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-              >
-                <option value="">{t('events.create.placeholders.track')}</option>
-                {tracks.map(track => (
-                  <option key={track.id || track._id} value={track.id || track._id}>{track.title}</option>
-                ))}
-                
-              </select>
+            <div className="space-y-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm mb-2 whitespace-nowrap" style={{ color: '#666'}}>
+                  <Globe className="w-4 h-4 shrink-0" />
+                  {t('events.create.country')}
+                </label>
+                <select
+                  value={formData.country}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      country: e.target.value,
+                      city: '',
+                      trackId: '',
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="">{t('events.create.placeholders.country')}</option>
+                  {availableCountries.map((country) => (
+                    <option key={country} value={country}>
+                      {t(`data.countries.${country}`, country)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm mb-2 whitespace-nowrap" style={{ color: '#666' }}>
+                  <MapPin className="w-4 h-4 shrink-0" />
+                  {t('events.create.city')}
+                </label>
+                <select
+                  value={formData.city}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      city: e.target.value,
+                      trackId: '',
+                    })
+                  }
+                  disabled={!formData.country}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="">{t('events.create.placeholders.city')}</option>
+                  {availableCities.map((city) => (
+                    <option key={city} value={city}>
+                      {t(`data.locations.${city}`, city)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm mb-2 whitespace-nowrap" style={{ color: '#666' }}>
+                  <Send className="w-4 h-4 shrink-0" />
+                  {t('events.create.track')}
+                </label>
+                <select
+                  value={formData.trackId}
+                  onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}
+                  disabled={!formData.city}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="">{t('events.create.placeholders.track')}</option>
+                  {filteredTracks.map((track) => (
+                    <option key={track.id || track._id} value={track.id || track._id}>
+                      {track.title}
+                    </option>
+                  ))}
+                </select>
+                {formData.country && formData.city && (
+                  <>
+                    {filteredTracks.length > 0 ? (
+                      <p className="text-sm mt-1.5" style={{ color: '#059669' }}>
+                        {t('events.create.tracksAvailable', { count: filteredTracks.length })}
+                      </p>
+                    ) : (
+                      <p className="text-sm mt-1.5 text-amber-600">
+                        {t('communities.form.noTracksInLocation', {
+                          city: formData.city,
+                          country: formData.country,
+                        })}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -964,6 +1088,9 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 >
                   <option value="Draft">{t('events.create.statusOptions.draft')}</option>
                   <option value="Open">{t('events.create.statusOptions.open')}</option>
+                  <option value="Full">{t('events.create.statusOptions.full')}</option>
+                  <option value="Completed">{t('events.create.statusOptions.completed')}</option>
+                  <option value="Archived">{t('events.create.statusOptions.archived')}</option>
                 </select>
               </div>
 
@@ -999,19 +1126,21 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
             <button
               onClick={() => handleSubmit('publish')}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg"
+              disabled={isSubmitting}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#C12D32' }}
             >
               <Save className="w-5 h-5" />
-              {t('events.create.publish')}
+              {isSubmitting ? t('common.saving', 'Saving...') : t('events.create.publish')}
             </button>
 
             <button
               onClick={() => handleSubmit('draft')}
-              className="w-full px-4 py-3 rounded-lg transition-all hover:shadow-md"
+              disabled={isSubmitting}
+              className="w-full px-4 py-3 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#ECC180', color: '#333' }}
             >
-              {t('events.create.saveAsDraft')}
+              {isSubmitting ? t('common.saving', 'Saving...') : t('events.create.saveAsDraft')}
             </button>
 
             <button
