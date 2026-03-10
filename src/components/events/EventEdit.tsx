@@ -313,6 +313,34 @@ export function EventEdit({ role }: EventEditProps) {
   // Custom amenities (those not in the predefined list)
   const customAmenities = formData.amenities.filter(a => !predefinedAmenities.includes(a));
 
+  // Country → City → Track cascade (same as EventCreate)
+  const AVAILABLE_COUNTRIES = ['UAE', 'Saudi Arabia', 'Kuwait', 'Bahrain', 'Oman', 'Qatar'];
+  const availableCountries = AVAILABLE_COUNTRIES;
+
+  const availableCities = React.useMemo(() => {
+    if (!formData.country) return [];
+    const country = formData.country.trim();
+    const cities = Array.from(
+      new Set(
+        tracks
+          .filter((t: { country?: string }) => (t.country || 'UAE').trim() === country)
+          .map((t: { city?: string }) => (t.city || '').trim())
+          .filter(Boolean)
+      )
+    );
+    return cities.sort();
+  }, [tracks, formData.country]);
+
+  const filteredTracks = React.useMemo(() => {
+    if (!formData.country || !formData.city) return [];
+    const country = formData.country.trim();
+    const city = formData.city.trim();
+    return tracks.filter(
+      (t: { country?: string; city?: string }) =>
+        (t.country || 'UAE').trim() === country && (t.city || '').trim() === city
+    );
+  }, [tracks, formData.country, formData.city]);
+
   const handleNameChange = (name: string) => {
     setFormData(prev => ({
       ...prev,
@@ -733,59 +761,93 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <MapPin className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Location</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.create.locationTrack')}</h2>
             </div>
 
             <div className="space-y-4">
-              {/* <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Country</label>
+              <div>
+                <label className="flex items-center gap-2 text-sm mb-2 whitespace-nowrap" style={{ color: '#666' }}>
+                  <Globe className="w-4 h-4 shrink-0" />
+                  {t('events.create.country')}
+                </label>
                 <select
                   value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      country: e.target.value,
+                      city: '',
+                      trackId: '',
+                    })
+                  }
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="UAE">United Arab Emirates</option>
-                  <option value="Saudi Arabia">Saudi Arabia</option>
-                  <option value="Kuwait">Kuwait</option>
-                  <option value="Bahrain">Bahrain</option>
-                  <option value="Oman">Oman</option>
-                  <option value="Qatar">Qatar</option>
-                </select>
-              </div> */}
-
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>City *</label>
-                <select
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value, trackId: '' })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                >
-                  <option value="Abu Dhabi">Abu Dhabi</option>
-                  <option value="Dubai">Dubai</option>
-                  <option value="Sharjah">Sharjah</option>
-                  <option value="Ajman">Ajman</option>
-                  <option value="Al Ain">Al Ain</option>
-                  <option value="Ras Al Khaimah">Ras Al Khaimah</option>
-                  <option value="Fujairah">Fujairah</option>
+                  <option value="">{t('events.create.placeholders.country')}</option>
+                  {availableCountries.map((country) => (
+                    <option key={country} value={country}>
+                      {t(`data.countries.${country}`, country)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Track *</label>
+                <label className="flex items-center gap-2 text-sm mb-2 whitespace-nowrap" style={{ color: '#666' }}>
+                  <MapPin className="w-4 h-4 shrink-0" />
+                  {t('events.create.city')}
+                </label>
+                <select
+                  value={formData.city}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      city: e.target.value,
+                      trackId: '',
+                    })
+                  }
+                  disabled={!formData.country}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="">{t('events.create.placeholders.city')}</option>
+                  {availableCities.map((city) => (
+                    <option key={city} value={city}>
+                      {t(`data.locations.${city}`, city)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.track')}</label>
                 <select
                   value={formData.trackId}
                   onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  disabled={!formData.city}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select track...</option>
-                  {Array.isArray(tracks) &&
-                    tracks.map(track => (
-                      <option key={track.id ?? (track as { _id?: string })._id} value={track.id ?? (track as { _id?: string })._id}>
-                        {track.title} ({track.distance} km - {track.difficulty})
-                      </option>
-                    ))
-                  }
+                  <option value="">{t('events.create.placeholders.track')}</option>
+                  {filteredTracks.map((track) => (
+                    <option key={track._id || track.id} value={track._id || track.id}>
+                      {track.title}
+                    </option>
+                  ))}
                 </select>
+                {formData.country && formData.city && (
+                  <>
+                    {filteredTracks.length > 0 ? (
+                      <p className="text-sm mt-1.5" style={{ color: '#059669' }}>
+                        {t('events.create.tracksAvailable', { count: filteredTracks.length })}
+                      </p>
+                    ) : (
+                      <p className="text-sm mt-1.5 text-amber-600">
+                        {t('communities.form.noTracksInLocation', {
+                          city: formData.city,
+                          country: formData.country,
+                        })}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
