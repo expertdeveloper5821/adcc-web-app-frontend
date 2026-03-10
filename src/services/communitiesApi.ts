@@ -25,7 +25,8 @@ export interface CommunityApiResponse {
   terrain?: string;
   isActive: boolean;
   isFeatured?: boolean;
-  status?: string;
+  /** Backend: boolean true = enabled, false = disabled */
+  status?: boolean | string;
   visibility?: string;
   joinMode?: string;
   displayPriority?: number;
@@ -75,6 +76,8 @@ export interface CreateCommunityRequest {
   terrain?: string;
   isActive: boolean;
   isFeatured?: boolean;
+  /** Backend: boolean true = enabled, false = disabled */
+  status?: boolean;
   /** Community logo (square) */
   logo?: string;
   /** Backend expects string (not null) */

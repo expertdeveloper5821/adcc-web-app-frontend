@@ -440,6 +440,7 @@
         "approvalRequired": "Approval Required",
         "inviteOnly": "Invite Only"
       },
+      "enable": "Enable Community",
       "disable": "Disable Community",
       "archive": "Archive Community",
       "updateCommunity": "Update Community",
@@ -461,6 +462,7 @@
         "missingRequired": "Please fill in all required fields",
         "missingSpecialType": "Please select a special community type",
         "updateSuccess": "Community updated successfully",
+        "enabled": "Community enabled",
         "disabled": "Community disabled",
         "archived": "Community archived"
       }
@@ -472,10 +474,12 @@
       "events": "events",
       "tabs": {
         "about": "about",
+        "overview": "Overview",
         "members": "members",
         "events": "events",
         "gallery": "gallery",
-        "feed": "feed"
+        "feed": "Feed Posts",
+        "tracks": "Tracks"
       },
       "aboutHeading": "About",
       "associatedTeams": "Associated Teams",

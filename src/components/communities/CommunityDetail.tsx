@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Users, Plus, Calendar, Image, MessageSquare, Edit, MapPin, Award, Trash2, FileImage, Upload, Route, Activity, } from 'lucide-react';
+import {
+  ArrowLeft,
+  Users,
+  Calendar,
+  Image,
+  MessageSquare,
+  Edit,
+  MapPin,
+  Award,
+  Plus,
+  Pin,
+  Trash2,
+  FileImage,
+  Upload,
+  Route,
+  Activity,
+} from 'lucide-react';
 import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage } from '../../services/communitiesApi';
 import { toast } from 'sonner';
 import { getCommunity, getFeedPostsByCommunity, deleteFeedPost, updateFeedPost } from '../../data/communitiesData';
@@ -12,7 +28,7 @@ import { DetailPageSkeleton } from '../ui/skeleton';
 
 
 
-type TabType = 'overview' | 'feed' | 'events' | 'gallery' | 'tracks | members';
+type TabType = 'overview' | 'feed' | 'events' | 'tracks' | 'gallery' | 'members';
 
 export function CommunityDetail() {
   const { t } = useTranslation();
@@ -24,7 +40,9 @@ export function CommunityDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const [ getMembers, setMembers ] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [showPostDeleteModal, setShowPostDeleteModal] = useState(false);
+  const [membersData, setMembersData] = useState<unknown>(null);
   const [allTracks, setAllTracks] = useState<Track[]>([]);
   const [communityEvents, setCommunityEvents] = useState<EventApiResponse[]>([]);
   const [galleryImages, setGalleryImages] = useState<Array<{ id: string; url: string; name: string }>>([]);
@@ -33,6 +51,10 @@ export function CommunityDetail() {
   const feedPosts = getFeedPostsByCommunity(communityId);
 
   useEffect(() => {
+    if (!communityId) {
+      setIsLoading(false);
+      return;
+    }
     const fetchCommunity = async () => {
       try {
         setIsLoading(true);
@@ -41,32 +63,26 @@ export function CommunityDetail() {
       } catch (error: any) {
         console.error('Error fetching community:', error);
         toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadCommunityError'));
+        setCommunity(null);
       } finally {
         setIsLoading(false);
       }
     };
-
-    if (communityId) {
-      fetchCommunity();
-    }
+    fetchCommunity();
   }, [communityId]);
 
 
   useEffect(() => {
     const fetchTracks = async () => {
       try {
-        setIsLoading(true);
         const data = await getAllTracks();
         setAllTracks(Array.isArray(data) ? data : []);
-
       } catch (error: any) {
         console.error('Error fetching tracks:', error);
         toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadTracksError'));
-      } finally {
-        setIsLoading(false);
       }
-    }
-  if (communityId) {
+    };
+    if (communityId) {
       fetchTracks();
     }
   }, [communityId]);
@@ -74,18 +90,13 @@ export function CommunityDetail() {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        setIsLoading(true);
-        const data = await getCommunityMembers(communityId);
-        setMembers(data);
-        console.log('Members', data);
+        const data = await getCommunityMembers(communityId) as unknown;
+        setMembersData(data);
       } catch (error: any) {
-        console.error('Error fetching community:', error);
+        console.error('Error fetching community members:', error);
         toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadCommunityError'));
-      } finally {
-        setIsLoading(false);
       }
     };
-
     if (communityId) {
       fetchMembers();
     }
@@ -138,11 +149,11 @@ export function CommunityDetail() {
     setUploading(true);
     try {
       const imageUrls: string[] = [];
-      
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const reader = new FileReader();
-        
+
         await new Promise<void>((resolve) => {
           reader.onload = () => {
             imageUrls.push(reader.result as string);
@@ -151,10 +162,10 @@ export function CommunityDetail() {
           reader.readAsDataURL(file);
         });
       }
-      
+
       // Call API to add images to backend
       const result = await addGalleryImages(communityId, imageUrls);
-      
+
       // Update state with new images from backend
       if (result.addedImages && result.addedImages.length > 0) {
         const newImages = result.addedImages.map((url: string, idx: number) => ({
@@ -175,7 +186,7 @@ export function CommunityDetail() {
 
   const handleGalleryDelete = async (id: string, imageUrl: string) => {
     if (!communityId) return;
-    
+
     try {
       await deleteGalleryImage(communityId, imageUrl);
       setGalleryImages(galleryImages.filter(img => img.id !== id));
@@ -218,45 +229,58 @@ export function CommunityDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Cover */}
-      <div className="relative h-72 rounded-2xl overflow-hidden">
-        <img src={community.image} alt={community.name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        
+      {/* Header with Cover (Hero Section) - matches design: back top-left, logo+name+meta+edit in bottom row */}
+      <div className={`relative h-[300px] rounded-2xl   bg-center  `} style={{
+        backgroundImage: `url(${community.image})`,
+        height: `350px`,
+        backgroundSize: `cover`,
+        backgroundPosition: `center`,
+        backgroundRepeat: `no-repeat`,
+      }}>
+        {/* <img src={community.image} alt={community.title} className="w-full h-full  object-cover" /> */}
+        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" /> */}
+
+        {/* Back button - top left only */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-6 left-6 p-3 bg-white/90 backdrop-blur-sm rounded-xl hover:bg-white transition-all"
+          className=" left-6 p-3 bg-white/90 backdrop-blur-sm rounded-xl hover:bg-white transition-all z-10" style={{ position: 'absolute', top: 10 }}
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
 
-        <div className="absolute bottom-8 left-8 right-8">
-          <div className="flex items-end gap-6">
+        {/* Bottom row: Logo | Name + Metadata | Edit Community (right, aligned with name) */}
+        <div className=" " style={{ position: 'absolute', bottom: 30, left: 0, right: 0 }}>
+          <div className="flex items-end gap-6 px-6">
+            {/* Community logo - bottom-left, thick white border, rounded square */}
             <img
-              src={community.logo}
+              src={community.logo ?? community.image}
               alt={community.title}
-              className="w-28 h-28 rounded-2xl border-4 border-white object-cover"
+              className=" h-20 rounded-2xl border-4 border-white object-cover shadow-lg flex-shrink-0 bg-white/10"
             />
-            <div className="flex-1 text-white">
+            <div className="flex-1 text-white min-w-0">
               <h1 className="text-4xl font-bold mb-3">{community.title}</h1>
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-4 text-sm flex-wrap">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  <span>{community.location}</span>
+                  <span>{community.city ?? community.location}</span>
                 </div>
-                <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
-                  {community.type}
+                <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/20 backdrop-blur-sm">
+                  {typeof community.type === 'string' ? community.type : (Array.isArray(community.type) ? community.type.join(', ') : '')}
                 </span>
-                {/* <span className="px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur-sm">
-                  {Array.isArray(community.category) ? community.category.join(', ') : community.category}
-                </span> */}
-                <span className="text-sm">{(community.membersCount ?? 3420).toLocaleString()} {t('communities.detail.members')}</span>
-                <span className="text-sm">{community.eventsCount ?? 18} {t('communities.detail.events')}</span>
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  <span>{((community.stats?.members ?? Number(community.memberCount)) || 0).toLocaleString()} {t('communities.detail.members')}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>{community.stats?.upcomingEvents ?? community.eventsCount ?? 0} {t('communities.detail.events')}</span>
+                </div>
               </div>
             </div>
+            {/* Edit Community - right side, vertically centered with name/metadata, red button with icon + text */}
             <button
-              onClick={() => navigate(`/communities/${communityId}/edit`)}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-white transition-all"
+              onClick={handleEdit}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium transition-all hover:opacity-90 flex-shrink-0"
               style={{ backgroundColor: '#C12D32' }}
             >
               <Edit className="w-4 h-4" />
@@ -268,30 +292,61 @@ export function CommunityDetail() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <div className="flex gap-6">
-          {(['about', 'members', 'events', 'gallery', 'feed'] as TabType[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className="pb-3 px-2 text-sm capitalize transition-all"
-              style={{
-                color: activeTab === tab ? '#C12D32' : '#666',
-                borderBottom: activeTab === tab ? '2px solid #C12D32' : '2px solid transparent',
-              }}
-            >
-              {t(`communities.detail.tabs.${tab}`)}
-            </button>
-          ))}
+        <div className="flex gap-8">
+          {([
+            { id: 'overview', label: t('communities.detail.tabs.overview'), icon: Activity },
+            { id: 'feed', label: t('communities.detail.tabs.feed'), icon: MessageSquare },
+            { id: 'events', label: t('communities.detail.tabs.events'), icon: Calendar },
+            { id: 'tracks', label: t('communities.detail.tabs.tracks'), icon: Route },
+            { id: 'gallery', label: t('communities.detail.tabs.gallery'), icon: Image },
+            { id: 'members', label: t('communities.detail.tabs.members'), icon: Users },
+          ] as const).map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="pb-4 px-2 flex items-center gap-2 transition-all"
+                style={{
+                  color: activeTab === tab.id ? '#C12D32' : '#999',
+                  borderBottom: activeTab === tab.id ? '2px solid #C12D32' : '2px solid transparent',
+                }}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Content */}
-      {activeTab === 'about' && (
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h2 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.detail.aboutHeading')}</h2>
-              <p className="text-base leading-relaxed" style={{ color: '#666' }}>{community.description}</p>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="rounded-2xl p-6 bg-white shadow-sm">
+                <MessageSquare className="w-8 h-8 mb-3" style={{ color: '#C12D32' }} />
+                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{community.postsCount ?? 0}</div>
+                <div className="text-sm" style={{ color: '#666' }}>Total Posts</div>
+              </div>
+              <div className="rounded-2xl p-6 bg-white shadow-sm">
+                <Calendar className="w-8 h-8 mb-3" style={{ color: '#CF9F0C' }} />
+                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{community.stats?.upcomingEvents ?? community.eventsCount ?? 0}</div>
+                <div className="text-sm" style={{ color: '#666' }}>Events</div>
+              </div>
+              <div className="rounded-2xl p-6 bg-white shadow-sm">
+                <Route className="w-8 h-8 mb-3" style={{ color: '#10B981' }} />
+                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{allTracks.length}</div>
+                <div className="text-sm" style={{ color: '#666' }}>Active Tracks</div>
+              </div>
+              <div className="rounded-2xl p-6 bg-white shadow-sm">
+                <Image className="w-8 h-8 mb-3" style={{ color: '#8B5CF6' }} />
+                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{galleryImages.length}</div>
+                <div className="text-sm" style={{ color: '#666' }}>Gallery Items</div>
+              </div>
             </div>
 
             {/* About */}
@@ -301,12 +356,11 @@ export function CommunityDetail() {
             </div>
 
             {/* Associated Teams */}
-            
+            {community.associatedTeams && community.associatedTeams.length > 0 && (
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <h2 className="text-xl font-semibold mb-4" style={{ color: '#333' }}>{t('communities.detail.associatedTeams')}</h2>
-                {community.teams && community.teams.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {community.teams.map((team) => (
+                  {community.associatedTeams.map((team) => (
                     <span
                       key={team}
                       className="px-4 py-2 rounded-full text-sm"
@@ -316,58 +370,77 @@ export function CommunityDetail() {
                     </span>
                   ))}
                 </div>
-              )}
               </div>
+            )}
           </div>
 
+          {/* Sidebar */}
           <div className="space-y-6">
-            <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.detail.quickActions')}</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={handleEdit}
-                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
-                  style={{ backgroundColor: '#ECC180', color: '#333' }}
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>{t('communities.detail.editCommunity')}</span>
-                </button>
-                <button
-                  className="w-full px-4 py-2 rounded-lg transition-all hover:shadow-md"
-                  style={{ backgroundColor: '#E1C06E', color: '#333' }}
-                >
-                  {t('communities.detail.featureOnHomepage')}
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl shadow-sm bg-white">
-              <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('communities.detail.details')}</h3>
+            {/* Details */}
+            <div className="rounded-2xl p-6 bg-white shadow-sm">
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#333' }}>{t('communities.detail.details')}</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.statusLabel')}</span>
                   <span
                     className="px-3 py-1 rounded-full text-xs font-medium text-white capitalize"
                     style={{
-                      backgroundColor:
-                        community.isActive === 'active' ? '#10B981' : '#EF4444'
+                      backgroundColor: community.isActive ? '#10B981' : '#EF4444',
                     }}
                   >
-                    {community.isActive === 'active' ? t('common.active') : t('common.inactive')}
+                    {community.isActive ? t('common.active') : t('common.inactive')}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.visibilityLabel')}</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.visibility ?? t('common.public')}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.visibility === 'public' ? t('common.public') : t('common.private')}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.featuredLabel')}</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.featured ?? true ? t('common.yes') : t('common.no')}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{community.featured ?? community.isFeatured ? t('common.yes') : t('common.no')}</span>
                 </div>
+                {community.manager && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.managerLabel')}</span>
+                    <span className="text-sm" style={{ color: '#333' }}>{community.manager}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.managerLabel')}</span>
-                  <span className="text-sm" style={{ color: '#333' }}>{community.manager ?? 'Ahmed Al Mansoori'}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>Created</span>
+                  <span className="text-sm" style={{ color: '#333' }}>
+                    {community.createdAt ? new Date(community.createdAt).toLocaleDateString() : '—'}
+                  </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="rounded-2xl p-6 bg-white shadow-sm">
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#333' }}>{t('communities.detail.quickActions')}</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setActiveTab('feed')}
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#C12D32' }}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{t('communities.detail.feed.createPost')}</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('events')}
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl transition-all hover:shadow-md"
+                  style={{ backgroundColor: '#ECC180', color: '#333' }}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>{t('communities.detail.eventsTab.createEvent')}</span>
+                </button>
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl transition-all hover:shadow-md"
+                  style={{ backgroundColor: '#E1C06E', color: '#333' }}
+                >
+                  <Award className="w-4 h-4" />
+                  <span>{t('communities.detail.featureOnHomepage')}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -444,7 +517,10 @@ export function CommunityDetail() {
                           <Edit className="w-4 h-4" style={{ color: '#666' }} />
                         </button>
                         <button
-                          onClick={() => handleDeletePost(post.id)}
+                          onClick={() => {
+                            setPostToDelete(post.id);
+                            setShowPostDeleteModal(true);
+                          }}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                           title={t('communities.detail.feed.deletePost')}
                         >
@@ -664,7 +740,7 @@ export function CommunityDetail() {
                   <div className="p-3">
                     <p className="text-sm truncate" style={{ color: '#333' }}>{image.name}</p>
                   </div>
-                  
+
                   {/* Hover Delete Button */}
                   <button
                     onClick={() => handleGalleryDelete(image.id, image.url)}
@@ -700,37 +776,125 @@ export function CommunityDetail() {
 
       {/* Members Tab */}
       {activeTab === 'members' && (
-        <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.membersTab.heading')}</h2>
-          <p style={{ color: '#666' }}>{t('communities.detail.membersTab.placeholder')}</p>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.membersTab.heading')}</h2>
+              <p style={{ color: '#666' }}>{((community.stats?.members ?? Number(community.memberCount)) || 0).toLocaleString()} total members</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
+            <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+            <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>Member Management</h3>
+            <p style={{ color: '#666' }}>View and manage community members</p>
+          </div>
         </div>
       )}
 
-      {activeTab === 'events' && (
-        <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.eventsFallback.heading')}</h2>
-          <p style={{ color: '#666' }}>{t('communities.detail.eventsFallback.placeholder')}</p>
+      {/* Delete Post Confirmation Modal */}
+      {showPostDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-6 max-w-md w-full mx-4 bg-white">
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Delete Post</h3>
+            <p className="mb-6" style={{ color: '#666' }}>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowPostDeleteModal(false);
+                  setPostToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl"
+                style={{ backgroundColor: '#ECC180', color: '#333' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (postToDelete) {
+                    deleteFeedPost(postToDelete);
+                    toast.success(t('communities.detail.toasts.postDeleted', { defaultValue: 'Post deleted successfully' }));
+                    setShowPostDeleteModal(false);
+                    setPostToDelete(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-white"
+                style={{ backgroundColor: '#C12D32' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {activeTab === 'gallery' && (
-        <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.galleryFallback.heading')}</h2>
-          <p style={{ color: '#666' }}>{t('communities.detail.galleryFallback.placeholder')}</p>
+      {/* Create Post Modal */}
+      {showCreatePost && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto bg-white">
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Create Post</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Post Title</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
+                  placeholder="Enter post title..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Post Type</label>
+                <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]">
+                  <option>Announcement</option>
+                  <option>Highlight</option>
+                  <option>Awareness</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Caption</label>
+                <textarea
+                  rows={4}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
+                  placeholder="Write your post caption..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>Upload Media</label>
+                <div className="border-2 border-dashed rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer" style={{ borderColor: '#ECC180' }}>
+                  <Upload className="w-12 h-12 mx-auto mb-3" style={{ color: '#999' }} />
+                  <p style={{ color: '#666' }}>Click to upload image or video</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={() => setShowCreatePost(false)}
+                className="px-4 py-2 rounded-xl"
+                style={{ backgroundColor: '#ECC180', color: '#333' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  toast.success(t('communities.detail.toasts.postCreated', { defaultValue: 'Post created successfully' }));
+                  setShowCreatePost(false);
+                }}
+                className="px-4 py-2 rounded-xl text-white"
+                style={{ backgroundColor: '#C12D32' }}
+              >
+                Publish Post
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {activeTab === 'feed' && (
-        <div className="p-6 rounded-2xl shadow-sm bg-white">
-          <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('communities.detail.feedFallback.heading')}</h2>
-          <p style={{ color: '#666' }}>{t('communities.detail.feedFallback.placeholder')}</p>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
+      {/* Delete Community Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-6 max-w-md w-full mx-4 bg-white">
             <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.detail.deleteModal.title')}</h3>
             <p className="mb-6" style={{ color: '#666' }}>
               {t('communities.detail.deleteModal.body', { name: community.title })}
@@ -738,7 +902,7 @@ export function CommunityDetail() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 rounded-lg"
+                className="px-4 py-2 rounded-xl"
                 style={{ backgroundColor: '#ECC180', color: '#333' }}
               >
                 {t('communities.detail.deleteModal.cancel')}
@@ -759,7 +923,7 @@ export function CommunityDetail() {
 
   function getPostTypeColor(type: string): string {
     switch (type?.toLowerCase()) {
-      case 'announcement': return '#C12D32';
+      case 'announcement': return '#3B82F6';
       case 'highlight': return '#CF9F0C';
       case 'awareness': return '#10B981';
       default: return '#666';
@@ -767,11 +931,11 @@ export function CommunityDetail() {
   }
 
   function handlePinPost(postId: string) {
-    toast.success(t('communities.detail.toasts.postPinned'));
-  }
-
-  function handleDeletePost(postId: string) {
-    setShowDeleteModal(true);
+    const post = feedPosts.find((p) => p.id === postId);
+    if (post) {
+      updateFeedPost(postId, { isPinned: !post.isPinned });
+      toast.success(post.isPinned ? t('communities.detail.feed.unpin') : t('communities.detail.feed.pin'));
+    }
   }
 }
 

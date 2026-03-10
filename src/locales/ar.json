@@ -399,6 +399,7 @@
       "allowGallery": "السماح برفع الصور",
       "featureComingSoon": "الميزة قريباً",
       "displayPriorityHint": "الأرقام الأعلى تظهر أولاً",
+      "enable": "تفعيل المجتمع",
       "disable": "تعطيل المجتمع",
       "archive": "أرشفة المجتمع",
       "updateCommunity": "تحديث المجتمع",
@@ -420,6 +421,7 @@
         "missingRequired": "يرجى ملء جميع الحقول المطلوبة",
         "missingSpecialType": "يرجى اختيار نوع المجتمع الخاص",
         "updateSuccess": "تم تحديث المجتمع بنجاح",
+        "enabled": "تم تفعيل المجتمع",
         "disabled": "تم تعطيل المجتمع",
         "archived": "تمت أرشفة المجتمع"
       }
@@ -431,10 +433,12 @@
       "events": "فعاليات",
       "tabs": {
         "about": "حول",
+        "overview": "نظرة عامة",
         "members": "الأعضاء",
         "events": "الفعاليات",
         "gallery": "المعرض",
-        "feed": "الموجز"
+        "feed": "منشورات الموجز",
+        "tracks": "المسارات"
       },
       "aboutHeading": "حول",
       "associatedTeams": "الفرق المرتبطة",

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, Upload, Users, MapPin, Tag, Settings, Shield, Image as ImageIcon, Save, AlertTriangle, Archive, Trash2 } from 'lucide-react';
-import { deleteCommunity } from '../../data/communitiesData';
+import { ArrowLeft, Upload, Users, MapPin, Tag, Settings, Shield, Image as ImageIcon, Save, AlertTriangle, Archive, Trash2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getCommunityById, updateCommunity, CommunityApiResponse, getAvailableCities, getAvailableCategories, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
+import { getCommunityById, updateCommunity, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getAvailableCities, getAvailableCategories, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { CommunityFormData } from '../../types/community';
-import { availableCategories } from '../../data/communitiesData'
+import { availableCategories } from '../../data/communitiesData';
+import { DetailPageSkeleton } from '../ui/skeleton';
 
 
 interface CommunityEditProps {
@@ -57,7 +57,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     fetchCommunity();
   }, [id]);
 
-  // Load all tracks from API (getAllTracks returns Track[] directly)
+  // Load all tracks from API (getAllTracks returns Track[] directly) – does not control main loader
   useEffect(() => {
     const fetchTracks = async () => {
       try {
@@ -65,8 +65,6 @@ export function CommunityEdit({ role }: CommunityEditProps) {
         setTracks(Array.isArray(list) ? list : []);
       } catch (error) {
         toast.error(t('communities.edit.toasts.trackNotFound'));
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchTracks();
@@ -210,7 +208,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       fundsRaised: existingCommunity.fundsRaised ?? stats?.fundsRaised ?? null,
       purposeType: (existingCommunity as any).purposeType ?? existingCommunity.purposeType ?? '',
       specialType: (existingCommunity as any).specialType ?? '',
-      status: existingCommunity.status ?? (existingCommunity.isActive ? 'active' : 'inactive'),
+      status: (existingCommunity.status === true || existingCommunity.status === 'active' || existingCommunity.isActive) ? 'active' : 'inactive',
       visibility: existingCommunity.visibility ?? 'public',
       joinMode: (existingCommunity as any).joinMode ?? 'open',
       displayPriority: (existingCommunity as any).displayPriority ?? 0,
@@ -224,11 +222,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   }, [existingCommunity]);
 
   if (isLoading || isMetadataLoading) {
-    return (
-      <div className="p-6 rounded-2xl bg-white">
-        <p style={{ color: '#666' }}>{t('common.loading')}</p>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (!existingCommunity) {
@@ -367,6 +361,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       logo: formData.logo || undefined,
       isFeatured: formData.isFeatured ?? false,
       isActive: formData.status === 'active',
+      status: formData.status === 'active',
       trackId: formData.primaryTrack ?? undefined,
       purposeType: formData.purposeType ?? '',
       ridesThisMonth: String(formData.ridesThisMonth ?? ''),
@@ -379,18 +374,45 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     // navigate(`/communities/${id}`);
   };
 
-  const handleDisable = () => {
-    updateCommunity(id, { isActive: false });
-    toast.success(t('communities.edit.toasts.disabled'));
-    setShowDisableModal(false);
-    navigate(`/communities/${id}`);
+  const handleEnable = async () => {
+    if (!id) return;
+    try {
+      await updateCommunity(id, { status: true });
+      setFormData((prev) => ({ ...prev, status: 'active' }));
+      setExistingCommunity((prev) => (prev ? { ...prev, status: true, isActive: true } : null));
+      toast.success(t('communities.edit.toasts.enabled'));
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message ?? t('communities.edit.toasts.loadError', { defaultValue: 'Failed to enable community' }));
+    }
   };
 
-  const handleArchive = () => {
-    deleteCommunity(id);
-    toast.success(t('communities.edit.toasts.archived'));
-    setShowArchiveModal(false);
-    navigate('/communities');
+  const handleDisable = async () => {
+    if (!id) return;
+    try {
+      await updateCommunity(id, { status: false });
+      setShowDisableModal(false);
+      setFormData((prev) => ({ ...prev, status: 'inactive' }));
+      setExistingCommunity((prev) => (prev ? { ...prev, status: false, isActive: false } : null));
+      toast.success(t('communities.edit.toasts.disabled'));
+      navigate(`/communities/${id}`);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message ?? t('communities.edit.toasts.loadError', { defaultValue: 'Failed to disable community' }));
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!id) return;
+    try {
+      await deleteCommunityApi(id);
+      setShowArchiveModal(false);
+      toast.success(t('communities.edit.toasts.archived'));
+      navigate('/communities');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message ?? t('communities.edit.toasts.loadError', { defaultValue: 'Failed to archive community' }));
+    }
   };
 
   return (
@@ -846,14 +868,25 @@ export function CommunityEdit({ role }: CommunityEditProps) {
             </div>
 
             <div className="space-y-3">
-              <button
-                onClick={() => setShowDisableModal(true)}
-                className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-md"
-                style={{ backgroundColor: '#F59E0B' }}
-              >
-                <AlertTriangle className="w-5 h-5" />
-                <span>{t('communities.edit.disable')}</span>
-              </button>
+              {formData.status === 'active' ? (
+                <button
+                  onClick={() => setShowDisableModal(true)}
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-md"
+                  style={{ backgroundColor: '#F59E0B' }}
+                >
+                  <AlertTriangle className="w-5 h-5" />
+                  <span>{t('communities.edit.disable')}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleEnable}
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-white transition-all hover:shadow-md"
+                  style={{ backgroundColor: '#10B981' }}
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  <span>{t('communities.edit.enable')}</span>
+                </button>
+              )}
 
               <button
                 onClick={() => setShowArchiveModal(true)}
