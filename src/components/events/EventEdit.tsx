@@ -418,26 +418,53 @@ export function EventEdit({ role }: EventEditProps) {
     setGalleryPreviews(updatedPreviews);
   };
 
-  const handleCloseRegistration = () => {
-    updateEventApi(id, { status: 'full' });
-    toast.success('Registration closed');
+  const handleCloseRegistration = async () => {
+    if (!id) return;
+    try {
+      await updateEventApi(id, { status: 'Full' });
+      setExistingEvent(prev => prev ? { ...prev, status: 'Full' } : prev);
+      setFormData(prev => ({ ...prev, status: 'Full' }));
+      toast.success('Registration closed');
+    } catch {
+      toast.error('Failed to close registration');
+    }
   };
 
-  const handleReopenRegistration = () => {
-    updateEventApi(id, { status: 'open' });
-    toast.success('Registration reopened');
+  const handleReopenRegistration = async () => {
+    if (!id) return;
+    try {
+      await updateEventApi(id, { status: 'Open' });
+      setExistingEvent(prev => prev ? { ...prev, status: 'Open' } : prev);
+      setFormData(prev => ({ ...prev, status: 'Open' }));
+      toast.success('Registration reopened');
+    } catch {
+      toast.error('Failed to reopen registration');
+    }
   };
 
-  const handleMarkCompleted = () => {
-    updateEventApi(id, { status: 'completed' });
-    toast.success('Event marked as completed');
+  const handleMarkCompleted = async () => {
+    if (!id) return;
+    try {
+      await updateEventApi(id, { status: 'Completed' });
+      setExistingEvent(prev => prev ? { ...prev, status: 'Completed' } : prev);
+      setFormData(prev => ({ ...prev, status: 'Completed' }));
+      toast.success('Event marked as completed');
+    } catch {
+      toast.error('Failed to mark event as completed');
+    }
   };
 
-  const handleDisable = () => {
-    updateEventApi(id, { status: 'archived' });
-    toast.success('Event disabled');
-    setShowDisableModal(false);
-    navigate(`/event/${id}`);
+  const handleDisable = async () => {
+    if (!id) return;
+    try {
+      await updateEventApi(id, { status: 'Archived' });
+      setExistingEvent(prev => prev ? { ...prev, status: 'Archived' } : prev);
+      setFormData(prev => ({ ...prev, status: 'Archived' }));
+      toast.success('Event disabled');
+      setShowDisableModal(false);
+    } catch {
+      toast.error('Failed to disable event');
+    }
   };
 
   const handleArchive = async () => {
@@ -1289,6 +1316,62 @@ export function EventEdit({ role }: EventEditProps) {
         
 
           </div>
+
+          {/* Event Controls */}
+          <div className="p-6 rounded-2xl shadow-sm bg-white border-2" style={{ borderColor: '#FEE2E2' }}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#FEE2E2' }}>
+                <AlertTriangle className="w-5 h-5" style={{ color: '#C12D32' }} />
+              </div>
+              <h2 className="text-xl" style={{ color: '#333' }}>Event Controls</h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleCloseRegistration}
+                disabled={existingEvent.status !== 'Open'}
+                className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#F59E0B', color: '#fff' }}
+              >
+                Close Registration
+              </button>
+
+              <button
+                onClick={handleReopenRegistration}
+                disabled={existingEvent.status === 'Open'}
+                className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#10B981', color: '#fff' }}
+              >
+                Re-open Registration
+              </button>
+
+              <button
+                onClick={handleMarkCompleted}
+                disabled={existingEvent.status === 'Completed'}
+                className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#3B82F6', color: '#fff' }}
+              >
+                Mark as Completed
+              </button>
+
+              <button
+                onClick={() => setShowDisableModal(true)}
+                className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md"
+                style={{ backgroundColor: '#EF4444', color: '#fff' }}
+              >
+                Disable Event
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowArchiveModal(true)}
+              className="cursor-pointer w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 transition-all hover:bg-gray-50"
+              style={{ borderColor: '#C12D32', color: '#C12D32' }}
+            >
+              <Archive className="w-4 h-4" />
+              Archive Event
+            </button>
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -1401,6 +1484,7 @@ export function EventEdit({ role }: EventEditProps) {
               <span>Cancel</span>
             </button>
           </div>
+
         </div>
       </div>
     </div>
