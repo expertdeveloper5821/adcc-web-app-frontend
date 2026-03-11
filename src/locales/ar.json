@@ -79,6 +79,7 @@
     "all": "الكل",
     "noResults": "لم يتم العثور على نتائج",
     "confirmDelete": "هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.",
+    "km": "كم",
     "country": {
       "uae": "الإمارات العربية المتحدة",
       "saudiArabia": "المملكة العربية السعودية",
@@ -751,6 +752,25 @@
       "saving": "جارٍ الحفظ...",
       "saveChanges": "حفظ التغييرات",
       "backToDetail": "العودة إلى تفاصيل الحدث",
+      "eventControls": "أدوات التحكم بالفعالية",
+      "closeRegistration": "إغلاق التسجيل",
+      "reopenRegistration": "إعادة فتح التسجيل",
+      "markCompleted": "تحديد كمكتمل",
+      "disableEvent": "تعطيل الفعالية",
+      "archiveEvent": "أرشفة الفعالية",
+      "addScheduleRow": "إضافة صف جدول",
+      "coverImage": "صورة الغلاف",
+      "englishReference": "المرجع الإنجليزي",
+      "difficultyOptions": {
+        "easy": "سهل",
+        "medium": "متوسط",
+        "hard": "صعب"
+      },
+      "experienceOptions": {
+        "beginner": "مبتدئ",
+        "intermediate": "متوسط",
+        "advanced": "متقدم"
+      },
       "toasts": {
         "loadError": "فشل في تحميل الفعالية. يرجى المحاولة مرة أخرى.",
         "notFound": "الحدث غير موجود",

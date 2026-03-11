@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Track {
   id: string;
@@ -27,6 +28,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
   country,
   loading = false,
 }) => {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -82,7 +84,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: '#ECC180', color: '#333' }}>
-                    {track.distance}km
+                    {track.distance} {t('common.km')}
                   </span>
                   <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: '#F3F4F6', color: '#666' }}>
                     {track.difficulty}

@@ -581,7 +581,7 @@ export function EventEdit({ role }: EventEditProps) {
   // console.log('formData',formData);
 
   if (isLoading) {
-    return <div className="text-center py-8" style={{ color: '#666' }}>Loading event...</div>;
+    return <div className="text-center py-8" style={{ color: '#666' }}>{t('events.edit.loading')}</div>;
   }
 
 
@@ -592,12 +592,12 @@ export function EventEdit({ role }: EventEditProps) {
         <button
           onClick={() => navigate(`/events/${id}`)}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Back to event detail"
+          title={t('events.edit.backToDetail')}
         >
           <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Edit Event</h1>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('events.edit.title')}</h1>
           <p style={{ color: '#666' }}>{existingEvent?.title ?? formData.title}</p>
         </div>
       </div>
@@ -612,7 +612,7 @@ export function EventEdit({ role }: EventEditProps) {
                 <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                   <FileText className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl" style={{ color: '#333' }}>Event Information</h2>
+                <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.eventInfo')}</h2>
               </div>
 
             </div>
@@ -620,7 +620,7 @@ export function EventEdit({ role }: EventEditProps) {
             {/* English Fields */}
             <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Title *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.eventTitle')}</label>
                 <input
                   type="text"
                   value={formData.title}
@@ -631,7 +631,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Slug</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.slug')}</label>
                 <input
                   type="text"
                   value={formData.slug}
@@ -642,7 +642,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Description *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -692,7 +692,7 @@ export function EventEdit({ role }: EventEditProps) {
                 <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
                   <div className="flex items-center gap-1.5 mb-1">
                     <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
-                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>English reference</span>
+                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>{t('events.edit.englishReference')}</span>
                   </div>
                   <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
                   {formData.description && (
@@ -705,7 +705,7 @@ export function EventEdit({ role }: EventEditProps) {
             {/* Common fields always visible */}
             <div className="space-y-4 mt-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Category *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.category')}</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -718,14 +718,14 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Community *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.community')}</label>
                 <select
                   value={formData.communityId}
                   onChange={(e) => setFormData({ ...formData, communityId: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
                   
-                  <option value="">Select community...</option>
+                  <option value="">{t('events.edit.placeholders.community')}</option>
                   {Array.isArray(communities) &&
                     communities.map((community) => (
                       <option key={(community as { _id?: string; id?: string })._id ?? (community as { _id?: string; id?: string }).id} value={(community as { _id?: string; id?: string })._id ?? (community as { _id?: string; id?: string }).id}>
@@ -738,7 +738,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>YouTube Link</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.youtubeLink')}</label>
                 <input
                   type="url"
                   value={formData.youtubeLink}
@@ -756,12 +756,12 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Clock className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Schedule</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.schedule')}</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Date *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.eventDate')}</label>
                 <input
                   type="date"
                   value={formData.eventDate}
@@ -771,7 +771,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Time *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.startTime')}</label>
                 <input
                   type="time"
                   value={formData.eventTime}
@@ -885,12 +885,12 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Calendar className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>C. Date & Time</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.dateTime')}</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Event Date *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.eventDate')}</label>
                 <input
                   type="date"
                   value={formData.eventDate}
@@ -900,7 +900,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Start Time *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.startTime')}</label>
                 <input
                   type="time"
                   value={formData.eventTime}
@@ -910,7 +910,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>End Time *</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.endTime')}</label>
                 <input
                   type="time"
                   value={formData.endTime}
@@ -927,13 +927,13 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Settings className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>D. Ride Details</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.rideDetails')}</h2>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Distance (km)</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.distance')}</label>
                   <input
                     type="number"
                     value={formData.distance}
@@ -945,22 +945,22 @@ export function EventEdit({ role }: EventEditProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Difficulty</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.difficulty')}</label>
                   <select
                     value={formData.difficulty}
                     onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as any })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                   >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
+                    <option value="Easy">{t('events.edit.difficultyOptions.easy')}</option>
+                    <option value="Medium">{t('events.edit.difficultyOptions.medium')}</option>
+                    <option value="Hard">{t('events.edit.difficultyOptions.hard')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Max Participants *</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.maxParticipants')}</label>
                   <input
                     type="number"
                     value={formData.maxParticipants}
@@ -972,7 +972,7 @@ export function EventEdit({ role }: EventEditProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Registration Fee</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.registrationFee')}</label>
                   <input
                     type="text"
                     value="FREE"
@@ -991,7 +991,7 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Calendar className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>E. Event Schedule</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.eventSchedule')}</h2>
             </div>
 
             <div className="space-y-3">
@@ -1028,7 +1028,7 @@ export function EventEdit({ role }: EventEditProps) {
                 style={{ backgroundColor: '#ECC180', color: '#333' }}
               >
                 <Plus className="w-4 h-4" />
-                Add schedule row
+                {t('events.edit.addScheduleRow')}
               </button>
             </div>
           </div>
@@ -1039,7 +1039,7 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Settings className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>F. Amenities</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.amenities')}</h2>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1074,12 +1074,12 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Users className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>G. Eligibility</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.eligibility')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Age Requirement</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.ageRequirement')}</label>
                 <input
                   type="number"
                   value={formData.minAge}
@@ -1090,7 +1090,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Bike Type</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.bikeType')}</label>
                 <input
                   type="text"
                   value={formData.eligibilityBike}
@@ -1101,15 +1101,15 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Experience Level</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.experienceLevel')}</label>
                 <select
                   value={formData.eligibilityExperience}
                   onChange={(e) => setFormData({ ...formData, eligibilityExperience: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
+                  <option value="Beginner">{t('events.edit.experienceOptions.beginner')}</option>
+                  <option value="Intermediate">{t('events.edit.experienceOptions.intermediate')}</option>
+                  <option value="Advanced">{t('events.edit.experienceOptions.advanced')}</option>
                 </select>
               </div>
             </div>
@@ -1121,12 +1121,12 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Award className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>H. Rewards & Badges</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.rewards')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Points Reward</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.pointsReward')}</label>
                 {/* <input
                   type="number"
                   value={formData.rewardPoints}
@@ -1138,7 +1138,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Badge Name</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.badgeName')}</label>
                 <input
                   type="text"
                   value={formData.rewardBadge}
@@ -1149,7 +1149,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Badge Image</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.badgeImage')}</label>
                 <div className="mb-3">
                   {/* {existingEvent.rewards.badgeImage && (
                     <img src={existingEvent.rewards.badgeImage} alt="Badge" className="w-20 h-20 rounded-lg" />
@@ -1160,8 +1160,8 @@ export function EventEdit({ role }: EventEditProps) {
                   style={{ borderColor: '#ECC180' }}
                 >
                   <ImageIcon className="w-8 h-8 mx-auto mb-2" style={{ color: '#999' }} />
-                  <p className="text-sm" style={{ color: '#666' }}>Upload new badge image</p>
-                  <p className="text-xs mt-1" style={{ color: '#999' }}>PNG, SVG - Square format</p>
+                  <p className="text-sm" style={{ color: '#666' }}>{t('events.edit.uploadBadge')}</p>
+                  <p className="text-xs mt-1" style={{ color: '#999' }}>{t('events.edit.badgeHint')}</p>
                 </div>
               </div>
             </div>
@@ -1173,13 +1173,13 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <ImageIcon className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Media</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.mediaSection')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  Cover Image
+                  {t('events.edit.coverImage')}
                 </label>
 
                 {/* Preview */}
@@ -1224,10 +1224,10 @@ export function EventEdit({ role }: EventEditProps) {
                     style={{ color: '#999' }}
                   />
                   <p className="text-sm" style={{ color: '#666' }}>
-                    Upload new cover image
+                    {t('events.edit.uploadCover')}
                   </p>
                   <p className="text-xs mt-1" style={{ color: '#999' }}>
-                    PNG, JPG - 16:9 format
+                    {t('events.edit.coverHint')}
                   </p>
                 </div>
 
@@ -1243,7 +1243,7 @@ export function EventEdit({ role }: EventEditProps) {
 
                 {/* Clickable Upload Box */}
                 <div>
-                  <label className="block text-sm mb-2" style={{ color: '#666' }}>Gallery Images (optional)</label>
+                  <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.galleryImages')}</label>
                   <label
                     htmlFor="galleryUpload"
                     className="border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors block"
@@ -1251,8 +1251,8 @@ export function EventEdit({ role }: EventEditProps) {
                   >
                     <div className="flex flex-col items-center justify-center py-8">
                       <ImageIcon className="w-10 h-10 mb-3" style={{ color: '#999' }} />
-                      <p className="text-lg font-medium" style={{ color: '#666' }}>Upload gallery images</p>
-                      <p className="text-sm mt-1" style={{ color: '#999' }}>PNG, JPG - Multiple files accepted</p>
+                      <p className="text-lg font-medium" style={{ color: '#666' }}>{t('events.edit.uploadGallery')}</p>
+                      <p className="text-sm mt-1" style={{ color: '#999' }}>{t('events.edit.galleryHint')}</p>
                     </div>
                     <input
                       id="galleryUpload"
@@ -1268,7 +1268,7 @@ export function EventEdit({ role }: EventEditProps) {
                   {galleryPreviews.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                         <div className="col-span-full mb-2">
-                          <p className="text-sm font-semibold" style={{ color: '#333' }}>New Images:</p>
+                          <p className="text-sm font-semibold" style={{ color: '#333' }}>{t('events.edit.newImages')}</p>
                         </div>
                       {galleryPreviews.map((preview, index) => (
                         <div key={`new-${index}`} className="relative group">
@@ -1295,7 +1295,7 @@ export function EventEdit({ role }: EventEditProps) {
                   {existingEvent?.galleryImages && existingEvent.galleryImages.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                       <div className="col-span-full mb-2">
-                        <p className="text-sm font-semibold" style={{ color: '#333' }}>Existing Images:</p>
+                        <p className="text-sm font-semibold" style={{ color: '#333' }}>{t('events.edit.existingImages')}</p>
                       </div>
                       {existingEvent.galleryImages.map((image, index) => (
                         <div key={`existing-${index}`} className="relative">
@@ -1323,7 +1323,7 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#FEE2E2' }}>
                 <AlertTriangle className="w-5 h-5" style={{ color: '#C12D32' }} />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Event Controls</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.eventControls')}</h2>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -1333,7 +1333,7 @@ export function EventEdit({ role }: EventEditProps) {
                 className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: '#F59E0B', color: '#fff' }}
               >
-                Close Registration
+                {t('events.edit.closeRegistration')}
               </button>
 
               <button
@@ -1342,7 +1342,7 @@ export function EventEdit({ role }: EventEditProps) {
                 className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: '#10B981', color: '#fff' }}
               >
-                Re-open Registration
+                {t('events.edit.reopenRegistration')}
               </button>
 
               <button
@@ -1351,7 +1351,7 @@ export function EventEdit({ role }: EventEditProps) {
                 className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: '#3B82F6', color: '#fff' }}
               >
-                Mark as Completed
+                {t('events.edit.markCompleted')}
               </button>
 
               <button
@@ -1359,7 +1359,7 @@ export function EventEdit({ role }: EventEditProps) {
                 className="cursor-pointer px-4 py-2 rounded-lg transition-all hover:shadow-md"
                 style={{ backgroundColor: '#EF4444', color: '#fff' }}
               >
-                Disable Event
+                {t('events.edit.disableEvent')}
               </button>
             </div>
 
@@ -1369,7 +1369,7 @@ export function EventEdit({ role }: EventEditProps) {
               style={{ borderColor: '#C12D32', color: '#C12D32' }}
             >
               <Archive className="w-4 h-4" />
-              Archive Event
+              {t('events.edit.archiveEvent')}
             </button>
           </div>
         </div>
@@ -1382,12 +1382,12 @@ export function EventEdit({ role }: EventEditProps) {
               <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
                 <Users className="w-5 h-5" />
               </div>
-              <h2 className="text-xl" style={{ color: '#333' }}>Registration</h2>
+              <h2 className="text-xl" style={{ color: '#333' }}>{t('events.edit.registration')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Max Participants</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.maxParticipants')}</label>
                 <input
                   type="number"
                   value={formData.maxParticipants}
@@ -1397,7 +1397,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Min Age</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.minAge')}</label>
                 <input
                   type="number"
                   value={formData.minAge}
@@ -1407,7 +1407,7 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Max Age</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.maxAge')}</label>
                 <input
                   type="number"
                   value={formData.maxAge}
@@ -1473,7 +1473,7 @@ export function EventEdit({ role }: EventEditProps) {
               style={{ backgroundColor: '#C12D32' }}
             >
               <Save className="w-4 h-4" />
-              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+              <span>{isSaving ? t('events.edit.saving') : t('events.edit.saveChanges')}</span>
             </button>
             <button
               onClick={() => navigate(`/events/${id}`)}
@@ -1481,7 +1481,7 @@ export function EventEdit({ role }: EventEditProps) {
               style={{ color: '#666' }}
             >
               <X className="w-4 h-4" />
-              <span>Cancel</span>
+              <span>{t('common.cancel')}</span>
             </button>
           </div>
 

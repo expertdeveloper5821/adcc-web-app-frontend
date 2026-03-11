@@ -252,7 +252,7 @@ export function TracksList({ role }: TracksListProps) {
         </div>
         <div className="p-4 rounded-xl bg-white shadow-sm">
           <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.totalDistance')}</p>
-          <p className="text-2xl" style={{ color: '#333' }}>{tracks.reduce((sum, t) => sum + t.distance, 0)} km</p>
+          <p className="text-2xl" style={{ color: '#333' }}>{tracks.reduce((sum, t) => sum + t.distance, 0)} {t('common.km')}</p>
         </div>
       </div>
 
@@ -399,7 +399,7 @@ export function TracksList({ role }: TracksListProps) {
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
                         <div>
                           <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.distance')}</div>
-                          <div className="text-sm" style={{ color: '#333' }}>{track.distance} km</div>
+                          <div className="text-sm" style={{ color: '#333' }}>{track.distance} {t('common.km')}</div>
                         </div>
                         <div>
                           <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.difficulty')}</div>

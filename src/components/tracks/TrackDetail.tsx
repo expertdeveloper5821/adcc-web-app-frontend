@@ -204,7 +204,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
             <MapPin className="w-4 h-4" style={{ color: '#999' }} />
             <span className="text-sm" style={{ color: '#666' }}>{t('tracks.detail.labels.distance')}</span>
           </div>
-          <p className="text-2xl" style={{ color: '#333' }}>{track.distance} km</p>
+          <p className="text-2xl" style={{ color: '#333' }}>{track.distance} {t('common.km')}</p>
         </div>
         <div className="p-4 rounded-xl bg-white shadow-sm">
           <div className="flex items-center gap-2 mb-1">
@@ -331,7 +331,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                 </div>
                 <div>
                   <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.detail.labels.distance')}</p>
-                  <p className="text-xl" style={{ color: '#333' }}>{track.distance} km</p>
+                  <p className="text-xl" style={{ color: '#333' }}>{track.distance} {t('common.km')}</p>
                 </div>
                 <div>
                   <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.detail.surfaceLabel')}</p>

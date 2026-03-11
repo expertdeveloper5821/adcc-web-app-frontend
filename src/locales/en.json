@@ -79,6 +79,7 @@
     "all": "All",
     "noResults": "No results found",
     "confirmDelete": "Are you sure? This action cannot be undone.",
+    "km": "km",
     "country": {
       "uae": "United Arab Emirates",
       "saudiArabia": "Saudi Arabia",
@@ -792,6 +793,25 @@
       "saving": "Saving...",
       "saveChanges": "Save Changes",
       "backToDetail": "Back to event detail",
+      "eventControls": "Event Controls",
+      "closeRegistration": "Close Registration",
+      "reopenRegistration": "Re-open Registration",
+      "markCompleted": "Mark as Completed",
+      "disableEvent": "Disable Event",
+      "archiveEvent": "Archive Event",
+      "addScheduleRow": "Add schedule row",
+      "coverImage": "Cover Image",
+      "englishReference": "English reference",
+      "difficultyOptions": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
+      "experienceOptions": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced"
+      },
       "toasts": {
         "loadError": "Failed to load event. Please try again.",
         "notFound": "Event not found",

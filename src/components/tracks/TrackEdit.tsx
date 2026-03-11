@@ -729,7 +729,7 @@ const handleDisable = async (id: string, name: string) => {
                       className="px-3 py-1 rounded-lg flex items-center gap-2"
                       style={{ backgroundColor: '#ECC180', color: '#333' }}
                     >
-                      {opt} km
+                      {opt} {t('common.km')}
                       <button
                         type="button"
                         onClick={() => removeLoopOption(opt)}
