@@ -2,6 +2,19 @@ export const availableCategories = [
   'City Communities',
   'Group Communities',
   'Awareness & special communities',
+
+  'Racing & Performance',
+  'Family & Leisure',
+  'Women (SheRides)',
+  'Youth',
+  'Social / Weekend',
+  'Night Riders',
+  'MTB / Trail',
+  'Training & Clinics',
+  'Awareness & Charity',
+  'Corporate',
+  'Education',
+  'Health',
 ];
 
 export const purposeTypes = [

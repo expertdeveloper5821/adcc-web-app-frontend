@@ -334,7 +334,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
                   <p className="text-xl" style={{ color: '#333' }}>{track.distance} km</p>
                 </div>
                 <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.detail.surfaceLabel', { type: track.surfaceType })}</p>
+                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.detail.surfaceLabel')}</p>
                   <p style={{ color: '#333' }}>{track.surfaceType ? (t(`data.surfaceTypes.${track.surfaceType}`, { defaultValue: track.surfaceType }) as string) : '—'}</p>
                 </div>
                 <div>

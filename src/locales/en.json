@@ -1190,7 +1190,7 @@
         "trackType": "Track Type",
         "surface": "Surface"
       },
-      "surfaceLabel": "{{type}} Surface",
+      "surfaceLabel": "Surface Type",
       "facilitiesHeading": "Available Facilities",
       "noFacilities": "No facilities listed",
       "lightingAvailable": "Lighting Available",
