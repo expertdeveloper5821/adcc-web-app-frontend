@@ -3,6 +3,7 @@ import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signO
 import { auth } from '../config/firebase';
 import { verifyFirebaseAuth, registerUser, getCurrentUser, logout as apiLogout, CurrentUserResponse } from '../services/authApi';
 import { toast } from 'sonner';
+import i18n from '../i18n';
 
 interface AuthContextType {
   user: User | null;
@@ -90,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
                 setUserProfile(null);
-                toast.error('Session expired. Please login again.');
+                toast.error(i18n.t('auth.toasts.sessionExpired'));
               }
             }
           } else {
@@ -118,11 +119,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (!verifyResponse.data.isNewUser && verifyResponse.data.user) {
             await refreshUserProfile();
           } else if (verifyResponse.data.isNewUser) {
-            toast.info('Please complete your registration');
+            toast.info(i18n.t('auth.toasts.completeRegistration'));
           }
         } catch (error: any) {
           console.error('❌ Error verifying auth:', error);
-          toast.error(error?.response?.data?.message || 'Failed to verify authentication');
+          toast.error(error?.response?.data?.message || i18n.t('auth.toasts.verifyFailed'));
         }
       } else {
         // Clear tokens when logged out
@@ -167,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // If new user, they need to register
       if (verifyResponse.data.isNewUser) {
         console.log('🆕 New user, redirecting to registration');
-        toast.info('Please complete your registration');
+        toast.info(i18n.t('auth.toasts.completeRegistration'));
         isHandlingAuthManually.current = false;
         return;
       }
@@ -175,7 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Fetch user profile
       console.log('👤 Fetching user profile...');
       await refreshUserProfile();
-      toast.success('Login successful');
+      toast.success(i18n.t('auth.toasts.loginSuccess'));
       isHandlingAuthManually.current = false;
     } catch (error: any) {
       isHandlingAuthManually.current = false;
@@ -186,17 +187,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         response: error?.response?.data,
         status: error?.response?.status,
       });
-      const errorMessage = error.code === 'auth/user-not-found' 
-        ? 'User not found'
+      const errorMessage = error.code === 'auth/user-not-found'
+        ? i18n.t('auth.toasts.userNotFound')
         : error.code === 'auth/wrong-password'
-        ? 'Incorrect password'
+        ? i18n.t('auth.toasts.incorrectPassword')
         : error.code === 'auth/invalid-email'
-        ? 'Invalid email address'
+        ? i18n.t('auth.toasts.invalidEmail')
         : error.code === 'auth/user-disabled'
-        ? 'User account has been disabled'
+        ? i18n.t('auth.toasts.accountDisabled')
         : error?.response?.data?.message
         ? error.response.data.message
-        : error.message || 'Login failed';
+        : error.message || i18n.t('auth.toasts.loginFailed');
       toast.error(errorMessage);
       throw error;
     }
@@ -237,7 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Fetch user profile
         await refreshUserProfile();
-        toast.success('Account already exists. Logged in successfully.');
+        toast.success(i18n.t('auth.toasts.accountExistsLoggedIn'));
         isHandlingAuthManually.current = false;
         return;
       }
@@ -267,7 +268,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set user profile
       setUserProfile(registerResponse.data.user as any);
       console.log('✅ User profile set:', registerResponse.data.user);
-      toast.success('Registration successful');
+      toast.success(i18n.t('auth.toasts.registrationSuccess'));
       isHandlingAuthManually.current = false;
     } catch (error: any) {
       isHandlingAuthManually.current = false;
@@ -282,7 +283,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Handle Firebase errors
       if (error.code === 'auth/email-already-in-use') {
-        toast.error('Email already in use. Please login instead.');
+        toast.error(i18n.t('auth.toasts.emailInUse'));
         throw error;
       }
       
@@ -293,21 +294,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Check if it's a duplicate key error
         if (backendError?.message?.includes('duplicate') || backendError?.message?.includes('Duplicate')) {
-          toast.error('This account already exists. Please try logging in instead.');
+          toast.error(i18n.t('auth.toasts.accountExists'));
         } else {
-          toast.error(backendError?.message || 'Account already exists. Please login.');
+          toast.error(backendError?.message || i18n.t('auth.toasts.accountExistsLogin'));
         }
         throw error;
       }
       
       // Handle other errors
       const errorMessage = error.code === 'auth/invalid-email'
-        ? 'Invalid email address'
+        ? i18n.t('auth.toasts.invalidEmail')
         : error.code === 'auth/weak-password'
-        ? 'Password is too weak'
+        ? i18n.t('auth.toasts.weakPassword')
         : error?.response?.data?.message
         ? error.response.data.message
-        : error.message || 'Registration failed';
+        : error.message || i18n.t('auth.toasts.registrationFailed');
       toast.error(errorMessage);
       throw error;
     }
@@ -334,10 +335,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('refreshToken');
       setUserProfile(null);
       
-      toast.success('Logged out successfully');
+      toast.success(i18n.t('auth.toasts.logoutSuccess'));
     } catch (error: any) {
       console.error('❌ Logout error:', error);
-      toast.error('Logout failed');
+      toast.error(i18n.t('auth.toasts.logoutFailed'));
       throw error;
     }
   };

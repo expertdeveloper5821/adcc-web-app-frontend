@@ -182,6 +182,32 @@ export const getAllTracks = async (params?: { page?: number; limit?: number }): 
 };
 
 
+// Get all tracks in English (for event forms where country/city filtering needs consistent English values)
+export const getAllTracksEn = async (params?: { page?: number; limit?: number }): Promise<Track[]> => {
+  const cacheKey = `tracks_en:${params?.page || 1}:${params?.limit || 500}`;
+  const cached = getCached<Track[]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const response = await api.get('/v1/en/tracks', { params: { limit: params?.limit ?? 500, page: params?.page ?? 1 } });
+    const body = response.data as { data?: Track[] | { tracks?: Track[] }; tracks?: Track[] };
+    let result: Track[];
+    if (Array.isArray(body?.data)) result = body.data;
+    else {
+      const data = body?.data as { tracks?: Track[] } | undefined;
+      if (data && Array.isArray(data.tracks)) result = data.tracks;
+      else if (Array.isArray(body?.tracks)) result = body.tracks;
+      else if (Array.isArray(body)) result = body;
+      else result = [];
+    }
+    setCache(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error('Error fetching tracks:', error);
+    throw error;
+  }
+};
+
 // Get track by ID
 export const getTrackById = async (trackId: string): Promise<Track> => {
   try {

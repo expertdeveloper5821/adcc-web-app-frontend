@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getEventById, updateEvent as updateEventApi, deleteEvent as deleteEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
-import { getAllTracks, deleteTrack } from '../../services/trackService';
+import { getAllTracksEn, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { formatToInputDate } from '../../utils/date';
 import { useLocale } from '../../contexts/LocaleContext';
@@ -45,7 +45,7 @@ export function EventEdit({ role }: EventEditProps) {
         console.log('result',data);
         setExistingEvent(data);
       } catch (error) {
-        toast.error('Event not found');
+        toast.error(t('events.edit.toasts.notFound'));
         // navigate('/events');
       } finally {
         setIsLoading(false);
@@ -62,12 +62,12 @@ export function EventEdit({ role }: EventEditProps) {
       try {
         const [communitiesList, tracksList] = await Promise.all([
           getAllCommunities(),
-          getAllTracks(),
+          getAllTracksEn(),
         ]);
         setCommunities(Array.isArray(communitiesList) ? communitiesList : []);
         setTracks(Array.isArray(tracksList) ? tracksList : []);
       } catch (error) {
-        toast.error('Failed to load communities or tracks');
+        toast.error(t('events.edit.toasts.loadMetaError'));
       }
     };
 
@@ -310,6 +310,16 @@ export function EventEdit({ role }: EventEditProps) {
   // Predefined amenities that appear as checkboxes
   const predefinedAmenities = ['water', 'toilets', 'parking', 'lighting', 'medical support', 'bike service'];
 
+  // Map amenity values to translation keys
+  const amenityKeyMap: Record<string, string> = {
+    'water': 'water',
+    'toilets': 'toilets',
+    'parking': 'parking',
+    'lighting': 'lighting',
+    'medical support': 'medicalSupport',
+    'bike service': 'bikeService',
+  };
+
   // Custom amenities (those not in the predefined list)
   const customAmenities = formData.amenities.filter(a => !predefinedAmenities.includes(a));
 
@@ -424,9 +434,9 @@ export function EventEdit({ role }: EventEditProps) {
       await updateEventApi(id, { status: 'Full' });
       setExistingEvent(prev => prev ? { ...prev, status: 'Full' } : prev);
       setFormData(prev => ({ ...prev, status: 'Full' }));
-      toast.success('Registration closed');
+      toast.success(t('events.edit.toasts.registrationClosed'));
     } catch {
-      toast.error('Failed to close registration');
+      toast.error(t('events.edit.toasts.updateError'));
     }
   };
 
@@ -436,9 +446,9 @@ export function EventEdit({ role }: EventEditProps) {
       await updateEventApi(id, { status: 'Open' });
       setExistingEvent(prev => prev ? { ...prev, status: 'Open' } : prev);
       setFormData(prev => ({ ...prev, status: 'Open' }));
-      toast.success('Registration reopened');
+      toast.success(t('events.edit.toasts.registrationReopened'));
     } catch {
-      toast.error('Failed to reopen registration');
+      toast.error(t('events.edit.toasts.updateError'));
     }
   };
 
@@ -448,9 +458,9 @@ export function EventEdit({ role }: EventEditProps) {
       await updateEventApi(id, { status: 'Completed' });
       setExistingEvent(prev => prev ? { ...prev, status: 'Completed' } : prev);
       setFormData(prev => ({ ...prev, status: 'Completed' }));
-      toast.success('Event marked as completed');
+      toast.success(t('events.edit.toasts.markedCompleted'));
     } catch {
-      toast.error('Failed to mark event as completed');
+      toast.error(t('events.edit.toasts.updateError'));
     }
   };
 
@@ -460,10 +470,10 @@ export function EventEdit({ role }: EventEditProps) {
       await updateEventApi(id, { status: 'Archived' });
       setExistingEvent(prev => prev ? { ...prev, status: 'Archived' } : prev);
       setFormData(prev => ({ ...prev, status: 'Archived' }));
-      toast.success('Event disabled');
+      toast.success(t('events.edit.toasts.disabled'));
       setShowDisableModal(false);
     } catch {
-      toast.error('Failed to disable event');
+      toast.error(t('events.edit.toasts.updateError'));
     }
   };
 
@@ -471,11 +481,11 @@ export function EventEdit({ role }: EventEditProps) {
     if (!id) return;
     try {
       await deleteEventApi(id);
-      toast.success('Event archived');
+      toast.success(t('events.edit.toasts.archived'));
       setShowArchiveModal(false);
       navigate('/events');
     } catch {
-      toast.error('Failed to archive event');
+      toast.error(t('events.edit.toasts.updateError'));
     }
   };
 
@@ -499,7 +509,7 @@ export function EventEdit({ role }: EventEditProps) {
     if (!id) return;
 
     if (!formData.title || !formData.eventDate) {
-      toast.error('Title and Event Date are required');
+      toast.error(t('events.edit.toasts.requiredFields'));
       return;
     }
 
@@ -560,13 +570,13 @@ export function EventEdit({ role }: EventEditProps) {
 
       await updateEventApi(id, payload);
 
-      toast.success('Event updated successfully');
+      toast.success(t('events.edit.toasts.updateSuccess'));
       navigate(`/events/${id}`);
     } catch (error: any) {
       console.log(error);
       toast.error(
         error.response?.data?.message ||
-        'Failed to update event'
+        t('events.edit.toasts.updateError')
       );
     } finally {
       setIsSaving(false);
@@ -855,7 +865,7 @@ export function EventEdit({ role }: EventEditProps) {
                   <option value="">{t('events.create.placeholders.track')}</option>
                   {filteredTracks.map((track) => (
                     <option key={track._id || track.id} value={track._id || track.id}>
-                      {track.title}
+                      {locale === 'ar' && track.titleAr ? track.titleAr : track.title}
                     </option>
                   ))}
                 </select>
@@ -1052,7 +1062,7 @@ export function EventEdit({ role }: EventEditProps) {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>{amenity}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t(`events.create.amenityOptions.${amenityKeyMap[amenity] || amenity}`, amenity)}</span>
                 </label>
               ))}
             </div>

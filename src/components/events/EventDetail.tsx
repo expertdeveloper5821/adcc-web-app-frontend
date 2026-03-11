@@ -384,7 +384,7 @@ export function EventDetail({ role }: EventDetailProps) {
                     className="px-3 py-2 rounded-lg text-sm"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
-                    {amenity}
+                    {t(`events.create.amenityOptions.${({'medical support': 'medicalSupport', 'bike service': 'bikeService'} as Record<string, string>)[amenity] || amenity}`, amenity)}
                   </span>
                 ))}
               </div>
@@ -399,7 +399,7 @@ export function EventDetail({ role }: EventDetailProps) {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.distance')}</p>
-                  <p className="text-xl" style={{ color: '#333' }}>{event.distance} km</p>
+                  <p className="text-xl" style={{ color: '#333' }}>{event.distance} {t('common.km')}</p>
                 </div>
                 <div>
                   <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.difficulty')}</p>

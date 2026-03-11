@@ -130,7 +130,27 @@
     "fillRequired": "يرجى ملء جميع الحقول المطلوبة",
     "passwordMismatch": "كلمات المرور غير متطابقة",
     "passwordTooShort": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
-    "invalidAge": "يرجى إدخال عمر صحيح (0-150)"
+    "invalidAge": "يرجى إدخال عمر صحيح (0-150)",
+    "toasts": {
+      "sessionExpired": "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.",
+      "completeRegistration": "يرجى إكمال التسجيل",
+      "verifyFailed": "فشل في التحقق من المصادقة",
+      "loginSuccess": "تم تسجيل الدخول بنجاح",
+      "userNotFound": "المستخدم غير موجود",
+      "incorrectPassword": "كلمة المرور غير صحيحة",
+      "invalidEmail": "عنوان البريد الإلكتروني غير صالح",
+      "accountDisabled": "تم تعطيل حساب المستخدم",
+      "loginFailed": "فشل تسجيل الدخول",
+      "accountExistsLoggedIn": "الحساب موجود بالفعل. تم تسجيل الدخول بنجاح.",
+      "registrationSuccess": "تم التسجيل بنجاح",
+      "emailInUse": "البريد الإلكتروني مستخدم بالفعل. يرجى تسجيل الدخول بدلاً من ذلك.",
+      "accountExists": "هذا الحساب موجود بالفعل. يرجى محاولة تسجيل الدخول بدلاً من ذلك.",
+      "accountExistsLogin": "الحساب موجود بالفعل. يرجى تسجيل الدخول.",
+      "weakPassword": "كلمة المرور ضعيفة جداً",
+      "registrationFailed": "فشل التسجيل",
+      "logoutSuccess": "تم تسجيل الخروج بنجاح",
+      "logoutFailed": "فشل تسجيل الخروج"
+    }
   },
   "dashboard": {
     "title": "لوحة التحكم",

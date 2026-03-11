@@ -130,7 +130,27 @@
     "fillRequired": "Please fill in all required fields",
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
-    "invalidAge": "Please enter a valid age (0-150)"
+    "invalidAge": "Please enter a valid age (0-150)",
+    "toasts": {
+      "sessionExpired": "Session expired. Please login again.",
+      "completeRegistration": "Please complete your registration",
+      "verifyFailed": "Failed to verify authentication",
+      "loginSuccess": "Login successful",
+      "userNotFound": "User not found",
+      "incorrectPassword": "Incorrect password",
+      "invalidEmail": "Invalid email address",
+      "accountDisabled": "User account has been disabled",
+      "loginFailed": "Login failed",
+      "accountExistsLoggedIn": "Account already exists. Logged in successfully.",
+      "registrationSuccess": "Registration successful",
+      "emailInUse": "Email already in use. Please login instead.",
+      "accountExists": "This account already exists. Please try logging in instead.",
+      "accountExistsLogin": "Account already exists. Please login.",
+      "weakPassword": "Password is too weak",
+      "registrationFailed": "Registration failed",
+      "logoutSuccess": "Logged out successfully",
+      "logoutFailed": "Logout failed"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

@@ -3,7 +3,7 @@ import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon
 import { addEvent, Event, availableCategories } from '../../data/eventsData';
 import { getTracksByCountryAndCity } from '../../data/tracksData';
 import { toast } from 'sonner';
-import { getAllTracks, deleteTrack } from '../../services/trackService';
+import { getAllTracksEn } from '../../services/trackService';
 import { createEvent, EventApiResponse } from '../../services/eventsApi';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { Input } from '../ui/input';
@@ -174,7 +174,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
           const [communityData, trackData] = await Promise.all([
             getAllCommunities(),
-            getAllTracks(),
+            getAllTracksEn(),
           ]);
   
           setCommunities(Array.isArray(communityData) ? communityData : []);
@@ -207,6 +207,15 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   // Predefined amenities that appear as checkboxes
   const predefinedAmenities = ['water', 'toilets', 'parking', 'lighting', 'medical support', 'bike service'];
+
+  const amenityKeyMap: Record<string, string> = {
+    'water': 'water',
+    'toilets': 'toilets',
+    'parking': 'parking',
+    'lighting': 'lighting',
+    'medical support': 'medicalSupport',
+    'bike service': 'bikeService',
+  };
   
   // Custom amenities (those not in the predefined list)
   const customAmenities = formData.amenities.filter(a => !predefinedAmenities.includes(a));
@@ -349,8 +358,13 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
-    if (!formData.title.trim()) errors.title = t('events.create.toasts.missingRequired');
-    if (!formData.description.trim()) errors.description = t('events.create.toasts.missingRequired');
+    // Accept Arabic title/description when in Arabic mode
+    if (!formData.title.trim() && !(locale === 'ar' && formData.titleAr?.trim())) {
+      errors.title = t('events.create.toasts.missingRequired');
+    }
+    if (!formData.description.trim() && !(locale === 'ar' && formData.descriptionAr?.trim())) {
+      errors.description = t('events.create.toasts.missingRequired');
+    }
     if (!formData.eventDate) errors.eventDate = t('events.create.toasts.missingRequired');
     return errors;
   };
@@ -379,12 +393,12 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
       // Prepare payload with correct types and only allowed fields
       const payload: Partial<EventApiResponse> = {
-        title: formData.title,
+        title: formData.title.trim() || formData.titleAr?.trim() || '',
         ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
         slug: formData.slug,
         category: formData.category,
         communityId: formData.communityId,
-        description: formData.description,
+        description: formData.description.trim() || formData.descriptionAr?.trim() || '',
         ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
         address: `${formData.city}, ${formData.country}`,
         country: formData.country,
@@ -643,7 +657,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <option value="">{t('events.create.placeholders.track')}</option>
                   {filteredTracks.map((track) => (
                     <option key={track.id || track._id} value={track.id || track._id}>
-                      {track.title}
+                      {locale === 'ar' && track.titleAr ? track.titleAr : track.title}
                     </option>
                   ))}
                 </select>
@@ -841,7 +855,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#666' }}>{amenity}</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t(`events.create.amenityOptions.${amenityKeyMap[amenity] || amenity}`, amenity)}</span>
                 </label>
               ))}
             </div>
