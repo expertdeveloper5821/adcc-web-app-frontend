@@ -508,7 +508,8 @@ export function EventEdit({ role }: EventEditProps) {
   const handleSave = async () => {
     if (!id) return;
 
-    if (!formData.title || !formData.eventDate) {
+    const hasTitle = formData.title?.trim() || (locale === 'ar' && formData.titleAr?.trim());
+    if (!hasTitle || !formData.eventDate) {
       toast.error(t('events.edit.toasts.requiredFields'));
       return;
     }
@@ -528,14 +529,14 @@ export function EventEdit({ role }: EventEditProps) {
       }
 
       const payload = {
-        title: formData.title,
+        title: formData.title?.trim() || formData.titleAr?.trim() || '',
         ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
         slug: formData.slug,
         category: formData.category,
         communityId: formData.communityId,
         trackId: formData.trackId,
         mainImage: formData.mainImage,
-        description: formData.description,
+        description: formData.description?.trim() || formData.descriptionAr?.trim() || '',
         ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
         city: formData.city,
         eventDate: formData.eventDate,

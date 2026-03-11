@@ -48,13 +48,28 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
   const [error, setError] = useState<string | null>(null);
 
 
+  /** Clean up raw i18n keys the backend may return (e.g. "communityTypes.awarenessSpecialCommunities") */
+  const FALLBACK_LABELS: Record<string, string> = {
+    'communityTypes.nightRiders': 'Night Riders',
+    'communityTypes.social/Weekend': 'Social / Weekend',
+    'communityTypes.mtb/Trail': 'MTB / Trail',
+    'communityTypes.education': 'Education',
+    'communityTypes.health': 'Health',
+  };
+  const cleanCategoryLabel = (label: string): string => {
+    if (FALLBACK_LABELS[label]) return FALLBACK_LABELS[label];
+    // Strip "communityTypes." prefix if backend returned a raw key
+    if (label.startsWith('communityTypes.')) return label.replace('communityTypes.', '');
+    return label;
+  };
+
   // Map API response to component format
   const mapApiResponseToCommunity = (apiCommunity: CommunityApiResponse): Community => {
     const normalizeToArray = (v: any): string[] => {
       if (!v && v !== 0) return [];
-      if (Array.isArray(v)) return v.map(String).map(s => s.trim()).filter(Boolean);
-      if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean);
-      return [String(v)];
+      if (Array.isArray(v)) return v.map(String).map(s => s.trim()).filter(Boolean).map(cleanCategoryLabel);
+      if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean).map(cleanCategoryLabel);
+      return [String(v)].map(cleanCategoryLabel);
     };
 
     return {
@@ -63,10 +78,13 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       city: apiCommunity.location || apiCommunity.city || '',
       memberCount: apiCommunity.memberCount !== undefined ? String(apiCommunity.memberCount) : (apiCommunity.membersCount !== undefined ? String(apiCommunity.membersCount) : '0'),
       upcomingEventCount: apiCommunity.upcomingEventCount !== undefined ? String(apiCommunity.upcomingEventCount) : (apiCommunity.eventsCount !== undefined ? String(apiCommunity.eventsCount) : '0'),
-      // Primary community category comes from `category` in the API (values like 'city', 'type', 'special')
-      communityType: apiCommunity.category || apiCommunity.communityType || '',
-      // Secondary type tags come from `type` (array or comma-separated string)
-      type: normalizeToArray(apiCommunity.type || apiCommunity.types || apiCommunity.tags),
+      // Category tags come from `type` array; fall back to `category` string
+      type: normalizeToArray(apiCommunity.type || apiCommunity.types || apiCommunity.tags || apiCommunity.category),
+      // Primary community classification derived from category tags
+      communityType: (() => {
+        const tags = normalizeToArray(apiCommunity.type || apiCommunity.types || apiCommunity.tags || apiCommunity.category);
+        return deriveCommunityType(tags);
+      })(),
       description: apiCommunity.description || '',
       isActive: apiCommunity.isActive ?? false,
       isFeatured: apiCommunity.isFeatured ?? apiCommunity.featured ?? false,
@@ -201,6 +219,20 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     }
   };
 
+  const CITY_CATEGORIES = ['City Communities', 'المجتمعات الحضرية'];
+  const PURPOSE_CATEGORIES = [
+    'Awareness & Charity', 'Corporate', 'Education', 'Health',
+    'الوعي والخيرية', 'شركات', 'تعليمي', 'صحي',
+  ];
+
+  /** Derive community type from the type/category tags */
+  const deriveCommunityType = (tags: string[]): 'city' | 'type' | 'purpose-based' | '' => {
+    if (!tags || tags.length === 0) return '';
+    if (tags.some(t => CITY_CATEGORIES.includes(t))) return 'city';
+    if (tags.some(t => PURPOSE_CATEGORIES.includes(t))) return 'purpose-based';
+    return 'type';
+  };
+
   const getCommunityTypeColor = (type?: string) => {
     switch (type) {
       case 'city': return '#C12D32';
@@ -214,7 +246,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     switch (type) {
       case 'city': return t('communities.card.cityType');
       case 'type': return t('communities.card.interestType');
-      case 'special': return t('communities.card.purposeType');
+      case 'purpose-based': return t('communities.card.purposeType');
       default: return type || '';
     }
   };
@@ -412,16 +444,18 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
                 {t(`data.locations.${community.city}`, community.city)}
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {community.communityType && (
+              {/* Community Type (city / interest / special purpose) */}
+              {community.communityType && (
+                <div className="flex flex-wrap gap-2">
                   <span
                     className="px-3 py-1 rounded-full text-xs text-white"
                     style={{ backgroundColor: getCommunityTypeColor(community.communityType) }}
                   >
                     {formatCommunityType(community.communityType)}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
+              {/* Category tags (already localized by backend) */}
               <div className="flex flex-wrap gap-1">
                 {(community.type || []).map((cat, i) => (
                   <span
@@ -429,10 +463,10 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
                     className="px-3 py-1 rounded-full text-xs"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
-                    {t(`data.communityCategories.${cat}`, cat)}
+                    {cat}
                   </span>
                 ))}
-                </div>
+              </div>
             </div>
 
             {/* Stats */}

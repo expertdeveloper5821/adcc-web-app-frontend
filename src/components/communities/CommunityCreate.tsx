@@ -87,6 +87,14 @@ console.log('errorss',errors);
     !!val && /^[a-fA-F0-9]{24}$/.test(val);
 
   const onSubmit = async (formData: any) => {
+    // Validate: require either English or Arabic title/description
+    const hasTitle = formData.title?.trim() || formData.titleAr?.trim();
+    const hasDescription = formData.description?.trim() || formData.descriptionAr?.trim();
+    if (!hasTitle || !hasDescription) {
+      toast.error(t('communities.create.toasts.requiredFields', 'Please fill all required fields'));
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -97,8 +105,8 @@ console.log('errorss',errors);
 
       // Build payload to match backend validation; include primary track IDs from database
       const communityData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title?.trim() || formData.titleAr?.trim() || '',
+        description: formData.description?.trim() || formData.descriptionAr?.trim() || '',
         ...(formData.titleAr ? { titleAr: formData.titleAr } : {}),
         ...(formData.descriptionAr ? { descriptionAr: formData.descriptionAr } : {}),
         type: Array.isArray(selectedCategories) && selectedCategories.length > 0

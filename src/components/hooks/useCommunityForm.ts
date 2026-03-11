@@ -6,22 +6,8 @@ import { CommunityFormData, GCCCountry, CommunityType } from '../../types/commun
 import type { CommunityApiResponse } from '../../services/communitiesApi';
 
 import { gccCountries, getCitiesByCountry } from '../../data/gccLocations';
-import { getAllTracks, type Track as ApiTrack } from '../../services/trackService';
+import { getAllTracksEn } from '../../services/trackService';
 import { compressImage } from '../../utils/imageUtils';
-
-/** Map API track to TrackSelector shape and normalize id (_id from MongoDB). */
-function toSelectorTrack(t: ApiTrack & { _id?: string }) {
-  const id = t.id ?? t._id ?? '';
-  const difficulty = t.difficulty ? String(t.difficulty).charAt(0).toUpperCase() + String(t.difficulty).slice(1) : '';
-  return {
-    id,
-    name: t.title ?? '',
-    description: t.shortDescription ?? '',
-    distance: t.distance ?? 0,
-    difficulty,
-    trackType: t.trackType ?? '',
-  };
-}
 
 // Coerce empty string from number inputs to undefined so optional number fields don't fail and scroll to this section
 const optionalNumber = (schema: z.ZodNumber) =>
@@ -35,9 +21,9 @@ const optionalNumber = (schema: z.ZodNumber) =>
   );
 // Validation schema using Zod
 const communityFormSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters').max(100, 'Title too long'),
+  title: z.string().max(100, 'Title too long').optional().default(''),
   titleAr: z.string().optional(),
-  description: z.string().min(10, 'Description must be at least 10 characters').max(2000, 'Description too long'),
+  description: z.string().max(2000, 'Description too long').optional().default(''),
   descriptionAr: z.string().optional(),
   country: z.enum(['UAE', 'Saudi Arabia', 'Kuwait', 'Qatar', 'Bahrain', 'Oman']),
   city: z.string().min(1, 'City is required'),
@@ -113,7 +99,6 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [allTracks, setAllTracks] = useState<(ApiTrack & { _id?: string })[]>([]);
   const [tracksLoading, setTracksLoading] = useState(true);
 
   const form = useForm<CommunityFormValues>({
@@ -229,34 +214,14 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
     setValue('primaryTrackIds', selectedTrackIds);
   }, [selectedTrackIds, setValue]);
 
-  // Fetch tracks from API (dynamic instead of hardcoded)
-  useEffect(() => {
-    let cancelled = false;
-    const fetchTracks = async () => {
-      try {
-        setTracksLoading(true);
-        const data = await getAllTracks();
-        if (!cancelled && Array.isArray(data)) {
-          setAllTracks(data);
-        }
-      } catch {
-        if (!cancelled) setAllTracks([]);
-      } finally {
-        if (!cancelled) setTracksLoading(false);
-      }
-    };
-    fetchTracks();
-    return () => { cancelled = true; };
-  }, []);
-
   const availableCities = getCitiesByCountry(selectedCountry);
 
-  // Load tracks from database (API)
+  // Load tracks from database (API) - always fetch English for consistent filtering
   const [tracksFromApi, setTracksFromApi] = useState<any[]>([]);
   useEffect(() => {
     let cancelled = false;
     setTracksLoading(true);
-    getAllTracks()
+    getAllTracksEn()
       .then((res) => {
         console.log( "this is a trck",res)
         const list = Array.isArray(res) ? res : (res as any)?.tracks ?? (res as any)?.data ?? [];
