@@ -92,7 +92,14 @@ export interface CreateCommunityRequest {
   manager?: string;
   area?: string;
   city?: string;
-} 
+}
+
+/** For FormData uploads: image, coverImage, logo as File (same key names as backend multer) */
+export type CommunityImageFiles = {
+  image?: File;
+  coverImage?: File;
+  logo?: File;
+};
 
 // Get community by ID
 export const getCommunityById = async (id: string): Promise<CommunityApiResponse> => {
@@ -111,17 +118,36 @@ export const getCommunityById = async (id: string): Promise<CommunityApiResponse
   }
 };
 
-// Create community
-export const createCommunity = async (communityData: CreateCommunityRequest): Promise<CommunityApiResponse> => {
+// Create community (FormData: no base64; image/coverImage/logo sent as File with same key names)
+export const createCommunity = async (
+  communityData: CreateCommunityRequest & { image?: string | File; logo?: string | File; coverImage?: File },
+  imageFiles?: CommunityImageFiles
+): Promise<CommunityApiResponse> => {
   invalidateCache('communities');
   try {
-    const response = await api.post<any>('/v1/communities', communityData);
-    // console.log('📥 createCommunity response:', response.data);
-    
-    // Handle nested response structure
-    if ((response.data as any).data) {
-      return (response.data as any).data;
-    }
+    const formData = new FormData();
+    const d = (communityData as unknown) as Record<string, unknown>;
+    const scalarKeys = [
+      'title', 'titleAr', 'description', 'descriptionAr', 'type', 'category', 'location',
+      'trackId', 'purposeType', 'ridesThisMonth', 'weeklyRides', 'fundsRaised', 'foundedYear',
+      'area', 'manager', 'city', 'isActive', 'isFeatured', 'status', 'isPublic',
+    ];
+    scalarKeys.forEach((key) => {
+      const val = d[key];
+      if (val === undefined || val === null) return;
+      if (Array.isArray(val)) {
+        formData.append(key, JSON.stringify(val));
+        return;
+      }
+      formData.append(key, String(val));
+    });
+
+    if (imageFiles?.image instanceof File) formData.append('image', imageFiles.image);
+    if (imageFiles?.coverImage instanceof File) formData.append('coverImage', imageFiles.coverImage);
+    if (imageFiles?.logo instanceof File) formData.append('logo', imageFiles.logo);
+
+    const response = await api.post<any>('/v1/communities', formData);
+    if ((response.data as any).data) return (response.data as any).data;
     return response.data;
   } catch (error) {
     console.error('Error creating community:', error);
@@ -129,17 +155,37 @@ export const createCommunity = async (communityData: CreateCommunityRequest): Pr
   }
 };
 
-// Update community
-export const updateCommunity = async (id: string, communityData: Partial<CreateCommunityRequest>): Promise<CommunityApiResponse> => {
+// Update community (always FormData so backend requireMultipartFormData is satisfied; same key names)
+export const updateCommunity = async (
+  id: string,
+  communityData: Partial<CreateCommunityRequest>,
+  imageFiles?: CommunityImageFiles
+): Promise<CommunityApiResponse> => {
   invalidateCache('communities');
   try {
-    const response = await api.patch<any>(`/v1/communities/${id}`, communityData);
-    // console.log('📥 updateCommunity response:', response.data);
-    
-    // Handle nested response structure
-    if ((response.data as any).data) {
-      return (response.data as any).data;
-    }
+    const formData = new FormData();
+    const d = (communityData as unknown) as Record<string, unknown>;
+    const scalarKeys = [
+      'title', 'titleAr', 'description', 'descriptionAr', 'type', 'category', 'location',
+      'trackId', 'purposeType', 'ridesThisMonth', 'weeklyRides', 'fundsRaised', 'foundedYear',
+      'area', 'manager', 'city', 'isActive', 'isFeatured', 'status', 'isPublic',
+    ];
+    scalarKeys.forEach((key) => {
+      const val = d[key];
+      if (val === undefined || val === null) return;
+      if (Array.isArray(val)) {
+        formData.append(key, JSON.stringify(val));
+        return;
+      }
+      formData.append(key, String(val));
+    });
+
+    if (imageFiles?.image instanceof File) formData.append('image', imageFiles.image);
+    if (imageFiles?.coverImage instanceof File) formData.append('coverImage', imageFiles.coverImage);
+    if (imageFiles?.logo instanceof File) formData.append('logo', imageFiles.logo);
+
+    const response = await api.patch<any>(`/v1/communities/${id}`, formData);
+    if ((response.data as any).data) return (response.data as any).data;
     return response.data;
   } catch (error) {
     console.error('Error updating community:', error);

@@ -31,6 +31,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
   const [existingCommunity, setExistingCommunity] = useState<CommunityApiResponse | null>(null);
   const [tracks, setTracks] = useState<any[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   // const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -297,32 +299,15 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        logo: reader.result as string,
-      }));
-    };
+    setLogoFile(file);
+    setFormData((prev) => ({ ...prev, logo: URL.createObjectURL(file) }));
   };
 
-  const handleImageChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        image: reader.result as string,
-      }));
-    };
+    setImageFile(file);
+    setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
   };
 
 
@@ -348,7 +333,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       ? (formData.city || formData.location)
       : COMMUNITY_LOCATION_OPTIONS[0];
 
-    // Map form data to backend API structure (type=array, category=string, trackId as string)
+    // Map form data to backend API structure; images sent as File in FormData (same key names: image, logo)
     const communityData = {
       title: formData.title,
       description: formData.description,
@@ -357,8 +342,6 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       location,
       area: formData.area || undefined,
       foundedYear: formData.foundedYear != null && formData.foundedYear !== '' ? Number(formData.foundedYear) : undefined,
-      image: formData.image || formData.logo || undefined,
-      logo: formData.logo || undefined,
       isFeatured: formData.isFeatured ?? false,
       isActive: formData.status === 'active',
       status: formData.status === 'active',
@@ -369,8 +352,12 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       fundsRaised: String(formData.fundsRaised ?? ''),
     };
 
+    const imageFiles = (imageFile || logoFile)
+      ? { ...(imageFile ? { image: imageFile } : {}), ...(logoFile ? { logo: logoFile } : {}) }
+      : undefined;
+
     try {
-      await updateCommunity(id, communityData);
+      await updateCommunity(id, communityData, imageFiles);
       toast.success(t('communities.edit.toasts.updateSuccess'));
       navigate(`/communities/${id}`);
     } catch (error: unknown) {

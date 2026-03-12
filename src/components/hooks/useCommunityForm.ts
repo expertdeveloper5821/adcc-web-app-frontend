@@ -7,7 +7,6 @@ import type { CommunityApiResponse } from '../../services/communitiesApi';
 
 import { gccCountries, getCitiesByCountry } from '../../data/gccLocations';
 import { getAllTracksEn } from '../../services/trackService';
-import { compressImage } from '../../utils/imageUtils';
 
 // Coerce empty string from number inputs to undefined so optional number fields don't fail and scroll to this section
 const optionalNumber = (schema: z.ZodNumber) =>
@@ -98,6 +97,8 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [tracksLoading, setTracksLoading] = useState(true);
 
@@ -279,41 +280,29 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
     );
   }, []);
 
-  const handleImageUpload = useCallback(async (file: File) => {
-    try {
-      setIsCompressing(true);
-      const compressedBase64 = await compressImage(file, 1200, 600, 0.75);
-      setImagePreview(compressedBase64);
-      setValue('image', compressedBase64);
-      return { success: true, data: compressedBase64 };
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to process image' };
-    } finally {
-      setIsCompressing(false);
-    }
+  const handleImageUpload = useCallback((file: File) => {
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setValue('image', '');
+    return { success: true, data: URL.createObjectURL(file) };
   }, [setValue]);
 
   const clearImage = useCallback(() => {
     setImagePreview(null);
+    setImageFile(null);
     setValue('image', '');
   }, [setValue]);
 
-  const handleLogoUpload = useCallback(async (file: File) => {
-    try {
-      setIsCompressing(true);
-      const compressedBase64 = await compressImage(file, 400, 400, 0.8);
-      setLogoPreview(compressedBase64);
-      setValue('logo', compressedBase64);
-      return { success: true, data: compressedBase64 };
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to process logo' };
-    } finally {
-      setIsCompressing(false);
-    }
+  const handleLogoUpload = useCallback((file: File) => {
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+    setValue('logo', '');
+    return { success: true, data: URL.createObjectURL(file) };
   }, [setValue]);
 
   const clearLogo = useCallback(() => {
     setLogoPreview(null);
+    setLogoFile(null);
     setValue('logo', '');
   }, [setValue]);
 
@@ -327,6 +316,8 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
     selectedTrackIds,
     imagePreview,
     logoPreview,
+    imageFile,
+    logoFile,
     isCompressing,
     communityType,
     availableCities,

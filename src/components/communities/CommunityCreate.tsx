@@ -41,6 +41,8 @@ export const CommunityCreate: React.FC<CommunityCreateProps> = ({ communityId: p
     selectedTrackIds,
     imagePreview,
     logoPreview,
+    imageFile,
+    logoFile,
     isCompressing,
     communityType,
     availableCities,
@@ -103,7 +105,7 @@ console.log('errorss',errors);
         ? selectedCity
         : COMMUNITY_LOCATION_OPTIONS[0];
 
-      // Build payload to match backend validation; include primary track IDs from database
+      // Build payload to match backend validation; images sent as File in FormData (same key names: image, logo)
       const communityData = {
         title: formData.title?.trim() || formData.titleAr?.trim() || '',
         description: formData.description?.trim() || formData.descriptionAr?.trim() || '',
@@ -114,11 +116,8 @@ console.log('errorss',errors);
           : [formData.communityType || 'city'],
         category: Array.isArray(selectedCategories) ? selectedCategories.join(', ') : '',
         location,
-        image: formData.image || undefined,
         isActive: formData.status === 'active',
         isFeatured: formData.isFeatured ?? false,
-        logo: formData.logo || undefined,
-        // Backend accepts a single track ID as string
         trackId: selectedTrackIds?.[0] ?? undefined,
         purposeType: formData.purposeType ?? '',
         ridesThisMonth: String(formData.ridesThisMonth ?? ''),
@@ -129,18 +128,18 @@ console.log('errorss',errors);
         manager: formData.managerName || undefined,
       };
 
-      if (import.meta.env.DEV) {
-        console.log('Community payload:', JSON.stringify(communityData, null, 2));
-      }
+      const imageFiles = (imageFile || logoFile)
+        ? { ...(imageFile ? { image: imageFile } : {}), ...(logoFile ? { logo: logoFile } : {}) }
+        : undefined;
 
       let result: CommunityApiResponse;
 
       if (isEditMode && stateCommunityId) {
-        result = await updateCommunity(stateCommunityId, communityData);
+        result = await updateCommunity(stateCommunityId, communityData, imageFiles);
         toast.success(t('communities.create.toasts.updateSuccess'));
         navigate(`/communities/${stateCommunityId}`);
       } else {
-        result = await createCommunity(communityData);
+        result = await createCommunity(communityData, imageFiles);
         toast.success(t('communities.create.toasts.createSuccess'));
         const id = result._id || result.id;
         navigate(id ? `/communities/${id}` : '/communities');
