@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getCommunityById, updateCommunity, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getAvailableCities, getAvailableCategories, COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
-import { getAllTracks, deleteTrack } from '../../services/trackService';
+import { getAllTracksEn, deleteTrack } from '../../services/trackService';
 import { CommunityFormData } from '../../types/community';
 import { availableCategories } from '../../data/communitiesData';
 import { DetailPageSkeleton } from '../ui/skeleton';
@@ -61,7 +61,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   useEffect(() => {
     const fetchTracks = async () => {
       try {
-        const list = await getAllTracks();
+        const list = await getAllTracksEn();
         setTracks(Array.isArray(list) ? list : []);
       } catch (error) {
         toast.error(t('communities.edit.toasts.trackNotFound'));

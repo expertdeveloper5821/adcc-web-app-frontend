@@ -1,8 +1,6 @@
 export const availableCategories = [
   'City Communities',
   'Group Communities',
-  'Awareness & special communities',
-
   'Racing & Performance',
   'Family & Leisure',
   'Women (SheRides)',
