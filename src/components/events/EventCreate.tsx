@@ -380,19 +380,8 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     }
     setIsSubmitting(true);
     try {
-      // Convert images to base64
-      let coverBase64 = '';
-      let galleryBase64: string[] = [];
-
-      if (coverImage) {
-        coverBase64 = await compressImage(coverImage);
-      }
-      if (galleryImages.length > 0) {
-        galleryBase64 = await Promise.all(galleryImages.map(img => compressImage(img)));
-      }
-
-      // Prepare payload with correct types and only allowed fields
-      const payload: Partial<EventApiResponse> = {
+      // Send images as File in FormData (backend multer: mainImage, eventImage)
+      const payload = {
         title: formData.title.trim() || formData.titleAr?.trim() || '',
         ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
         slug: formData.slug,
@@ -414,8 +403,9 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           ? formData.schedule.filter((s) => s.time && s.title?.trim())
           : [],
         amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
-        mainImage: coverBase64 || undefined,
-        galleryImages: galleryBase64,
+        mainImage: coverImage || undefined,
+        eventImage: coverImage || undefined,
+        galleryImages,
         status: action === 'draft' ? 'Draft' : formData.status,
         isFeatured: !!formData.isFeatured,
         allowCancellation: !!formData.allowCancellation,

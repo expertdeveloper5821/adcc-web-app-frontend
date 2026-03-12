@@ -57,7 +57,7 @@ export function EventDetail({ role }: EventDetailProps) {
     }
   };
 
-  console.log('participants',participants);
+  // console.log('participants',participants);
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -127,7 +127,7 @@ export function EventDetail({ role }: EventDetailProps) {
     }
   };
 
-
+    console.log('event.mainImage',event?.mainImage);
 
   return (
     <div className="space-y-6">

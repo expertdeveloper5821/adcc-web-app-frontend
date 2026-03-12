@@ -210,6 +210,11 @@ const refreshToken = async (): Promise<string | null> => {
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Let browser set Content-Type with boundary for FormData (multipart/form-data)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     // Skip token refresh for auth endpoints
     const isAuthEndpoint = config.url?.includes('/auth/refresh') || 
                           config.url?.includes('/auth/verify') ||

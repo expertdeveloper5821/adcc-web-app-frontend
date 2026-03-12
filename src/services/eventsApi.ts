@@ -133,49 +133,163 @@ export const getEventById = async (id: string): Promise<EventApiResponse> => {
 };
 
 // Create event
-export const createEvent = async (eventData: Partial<EventApiResponse>): Promise<EventApiResponse> => {
-//     eventData = {
-//         "title": "Abu Dhabi Cycling Challenge 2025",
-//         "description": "Join us for the annual Abu Dhabi Cycling Challenge. A challenging ride through the city.",
-//         "mainImage": "data:image/png;base64,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"
-// ,
-//         "eventImage": "data:image/png;base64,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"
-// ,
-//         "eventDate": "2025-02-17",
-//         "eventTime": "06:00",
-//         "address": "Yas Marina Circuit, Abu Dhabi",
-//         "maxParticipants": 500,
-//         "minAge": 16,
-//         "maxAge": 70,
-//         "youtubeLink": "https://www.youtube.com/watch?v=example",
-//         "status": "upcoming"
-//     }
+// export const createEvent = async (eventData: Partial<EventApiResponse>): Promise<EventApiResponse> => {
 
-  invalidateCache('events');
-  try {
-    const response = await api.post<any>('/v1/events', eventData);
+
+//   invalidateCache('events');
+//   try {
+//     const response = await api.post<any>('/v1/events', eventData);
     
-    // Handle nested response structure
-    if ((response.data as any).data) {
-      return (response.data as any).data;
+//     // Handle nested response structure
+//     if ((response.data as any).data) {
+//       return (response.data as any).data;
+//     }
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error creating event:', error);
+//     throw error;
+//   }
+// };
+
+export const createEvent = async (
+  eventData: any
+): Promise<any> => {
+
+  invalidateCache("events");
+
+  try {
+
+    const formData = new FormData();
+
+    formData.append("title", eventData.title || "");
+    formData.append("slug", eventData.slug || "");
+    formData.append("category", eventData.category || "");
+    formData.append("communityId", eventData.communityId || "");
+    formData.append("description", eventData.description || "");
+    formData.append("address", eventData.address || "");
+    formData.append("country", eventData.country || "");
+    formData.append("city", eventData.city || "");
+    formData.append("trackId", eventData.trackId || "");
+    formData.append("eventDate", eventData.eventDate || "");
+    formData.append("eventTime", eventData.eventTime || "");
+    formData.append("endTime", eventData.endTime || "");
+    formData.append("distance", String(eventData.distance ?? ""));
+    formData.append("difficulty", eventData.difficulty || "");
+    formData.append("maxParticipants", String(eventData.maxParticipants ?? ""));
+    formData.append("status", eventData.status || "Draft");
+    formData.append("isFeatured", String(eventData.isFeatured ?? false));
+    formData.append("allowCancellation", String(eventData.allowCancellation ?? true));
+    if (eventData.schedule) {
+      formData.append("schedule", JSON.stringify(eventData.schedule));
     }
+    // Send amenities as JSON string so backend can parse to array (FormData sends strings only)
+    if (eventData.amenities && Array.isArray(eventData.amenities)) {
+      formData.append("amenities", JSON.stringify(eventData.amenities));
+    }
+
+    // Images: backend multer expects mainImage and eventImage (File objects only)
+    if (eventData.mainImage instanceof File) {
+      formData.append("mainImage", eventData.mainImage);
+    }
+    if (eventData.eventImage instanceof File) {
+      formData.append("eventImage", eventData.eventImage);
+    }
+
+    // Gallery images (if backend supports this field)
+    if (eventData.galleryImages && Array.isArray(eventData.galleryImages)) {
+      eventData.galleryImages.forEach((file: File) => {
+        if (file instanceof File) formData.append("galleryImages", file);
+      });
+    }
+
+    // Do not set Content-Type: axios sets multipart/form-data with boundary for FormData
+    const response = await api.post("/v1/events", formData);
+
+    if (response.data?.data) {
+      return response.data.data;
+    }
+
     return response.data;
+
   } catch (error) {
-    console.error('Error creating event:', error);
+    console.error("Error creating event:", error);
     throw error;
   }
 };
 
-// Update event
-export const updateEvent = async (id: string, eventData: Partial<EventApiResponse>): Promise<EventApiResponse> => {
+/** Optional image files for multipart update (backend multer: mainImage, eventImage) */
+export interface EventUpdateImageFiles {
+  mainImage?: File;
+  eventImage?: File;
+  galleryImages?: File[];
+}
+
+// Update event: always send FormData so backend requireMultipartFormData middleware is satisfied
+export const updateEvent = async (
+  id: string,
+  eventData: Partial<EventApiResponse> & { schedule?: { time: string; title: string }[]; amenities?: string[] },
+  imageFiles?: EventUpdateImageFiles
+): Promise<EventApiResponse> => {
   invalidateCache('events');
   try {
-    const response = await api.patch<any>(`/v1/events/${id}`, eventData);
-    
-    // Handle nested response structure
-    if ((response.data as any).data) {
-      return (response.data as any).data;
+    const formData = new FormData();
+    const d = eventData as Record<string, unknown>;
+    const append = (key: string, value: unknown) => {
+      if (value === undefined || value === null) return;
+      if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof File)) {
+        formData.append(key, JSON.stringify(value));
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach((item) => formData.append(key, typeof item === 'object' ? JSON.stringify(item) : String(item)));
+        return;
+      }
+      formData.append(key, String(value));
+    };
+    append('title', d.title);
+    append('titleAr', d.titleAr);
+    append('slug', d.slug);
+    append('category', d.category);
+    append('communityId', d.communityId);
+    append('description', d.description);
+    append('descriptionAr', d.descriptionAr);
+    append('address', d.address);
+    append('country', d.country);
+    append('city', d.city);
+    append('trackId', d.trackId);
+    append('eventDate', d.eventDate);
+    append('eventTime', d.eventTime);
+    append('endTime', d.endTime);
+    append('distance', d.distance);
+    append('difficulty', d.difficulty);
+    append('maxParticipants', d.maxParticipants);
+    // schedule: send as single JSON string so backend gets array (multiple "schedule" fields become object)
+    if (Array.isArray(d.schedule)) {
+      formData.append('schedule', JSON.stringify(d.schedule));
+    } else if (d.schedule !== undefined && d.schedule !== null) {
+      formData.append('schedule', JSON.stringify([]));
     }
+    if (Array.isArray(d.amenities)) {
+      formData.append('amenities', JSON.stringify(d.amenities));
+    } else if (d.amenities !== undefined && d.amenities !== null) {
+      formData.append('amenities', JSON.stringify([]));
+    }
+    append('status', d.status);
+    append('isFeatured', d.isFeatured);
+    append('allowCancellation', d.allowCancellation);
+    append('youtubeLink', d.youtubeLink);
+    append('minAge', d.minAge);
+    append('maxAge', d.maxAge);
+    if (d.eligibility != null) append('eligibility', d.eligibility);
+
+    if (imageFiles?.mainImage instanceof File) formData.append('mainImage', imageFiles.mainImage);
+    if (imageFiles?.eventImage instanceof File) formData.append('eventImage', imageFiles.eventImage);
+    if (imageFiles?.galleryImages?.length) {
+      imageFiles.galleryImages.forEach((file) => formData.append('galleryImages', file));
+    }
+
+    const response = await api.patch<any>(`/v1/events/${id}`, formData);
+    if ((response.data as any).data) return (response.data as any).data;
     return response.data;
   } catch (error) {
     console.error('Error updating event:', error);

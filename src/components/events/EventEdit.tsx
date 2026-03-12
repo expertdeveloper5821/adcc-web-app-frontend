@@ -33,8 +33,8 @@ export function EventEdit({ role }: EventEditProps) {
   const [tracks, setTracks] = useState<any[]>([]);
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
 
-  
   useEffect(() => {
     if (!id) return;
 
@@ -214,7 +214,6 @@ export function EventEdit({ role }: EventEditProps) {
     country: '',
     city: '',
     trackId: '',
-    eventImage: '',
     eventDate: '',
     eventTime: '07:00',
     endTime: '08:00',
@@ -490,20 +489,11 @@ export function EventEdit({ role }: EventEditProps) {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        mainImage: reader.result as string,
-      }));
-    };
-  }
+    setMainImageFile(file);
+    setFormData((prev) => ({ ...prev, mainImage: URL.createObjectURL(file) }));
+  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -516,17 +506,6 @@ export function EventEdit({ role }: EventEditProps) {
     setIsSaving(true);
 
     try {
-
-      let coverBase64 = '';
-      let galleryBase64: string[] = [];
-
-      // if (coverImage) {
-      //   coverBase64 = await compressImage(coverImage);
-      // }
-      if (galleryImages.length > 0) {
-        galleryBase64 = await Promise.all(galleryImages.map(img => compressImage(img)));
-      }
-
       const payload = {
         title: formData.title,
         ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
@@ -534,7 +513,6 @@ export function EventEdit({ role }: EventEditProps) {
         category: formData.category,
         communityId: formData.communityId,
         trackId: formData.trackId,
-        mainImage: formData.mainImage,
         description: formData.description,
         ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
         city: formData.city,
@@ -544,21 +522,13 @@ export function EventEdit({ role }: EventEditProps) {
         distance: formData.distance,
         difficulty: formData.difficulty,
         maxParticipants: formData.maxParticipants,
-        schedule: formData.schedule.filter(
-          (s) => s.time && s.title
-        ),
+        schedule: formData.schedule.filter((s) => s.time && s.title),
         amenities: formData.amenities,
         minAge: formData.minAge,
         eligibility: {
-          // ageRequirement: formData.eligibilityAge,
           bikeType: formData.eligibilityBike,
           experienceLevel: formData.eligibilityExperience,
         },
-        galleryImages: galleryBase64,
-        // rewards: {
-        //   points: formData.rewardPoints,
-        //   badgeName: formData.rewardBadge,
-        // },
         status: formData.status,
         isFeatured: formData.isFeatured,
         allowCancellation: formData.allowCancellation,
@@ -568,7 +538,21 @@ export function EventEdit({ role }: EventEditProps) {
         youtubeLink: formData.youtubeLink || undefined,
       };
 
-      await updateEventApi(id, payload);
+      // When not uploading a new file, send existing mainImage (URL/base64) so backend keeps it
+      if (!mainImageFile && formData.mainImage) {
+        (payload as Record<string, unknown>).mainImage = formData.mainImage;
+      }
+
+      // Send new images as File in FormData (backend multer: mainImage, eventImage, galleryImages)
+      const imageFiles =
+        mainImageFile || galleryImages.length > 0
+          ? {
+              ...(mainImageFile ? { mainImage: mainImageFile } : {}),
+              ...(galleryImages.length > 0 ? { galleryImages } : {}),
+            }
+          : undefined;
+
+      await updateEventApi(id, payload, imageFiles);
 
       toast.success(t('events.edit.toasts.updateSuccess'));
       navigate(`/events/${id}`);
@@ -1204,22 +1188,14 @@ export function EventEdit({ role }: EventEditProps) {
                 {/* Hidden File Input */}
                 <input
                   type="file"
-                  accept="image/png, image/jpeg"
+                  accept="image/png, image/jpeg, image/webp, image/gif"
                   className="hidden"
                   id="coverUpload"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-
-                    reader.onloadend = () => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        mainImage: reader.result as string,
-                      }));
-                    };
+                    setMainImageFile(file);
+                    setFormData((prev) => ({ ...prev, mainImage: URL.createObjectURL(file) }));
                   }}
                 />
 
