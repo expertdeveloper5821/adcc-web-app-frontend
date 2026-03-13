@@ -1,17 +1,25 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
+import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { verifyFirebaseAuth, registerUser, getCurrentUser, logout as apiLogout, CurrentUserResponse } from '../services/authApi';
 import { toast } from 'sonner';
 import i18n from '../i18n';
+
+export interface PendingGoogleProfile {
+  fullName: string;
+  email: string;
+}
 
 interface AuthContextType {
   user: User | null;
   userProfile: CurrentUserResponse['data'] | null;
   loading: boolean;
   isAuthenticated: boolean;
+  pendingGoogleProfile: PendingGoogleProfile | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, fullName: string, gender: 'Male' | 'Female', age: number) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  register: (email: string, password: string, fullName: string, gender: 'Male' | 'Female', age: number, dob: string, country: string) => Promise<void>;
+  completeGoogleRegistration: (gender: 'Male' | 'Female', age: number, dob: string, country: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
 }
@@ -33,6 +41,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<CurrentUserResponse['data'] | null>(null);
+  const [pendingGoogleProfile, setPendingGoogleProfile] = useState<PendingGoogleProfile | null>(null);
   const [loading, setLoading] = useState(true);
   // Flag to prevent duplicate verification when handling auth manually
   const isHandlingAuthManually = useRef(false);
@@ -140,6 +149,80 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const loginWithGoogle = async () => {
+    try {
+      console.log('🔐 Signing in with Google...');
+      isHandlingAuthManually.current = true;
+
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      console.log('✅ Google sign-in successful');
+
+      const idToken = await userCredential.user.getIdToken();
+      // Pass provider: 'google' so backend can save login/user data to MongoDB (same as normal login)
+      const verifyResponse = await verifyFirebaseAuth(idToken, { provider: 'google' });
+      console.log('✅ Backend verification successful:', verifyResponse);
+
+      if (verifyResponse.data.accessToken) {
+        localStorage.setItem('accessToken', verifyResponse.data.accessToken);
+        localStorage.setItem('refreshToken', verifyResponse.data.refreshToken);
+      }
+
+      if (verifyResponse.data.isNewUser) {
+        const displayName = userCredential.user.displayName || '';
+        const email = userCredential.user.email || '';
+        setPendingGoogleProfile({ fullName: displayName, email });
+        toast.info(i18n.t('auth.toasts.completeRegistration'));
+        isHandlingAuthManually.current = false;
+        return;
+      }
+
+      await refreshUserProfile();
+      toast.success(i18n.t('auth.toasts.loginSuccess'));
+      isHandlingAuthManually.current = false;
+    } catch (error: any) {
+      isHandlingAuthManually.current = false;
+      console.error('❌ Google sign-in error:', error);
+      const errorMessage =
+        error?.code === 'auth/popup-closed-by-user'
+          ? i18n.t('auth.toasts.googleSignInCancelled')
+          : error?.code === 'auth/popup-blocked'
+          ? i18n.t('auth.toasts.googlePopupBlocked')
+          : error?.response?.data?.message || error?.message || i18n.t('auth.toasts.googleSignInFailed');
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const completeGoogleRegistration = async (gender: 'Male' | 'Female', age: number, dob: string, country: string) => {
+    if (!pendingGoogleProfile) {
+      toast.error(i18n.t('auth.toasts.completeRegistration'));
+      return;
+    }
+    try {
+      console.log('📝 Completing Google registration...');
+      const registerResponse = await registerUser({
+        fullName: pendingGoogleProfile.fullName,
+        gender,
+        age,
+        dob,
+        country,
+        provider: 'google',
+      });
+      if (registerResponse.data.accessToken) {
+        localStorage.setItem('accessToken', registerResponse.data.accessToken);
+        localStorage.setItem('refreshToken', registerResponse.data.refreshToken);
+      }
+      setUserProfile(registerResponse.data.user as any);
+      setPendingGoogleProfile(null);
+      toast.success(i18n.t('auth.toasts.registrationSuccess'));
+    } catch (error: any) {
+      console.error('❌ Complete Google registration error:', error);
+      toast.error(error?.response?.data?.message || i18n.t('auth.toasts.registrationFailed'));
+      throw error;
+    }
+  };
+
   const login = async (email: string, password: string) => {
     try {
       console.log('🔐 Logging in with email:', email);
@@ -150,12 +233,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('✅ Firebase login successful');
       
-      // Get ID token and verify with backend
+      // Get ID token and verify with backend (provider: 'email' so backend can save login data to MongoDB)
       const idToken = await userCredential.user.getIdToken();
-      // console.log('🔑 Got ID token for verification' , idToken);
-      
-      // Verify with backend
-      const verifyResponse = await verifyFirebaseAuth(idToken);
+      const verifyResponse = await verifyFirebaseAuth(idToken, { provider: 'email' });
       console.log('✅ Backend verification successful:', verifyResponse);
       
       // Store tokens 
@@ -208,7 +288,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     password: string,
     fullName: string,
     gender: 'Male' | 'Female',
-    age: number
+    age: number,
+    dob: string,
+    country: string
   ) => {
     try {
       console.log('📝 Registering user:', { email, fullName, gender, age });
@@ -218,12 +300,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('✅ Firebase registration successful:', userCredential.user.uid);
       
-      // Get ID token
+      // Get ID token and verify with backend (provider: 'email' so backend can save user to MongoDB)
       const idToken = await userCredential.user.getIdToken();
-      console.log('🔑 Got ID token for verification', idToken);
-      
-      // Verify with backend (to get temporary token)
-      const verifyResponse = await verifyFirebaseAuth(idToken);
+      const verifyResponse = await verifyFirebaseAuth(idToken, { provider: 'email' });
       console.log('✅ Backend verification response:', verifyResponse);
       
       // If user already exists, try to fetch profile instead
@@ -255,6 +334,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         fullName,
         gender,
         age,
+        dob,
+        country,
       });
       console.log('✅ Backend registration successful:', registerResponse);
       
@@ -348,8 +429,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userProfile,
     loading,
     isAuthenticated: !!user && !!userProfile,
+    pendingGoogleProfile,
     login,
+    loginWithGoogle,
     register,
+    completeGoogleRegistration,
     logout,
     refreshUserProfile,
   };

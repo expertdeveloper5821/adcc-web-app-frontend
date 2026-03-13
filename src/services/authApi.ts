@@ -21,6 +21,12 @@ export interface RegisterUserData {
   fullName: string;
   gender: 'Male' | 'Female';
   age: number;
+  /** Date of birth, format YYYY-MM-DD (required by backend) */
+  dob: string;
+  /** Country name (required by backend) */
+  country: string;
+  /** Optional: 'google' when completing Google sign-up so backend can save auth provider to MongoDB */
+  provider?: 'email' | 'google';
 }
 
 export interface RegisterResponse {
@@ -66,13 +72,16 @@ export interface CurrentUserResponse {
   };
 }
 
-// Verify Firebase Auth Token
-export const verifyFirebaseAuth = async (idToken: string): Promise<VerifyAuthResponse> => {
+// Verify Firebase Auth Token (optionally pass provider so backend can save login data to MongoDB the same way for email and Google)
+export const verifyFirebaseAuth = async (
+  idToken: string,
+  options?: { provider?: 'email' | 'google' }
+): Promise<VerifyAuthResponse> => {
   try {
-    console.log('📋 verifyFirebaseAuth called');
-    const response = await api.post<VerifyAuthResponse>('/v1/auth/verify', {
-      idToken,
-    });
+    console.log('📋 verifyFirebaseAuth called', options?.provider ? `(provider: ${options.provider})` : '');
+    const body: { idToken: string; provider?: string } = { idToken };
+    if (options?.provider) body.provider = options.provider;
+    const response = await api.post<VerifyAuthResponse>('/v1/auth/verify', body);
     console.log('📥 verifyFirebaseAuth response:', response.data);
     return response.data;
   } catch (error) {

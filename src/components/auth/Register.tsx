@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Mail, Lock, User, Calendar, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { Mail, Lock, User, Calendar, ArrowRight, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 interface RegisterProps {
@@ -17,6 +17,8 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
     fullName: '',
     gender: 'Male' as 'Male' | 'Female',
     age: '',
+    dob: '',
+    country: 'UAE',
   });
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
@@ -25,7 +27,7 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password || !formData.fullName || !formData.age) {
+    if (!formData.email || !formData.password || !formData.fullName || !formData.age || !formData.dob || !formData.country) {
       toast.error(t('auth.fillRequired'));
       return;
     }
@@ -53,7 +55,9 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
         formData.password,
         formData.fullName,
         formData.gender,
-        age
+        age,
+        formData.dob,
+        formData.country
       );
       onRegisterSuccess();
     } catch (error) {
@@ -141,11 +145,45 @@ export function Register({ onSwitchToLogin, onRegisterSuccess }: RegisterProps) 
                     placeholder={t('auth.agePlaceholder')}
                     min="0"
                     max="150"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
-                    style={{ focusRing: '#C12D32' }}
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                     required
                   />
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                {t('auth.dob')}
+              </label>
+              <input
+                type="date"
+                value={formData.dob}
+                onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                {t('auth.country')}
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
+                <select
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600 bg-white"
+                  required
+                >
+                  <option value="UAE">{t('common.country.uae')}</option>
+                  <option value="Saudi Arabia">{t('common.country.saudiArabia')}</option>
+                  <option value="Kuwait">{t('common.country.kuwait')}</option>
+                  <option value="Bahrain">{t('common.country.bahrain')}</option>
+                  <option value="Oman">{t('common.country.oman')}</option>
+                  <option value="Qatar">{t('common.country.qatar')}</option>
+                </select>
               </div>
             </div>
 
