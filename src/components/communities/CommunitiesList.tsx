@@ -448,7 +448,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
               {community.communityType && (
                 <div className="flex flex-wrap gap-2">
                   <span
-                    className="px-3 py-1 rounded-full text-xs text-white"
+                    className="px-3 py-1 max-w-full truncate rounded-full text-xs text-white"
                     style={{ backgroundColor: getCommunityTypeColor(community.communityType) }}
                   >
                     {formatCommunityType(community.communityType)}
