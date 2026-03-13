@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { CardSkeleton } from '../ui/skeleton';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
+import { FiChevronDown } from "react-icons/fi";
 
 interface EventsListProps {
   navigate: (page: string, params?: any) => void;
@@ -143,7 +144,7 @@ export function EventsList({ role }: EventsListProps) {
 
   const trackStats = useMemo(() => {
     const stats: Record<string, { eventsCount: number; communitiesCount: number }> = {};
-    
+
     // Count events per track
     events.forEach(event => {
       const trackId = event.trackId?._id || event.trackId?.id;
@@ -154,7 +155,7 @@ export function EventsList({ role }: EventsListProps) {
         stats[trackId].eventsCount++;
       }
     });
-    
+
     // Count communities per track
     communities.forEach(community => {
       const trackId = community.trackId?._id || community.trackId?.id || community.trackId;
@@ -165,7 +166,7 @@ export function EventsList({ role }: EventsListProps) {
         stats[trackId].communitiesCount++;
       }
     });
-    
+
     return stats;
   }, [events, communities]);
 
@@ -177,23 +178,23 @@ export function EventsList({ role }: EventsListProps) {
   };
 
   const confirmDelete = async () => {
-  if (!eventToDelete) return;
+    if (!eventToDelete) return;
 
-  try {
-    await deleteEventApi(eventToDelete);
+    try {
+      await deleteEventApi(eventToDelete);
 
-    setEvents(prev => prev.filter(e => ((e as any)._id ?? (e as any).id) !== eventToDelete));
+      setEvents(prev => prev.filter(e => ((e as any)._id ?? (e as any).id) !== eventToDelete));
 
-    toast.success(t('events.toasts.deleteSuccess'));
-  } catch (error: any) {
-    toast.error(error?.response?.data?.message || t('events.toasts.deleteError'));
-  } finally {
-    setShowDeleteModal(false);
-    setEventToDelete(null);
-  }
-};
+      toast.success(t('events.toasts.deleteSuccess'));
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || t('events.toasts.deleteError'));
+    } finally {
+      setShowDeleteModal(false);
+      setEventToDelete(null);
+    }
+  };
 
-    // const selectedTrack = tracks.find(t => t.id === formData.trackId);
+  // const selectedTrack = tracks.find(t => t.id === formData.trackId);
 
 
   return (
@@ -272,14 +273,35 @@ export function EventsList({ role }: EventsListProps) {
             <select
               value={communityFilter}
               onChange={(e) => setCommunityFilter(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full px-4 py-2  rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
             >
               <option value="">{t('events.filters.allCommunities')}</option>
               {communities.map(community => (
                 <option key={community._id || community.id} value={community._id || community.id}>{community.title || community.name}</option>
               ))}
             </select>
+            
           </div>
+          {/* <div className="relative w-full">
+            <select
+              value={communityFilter}
+              onChange={(e) => setCommunityFilter(e.target.value)}
+              className="w-full px-4 py-2 pr-10 appearance-none rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+            >
+              <option value="">{t('events.filters.allCommunities')}</option>
+
+              {communities.map((community) => (
+                <option
+                  key={community._id || community.id}
+                  value={community._id || community.id}
+                >
+                  {community.title || community.name}
+                </option>
+              ))}
+            </select>
+
+            <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+          </div> */}
 
           <div>
             <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.filters.city')}</label>
@@ -395,155 +417,155 @@ export function EventsList({ role }: EventsListProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {filteredEvents.map((event) => {
-          const eventId = (event as any)._id ?? (event as any).id;
-          return (
-          <div
-            key={eventId}
-            className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all relative"
-          >
-            <div className="flex items-start gap-6">
-              {/* Cover Image */}
-              <img
-                src={event.mainImage ? event.mainImage : event.eventImag}
-                alt={event.title}
-                className="w-32 h-32 rounded-lg object-cover"
-              />
+            const eventId = (event as any)._id ?? (event as any).id;
+            return (
+              <div
+                key={eventId}
+                className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all relative"
+              >
+                <div className="flex items-start gap-6">
+                  {/* Cover Image */}
+                  <img
+                    src={event.mainImage ? event.mainImage : event.eventImag}
+                    alt={event.title}
+                    className="w-32 h-32 rounded-lg object-cover"
+                  />
 
-              {/* Event Info */}
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-xl" style={{ color: '#333' }}>{event.title}</h3>
-                      {event.isFeatured && (
-                        <Star className="w-5 h-5 fill-current" style={{ color: '#F59E0B' }} />
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
+                  {/* Event Info */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-xl" style={{ color: '#333' }}>{event.title}</h3>
+                          {event.isFeatured && (
+                            <Star className="w-5 h-5 fill-current" style={{ color: '#F59E0B' }} />
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <span
+                            className="px-3 py-1 rounded-full text-xs text-white"
+                            style={{
+                              backgroundColor:
+                                event.category === 'Race' ? '#C12D32' :
+                                  event.category === 'Community Ride' ? '#10B981' :
+                                    event.category === 'Training & Clinics' ? '#3B82F6' :
+                                      event.category === 'Awareness Rides' ? '#EC4899' :
+                                        event.category === 'Family & Kids' ? '#F59E0B' : '#8B5CF6'
+                            }}
+                          >
+                            {event.category ? t(`data.eventCategories.${event.category}`, event.category) : t('events.card.noCategory', 'Uncategorized')}
+                          </span>
+                          <span className="text-sm" style={{ color: '#666' }}>{event.communityId?.title || t('events.card.noCommunity')}</span>
+                          <span className="text-sm" style={{ color: '#666' }}>|</span>
+                          <span className="text-sm" style={{ color: '#666' }}>
+                            {event.trackId?.title || t('events.card.noTrack')}
+                            {(() => {
+                              const trackId = event.trackId?._id || event.trackId?.id;
+                              const stats = trackId ? trackStats[trackId] : null;
+                              return stats ? ` (${t('events.card.trackStats', { events: stats.eventsCount, communities: stats.communitiesCount })})` : '';
+                            })()}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" style={{ color: '#999' }} />
+                            <span className="text-sm" style={{ color: '#666' }}>
+                              {new Date(event.eventDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" style={{ color: '#999' }} />
+                            <span className="text-sm" style={{ color: '#666' }}>
+                              {event.currentParticipants} / {event.maxParticipants}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" style={{ color: '#999' }} />
+                            <span className="text-sm" style={{ color: '#666' }}>{event.city ? t(`data.locations.${event.city}`, event.city) : t('events.card.noLocation', 'No Location')}</span>
+                          </div>
+                        </div>
+                      </div>
+
                       <span
-                        className="px-3 py-1 rounded-full text-xs text-white"
+                        className="px-3 py-1 rounded-full text-xs capitalize text-white"
                         style={{
                           backgroundColor:
-                            event.category === 'Race' ? '#C12D32' :
-                            event.category === 'Community Ride' ? '#10B981' :
-                            event.category === 'Training & Clinics' ? '#3B82F6' :
-                            event.category === 'Awareness Rides' ? '#EC4899' :
-                            event.category === 'Family & Kids' ? '#F59E0B' : '#8B5CF6'
+                            event.status === 'Open' ? '#10B981' :
+                              event.status === 'Full' ? '#F59E0B' :
+                                event.status === 'Completed' ? '#3B82F6' :
+                                  event.status === 'Draft' ? '#6B7280' : '#EF4444'
                         }}
                       >
-                        {event.category ? t(`data.eventCategories.${event.category}`, event.category) : t('events.card.noCategory', 'Uncategorized')}
-                      </span>
-                      <span className="text-sm" style={{ color: '#666' }}>{event.communityId?.title || t('events.card.noCommunity')}</span>
-                      <span className="text-sm" style={{ color: '#666' }}>|</span>
-                      <span className="text-sm" style={{ color: '#666' }}>
-                        {event.trackId?.title || t('events.card.noTrack')}
-                        {(() => {
-                          const trackId = event.trackId?._id || event.trackId?.id;
-                          const stats = trackId ? trackStats[trackId] : null;
-                          return stats ? ` (${t('events.card.trackStats', { events: stats.eventsCount, communities: stats.communitiesCount })})` : '';
-                        })()}
+                        {t(`data.statuses.${event.status}`, event.status)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" style={{ color: '#999' }} />
-                        <span className="text-sm" style={{ color: '#666' }}>
-                          {new Date(event.eventDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4" style={{ color: '#999' }} />
-                        <span className="text-sm" style={{ color: '#666' }}>
-                          {event.currentParticipants} / {event.maxParticipants}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" style={{ color: '#999' }} />
-                        <span className="text-sm" style={{ color: '#666' }}>{event.city ? t(`data.locations.${event.city}`, event.city) : t('events.card.noLocation', 'No Location')}</span>
-                      </div>
+                    {/* Actions */}
+                    <div className="flex flex-wrap items-center gap-2 mt-4">
+                      <button
+                        onClick={() => navigate(`/events/${eventId}`)}
+                        className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
+                        style={{ backgroundColor: '#ECC180', color: '#333' }}
+                      >
+                        <Eye className="w-4 h-4" />
+                        {t('events.card.view')}
+                      </button>
+
+                      <button
+                        onClick={() => navigate(`/events/${eventId}/edit`)}
+                        className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
+                        style={{ backgroundColor: '#E5E7EB', color: '#333' }}
+                      >
+                        <Edit className="w-4 h-4" />
+                        {t('events.card.edit')}
+                      </button>
+
+                      <button
+                        onClick={() => navigate(`/events/${eventId}/event-participants`)}
+                        className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
+                        style={{ backgroundColor: '#E5E7EB', color: '#333' }}
+                      >
+                        <UserCheck className="w-4 h-4" />
+                        {t('events.card.participants')}
+                      </button>
+
+                      {event.category === 'Race' && (
+                        <button
+                          onClick={() => navigate('event-results', { selectedEventId: eventId })}
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
+                          style={{ backgroundColor: '#E5E7EB', color: '#333' }}
+                        >
+                          <Trophy className="w-4 h-4" />
+                          {t('events.card.results')}
+                        </button>
+                      )}
+
+                      {event.status !== 'Archived' && (
+                        <button
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
+                          style={{ backgroundColor: '#FEE2E2', color: '#C12D32' }}
+                        >
+                          <Ban className="w-4 h-4" />
+                          {t('events.card.disable')}
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <span
-                    className="px-3 py-1 rounded-full text-xs capitalize text-white"
-                    style={{
-                      backgroundColor:
-                        event.status === 'Open' ? '#10B981' :
-                        event.status === 'Full' ? '#F59E0B' :
-                        event.status === 'Completed' ? '#3B82F6' :
-                        event.status === 'Draft' ? '#6B7280' : '#EF4444'
-                    }}
-                  >
-                    {t(`data.statuses.${event.status}`, event.status)}
-                  </span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap items-center gap-2 mt-4">
-                  <button
-                    onClick={() => navigate(`/events/${eventId}`)}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
-                    style={{ backgroundColor: '#ECC180', color: '#333' }}
-                  >
-                    <Eye className="w-4 h-4" />
-                    {t('events.card.view')}
-                  </button>
-
-                  <button
-                    onClick={() => navigate(`/events/${eventId}/edit`)}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
-                    style={{ backgroundColor: '#E5E7EB', color: '#333' }}
-                  >
-                    <Edit className="w-4 h-4" />
-                    {t('events.card.edit')}
-                  </button>
-
-                  <button
-                    onClick={() => navigate(`/events/${eventId}/event-participants`)}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
-                    style={{ backgroundColor: '#E5E7EB', color: '#333' }}
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    {t('events.card.participants')}
-                  </button>
-
-                  {event.category === 'Race' && (
-                    <button
-                      onClick={() => navigate('event-results', { selectedEventId: eventId })}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
-                      style={{ backgroundColor: '#E5E7EB', color: '#333' }}
-                    >
-                      <Trophy className="w-4 h-4" />
-                      {t('events.card.results')}
-                    </button>
-                  )}
-
-                  {event.status !== 'Archived' && (
-                    <button
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
-                      style={{ backgroundColor: '#FEE2E2', color: '#C12D32' }}
-                    >
-                      <Ban className="w-4 h-4" />
-                      {t('events.card.disable')}
-                    </button>
-                  )}
                 </div>
               </div>
-            </div>
-          </div>
-        );
-        })}
+            );
+          })}
 
-        {filteredEvents.length === 0 && (
-          <div className="p-12 rounded-2xl bg-white text-center">
-            <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-            <p className="text-lg mb-2" style={{ color: '#666' }}>{t('events.empty.noResults')}</p>
-            <p className="text-sm" style={{ color: '#999' }}>{t('events.empty.tryFilters')}</p>
-          </div>
-        )}
-      </div>
+          {filteredEvents.length === 0 && (
+            <div className="p-12 rounded-2xl bg-white text-center">
+              <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+              <p className="text-lg mb-2" style={{ color: '#666' }}>{t('events.empty.noResults')}</p>
+              <p className="text-sm" style={{ color: '#999' }}>{t('events.empty.tryFilters')}</p>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
