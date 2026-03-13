@@ -75,7 +75,7 @@ export function Layout() {
             <Route path="/events/create" element={<EventCreate />} />
             <Route path="/events/:id/edit" element={<EventEdit role={currentRole} />} />
             <Route path="/events/:id" element={<EventDetail role={currentRole} />} />
-            {/* <Route path="/events/:id/event-participants" element={<EventParticipants role={currentRole} />} /> */}
+            <Route path="/events/:id/event-participants" element={<EventParticipants role={currentRole} />} />
             
             {/* Communities Routes */}
             <Route path="/communities" element={<CommunitiesList role={currentRole} />} />

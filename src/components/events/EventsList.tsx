@@ -501,7 +501,7 @@ export function EventsList({ role }: EventsListProps) {
                   </button>
 
                   <button
-                    onClick={() => navigate('event-participants', { selectedEventId: eventId })}
+                    onClick={() => navigate(`/events/${eventId}/event-participants`)}
                     className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: '#E5E7EB', color: '#333' }}
                   >
