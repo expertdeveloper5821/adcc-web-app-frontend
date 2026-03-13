@@ -211,9 +211,8 @@ export function TrackCreate({ role }: TrackCreateProps) {
       toast.error(t('tracks.create.toasts.imageTooLarge'));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setImage(reader.result as string);
-    reader.readAsDataURL(file);
+    setThumbnailFile(file);
+    setImage(URL.createObjectURL(file));
     e.target.value = '';
   };
 
@@ -224,9 +223,8 @@ export function TrackCreate({ role }: TrackCreateProps) {
       toast.error(t('tracks.create.toasts.imageTooLarge'));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setCoverImage(reader.result as string);
-    reader.readAsDataURL(file);
+    setCoverFile(file);
+    setCoverImage(URL.createObjectURL(file));
     e.target.value = '';
   };
 
@@ -234,27 +232,28 @@ export function TrackCreate({ role }: TrackCreateProps) {
     const files = e.target.files;
     if (!files?.length) return;
     const fileArray = Array.from(files);
-    if (galleryImages.length + fileArray.length > MAX_GALLERY_IMAGES) {
+    if (galleryFiles.length + fileArray.length > MAX_GALLERY_IMAGES) {
       toast.error(t('tracks.create.toasts.maxGalleryImages'));
       e.target.value = '';
       return;
     }
-    fileArray.forEach((file: File) => {
-      if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-        toast.error(`${file.name}: ${t('tracks.create.toasts.imageTooLarge')}`);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setGalleryImages((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+    const toAdd = fileArray.filter((f) => f.size <= MAX_IMAGE_SIZE_MB * 1024 * 1024);
+    fileArray.filter((f) => f.size > MAX_IMAGE_SIZE_MB * 1024 * 1024).forEach((f) =>
+      toast.error(`${f.name}: ${t('tracks.create.toasts.imageTooLarge')}`)
+    );
+    setGalleryFiles((prev) => [...prev, ...toAdd]);
+    setGalleryPreviews((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
+    setGalleryImages((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
     e.target.value = '';
   };
 
   const removeGalleryImage = (index: number) => {
     setGalleryImages((prev) => prev.filter((_, i) => i !== index));
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+    setGalleryPreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
 const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
@@ -309,12 +308,19 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
       status: action === 'draft' ? 'closed' : data.status,
       visibility: data.visibility,
       displayPriority: data.displayPriority,
-      ...(image ? { image } : {}),
-      ...(coverImage ? { coverImage } : {}),
-      galleryImages: galleryImages.length ? galleryImages : [],
+      galleryImages: [],
     };
 
-    const track = await createTrack(payload);
+    const imageFiles =
+      thumbnailFile || coverFile || galleryFiles.length
+        ? {
+            ...(thumbnailFile ? { image: thumbnailFile } : {}),
+            ...(coverFile ? { coverImage: coverFile } : {}),
+            ...(galleryFiles.length ? { galleryImages: galleryFiles } : {}),
+          }
+        : undefined;
+
+    const track = await createTrack(payload, imageFiles);
 
     const created = track && (track.id ?? (track as any)._id);
     if (created) {

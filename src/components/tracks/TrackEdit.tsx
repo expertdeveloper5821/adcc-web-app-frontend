@@ -106,16 +106,10 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (!file) return;
   setCoverImage(file);
   setCoverPreview(URL.createObjectURL(file));
-
-  // convert to base64 and store in formData
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    setFormData(prev => ({ ...prev, coverImage: reader.result as string }));
-  };
-  reader.readAsDataURL(file);
+  setFormData(prev => ({ ...prev, coverImage: URL.createObjectURL(file) }));
 };
 
-const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     const files: File[] = fileList ? Array.from(fileList) : [];
     if (!files.length) return;
@@ -126,25 +120,10 @@ const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       return;
     }
 
-    const newPreviews = files.map((file: File) => URL.createObjectURL(file));
-    const base64Results = await Promise.all(
-      files.map(
-        (file: File) =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          })
-      )
-    );
-
+    const newPreviews = files.map((f: File) => URL.createObjectURL(f));
     setGalleryImages((prev) => [...prev, ...files]);
     setGalleryPreviews((prev) => [...prev, ...newPreviews]);
-    setFormData((prev) => ({
-      ...prev,
-      galleryImages: [...prev.galleryImages, ...base64Results],
-    }));
+    setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newPreviews] }));
     e.target.value = '';
   };
 
@@ -291,53 +270,39 @@ const handleImageUpload = (
   const file = event.target.files?.[0];
   if (!file) return;
 
-  // Optional: limit size (2MB)
   if (file.size > 2 * 1024 * 1024) {
     toast.error(t('tracks.edit.toasts.imageTooLarge'));
     return;
   }
 
-  const reader = new FileReader();
-
-  reader.onload  = () => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: reader.result as string,
-    }));
-  };
-
-  reader.readAsDataURL(file);
+  if (field === 'thumbnailImage') {
+    setThumbnailImage(file);
+    setFormData(prev => ({ ...prev, thumbnailImage: URL.createObjectURL(file) }));
+  } else {
+    setCoverImage(file);
+    setCoverPreview(URL.createObjectURL(file));
+    setFormData(prev => ({ ...prev, coverImage: URL.createObjectURL(file) }));
+  }
 };
 
-const handleGalleryUpload = (
-  event: React.ChangeEvent<HTMLInputElement>
-) => {
+const handleGalleryUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
   const files = event.target.files;
   if (!files) return;
-
   const fileArray = Array.from(files) as File[];
-
-  fileArray.forEach((file: File) => {
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error(`${file.name} is larger than 2MB`);
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      setFormData(prev => ({
-        ...prev,
-        galleryImages: [
-          ...prev.galleryImages,
-          reader.result as string,
-        ],
-      }));
-    };
-
-    reader.readAsDataURL(file);
-  });
-  event.target.value = ''
+  if (galleryImages.length + fileArray.length > 10) {
+    toast.error(t('tracks.edit.toasts.maxImages'));
+    event.target.value = '';
+    return;
+  }
+  const valid = fileArray.filter((f) => f.size <= 2 * 1024 * 1024);
+  fileArray.filter((f) => f.size > 2 * 1024 * 1024).forEach((f) =>
+    toast.error(`${f.name}: ${t('tracks.edit.toasts.imageTooLarge')}`)
+  );
+  const newPreviews = valid.map((f) => URL.createObjectURL(f));
+  setGalleryImages((prev) => [...prev, ...valid]);
+  setGalleryPreviews((prev) => [...prev, ...newPreviews]);
+  setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newPreviews] }));
+  event.target.value = '';
 };
 
 // const removeGalleryImage = (index: number) => {
@@ -362,7 +327,7 @@ const handleGalleryUpload = (
     }
 
     try {
-      // Build cleaned payload to match backend: trackType 'coastal' -> 'costal', galleryImages always array
+      // Build payload; images sent as File in FormData (same key names: image, coverImage, galleryImages)
       const payload: any = {
         title: formData.title,
         slug: formData.slug,
@@ -384,16 +349,22 @@ const handleGalleryUpload = (
         helmetRequired: Boolean(formData.helmetRequired),
         nightRidingAllowed: Boolean(formData.nightRidingAllowed),
         status: formData.status,
-        image: formData.thumbnailImage,
-        coverImage: formData.coverImage,
-        galleryImages: Array.isArray(formData.galleryImages) ? formData.galleryImages : [],
         visibility: formData.visibility,
         displayPriority: Number(formData.displayPriority) || 0,
       };
 
       Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
 
-      await updateTrack(trackId, payload);
+      const imageFiles =
+        thumbnailImage || coverImage || galleryImages.length
+          ? {
+              ...(thumbnailImage ? { image: thumbnailImage } : {}),
+              ...(coverImage ? { coverImage } : {}),
+              ...(galleryImages.length ? { galleryImages } : {}),
+            }
+          : undefined;
+
+      await updateTrack(trackId, payload, imageFiles);
 
       toast.success(t('tracks.edit.toasts.updateSuccess'));
       navigate(`/tracks/${trackId}`);

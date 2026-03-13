@@ -223,11 +223,51 @@ export const getTrackById = async (trackId: string): Promise<Track> => {
   }
 };
 
-// Create track
-export const createTrack = async (trackData: CreateTrackRequest | TrackFormData): Promise<Track & { success?: boolean; message?: string }> => {
+/** Image files for FormData (same key names as backend: image, coverImage, galleryImages) */
+export interface TrackImageFiles {
+  image?: File;
+  coverImage?: File;
+  galleryImages?: File[];
+}
+
+function buildTrackFormData(trackData: Record<string, unknown>, imageFiles?: TrackImageFiles): FormData {
+  const formData = new FormData();
+  const scalarKeys = [
+    'title', 'titleAr', 'slug', 'description', 'descriptionAr', 'trackType', 'country', 'city', 'area',
+    'distance', 'difficulty', 'surfaceType', 'elevation', 'estimatedTime', 'safetyNotes',
+    'helmetRequired', 'nightRidingAllowed', 'status', 'visibility', 'displayPriority',
+  ];
+  scalarKeys.forEach((key) => {
+    const val = trackData[key];
+    if (val === undefined || val === null) return;
+    formData.append(key, String(val));
+  });
+  if (trackData.loopOptions != null && Array.isArray(trackData.loopOptions)) {
+    formData.append('loopOptions', JSON.stringify(trackData.loopOptions));
+  }
+  if (trackData.facilities != null) {
+    const f = trackData.facilities;
+    if (Array.isArray(f)) formData.append('facilities', JSON.stringify(f));
+    else formData.append('facilities', String(f));
+  }
+  if (imageFiles?.image instanceof File) formData.append('image', imageFiles.image);
+  if (imageFiles?.coverImage instanceof File) formData.append('coverImage', imageFiles.coverImage);
+  if (imageFiles?.galleryImages?.length) {
+    imageFiles.galleryImages.forEach((file) => formData.append('galleryImages', file));
+  }
+  return formData;
+}
+
+// Create track – send as FormData (same key names as backend)
+export const createTrack = async (
+  trackData: CreateTrackRequest | TrackFormData,
+  imageFiles?: TrackImageFiles
+): Promise<Track & { success?: boolean; message?: string }> => {
   invalidateCache('tracks');
   try {
-    const response = await api.post<{ data?: Track; success?: boolean; message?: string }>('/v1/tracks', trackData);
+    const d = (trackData as unknown) as Record<string, unknown>;
+    const formData = buildTrackFormData(d, imageFiles);
+    const response = await api.post<{ data?: Track; success?: boolean; message?: string }>('/v1/tracks', formData);
     const body = response.data as { data?: Track; success?: boolean; message?: string };
     if (body?.data) {
       return { ...body.data, success: body.success ?? true, message: body.message };
@@ -239,24 +279,23 @@ export const createTrack = async (trackData: CreateTrackRequest | TrackFormData)
   }
 };
 
-// Update track (ensures galleryImages is always an array when provided)
-export const updateTrack = async (trackId: string, trackData: Partial<TrackFormData>): Promise<Track> => {
+// Update track – always send FormData (same key names as backend)
+export const updateTrack = async (
+  trackId: string,
+  trackData: Partial<TrackFormData>,
+  imageFiles?: TrackImageFiles
+): Promise<Track> => {
   invalidateCache('tracks');
   try {
-    const payload =
-      trackData.galleryImages !== undefined
-        ? { ...trackData, galleryImages: trackData.galleryImages ?? [] }
-        : trackData;
-    const response = await api.patch<any>(`/v1/tracks/${trackId}`, payload);
-    // console.log('updateTrack response:', response.data);
-    if ((response.data as any).data) {
-        return (response.data as any).data;
-    }
+    const d = { ...trackData, galleryImages: trackData.galleryImages ?? [] } as Record<string, unknown>;
+    const formData = buildTrackFormData(d, imageFiles);
+    const response = await api.patch<any>(`/v1/tracks/${trackId}`, formData);
+    if ((response.data as any).data) return (response.data as any).data;
     return response.data;
   } catch (error) {
     console.error('Error updating track:', error);
     throw error;
-  };
+  }
 };
 
 // Delete track
