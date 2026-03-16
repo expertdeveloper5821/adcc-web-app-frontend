@@ -78,7 +78,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
 
       <div className="flex items-center gap-6">
         {/* Language toggle */}
-        <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
+        {/* <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
           <button
             type="button"
             onClick={() => setLocale('en')}
@@ -99,7 +99,7 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
           >
             AR
           </button>
-        </div>
+        </div> */}
 
         {/* Role Switcher */}
         <div className="relative" ref={dropdownRef}>

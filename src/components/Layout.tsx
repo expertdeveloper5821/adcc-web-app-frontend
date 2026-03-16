@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { UserRole } from '../App';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -32,11 +32,13 @@ import { UsersList } from './users/UsersList';
 import { Reports } from './reports/Reports';
 import { AppConfig } from './config/AppConfig';
 import { RolesPermissions } from './roles/RolesPermissions';
+import { BadgesList } from './badges/BadgesList';
+import { BadgesCreate } from './badges/BadgesCreate';
+import { LanguagesList } from './languages/LanguagesList';
 
 export function Layout() {
   const [currentRole, setCurrentRole] = useState<UserRole>('super-admin');
   const location = useLocation();
-  
   // Extract current page from pathname
   const getCurrentPage = () => {
     const path = location.pathname;
@@ -54,11 +56,20 @@ export function Layout() {
     if (path.startsWith('/reports')) return 'reports';
     if (path.startsWith('/config')) return 'config';
     if (path.startsWith('/roles')) return 'roles';
+    if (path.startsWith('/badges')) return 'badges';
+    if (path.startsWith('/languages')) return 'languages';
+    if (path.startsWith('/badges/create')) return 'badges-create';
+    if (path.startsWith('/badges/:id/edit')) return 'badges-edit';
     return 'dashboard';
   };
 
   const currentPage = getCurrentPage();
-
+  function BadgesEditWrapper({ role }: { role: UserRole }) {
+    const { id } = useParams<{ id: string }>();
+    if (!id) return null;
+    return <BadgesCreate navigate={() => {}} badgeId={id} />;
+  }
+  
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFF9EF' }}>
       <TopBar currentRole={currentRole} setRole={setCurrentRole} />
@@ -75,23 +86,18 @@ export function Layout() {
             } />
             
             {/* Events Routes */}
-            <Route path="/events" element={<EventsList role={currentRole} />} />
-            <Route path="/events/create" element={<EventCreate />} />
-            <Route path="/events/:id/edit" element={<EventEdit role={currentRole} />} />
-            <Route path="/events/:id" element={<EventDetail role={currentRole} />} />
+            <Route path="/events" element={<EventsList navigate={() => {}} role={currentRole} />} />
+            <Route path="/events/create" element={<EventCreate navigate={() => {}} role={currentRole} />} />
+            <Route path="/events/:id/edit" element={<EventEdit navigate={() => {}} role={currentRole} />} />
+            <Route path="/events/:id" element={<EventDetail navigate={() => {}} role={currentRole} />} />
             <Route path="/events/:id/event-participants" element={<EventParticipants role={currentRole} />} />
             
             {/* Communities Routes */}
             <Route path="/communities" element={<CommunitiesList role={currentRole} />} />
             <Route path="/communities/create" element={<CommunityCreate />} />
-            <Route path="/communities/:id/edit" element={<CommunityEdit />} />
+            <Route path="/communities/:id/edit" element={<CommunityEdit navigate={() => {}} role={currentRole} />} />
             <Route path="/communities/:id" element={<CommunityDetail />} />
             
-            {/* Tracks Routes */}
-            <Route path="/tracks" element={<TracksList role={currentRole} />} />
-            <Route path="/tracks/create" element={<TrackCreate />} />
-            <Route path="/tracks/:id" element={<TrackDetail role={currentRole} />} />
-<Route path='/tracks/:id/edit' element={<TrackEdit role={currentRole} />} />
 
             {/* Challenges Routes */}
             <Route path="/challenges" element={<ChallengesList role={currentRole} />} />
@@ -99,6 +105,15 @@ export function Layout() {
             <Route path="/challenges/:id" element={<ChallengeDetail role={currentRole} />} />
             <Route path="/challenges/:id/edit" element={<ChallengeCreate />} />
 
+            <Route path="/tracks" element={<TracksList navigate={() => {}} role={currentRole} />} />
+            <Route path="/tracks/create" element={<TrackCreate navigate={() => {}} role={currentRole} />} />
+            <Route path="/tracks/:id" element={<TrackDetail navigate={() => {}} role={currentRole} />} />
+            <Route path='/tracks/:id/edit' element={<TrackEdit navigate={() => {}} role={currentRole} />} />
+            
+            {/* Badges Routes */}
+            <Route path="/badges" element={<BadgesList navigate={() => {}} role={currentRole} />} />
+            <Route path="/badges/create" element={<BadgesCreate navigate={() => {}} />} />
+            <Route path="/badges/:id/edit" element={<BadgesEditWrapper role={currentRole} />} />
             {/* Other Routes */}
             <Route path="/feed" element={<FeedModeration />} />
             <Route path="/marketplace" element={<MarketplaceModeration />} />
@@ -109,6 +124,7 @@ export function Layout() {
             <Route path="/reports" element={<Reports role={currentRole} />} />
             <Route path="/config" element={<AppConfig />} />
             <Route path="/roles" element={<RolesPermissions />} />
+            <Route path="/languages" element={<LanguagesList />} />
             
             {/* Default redirect to dashboard */}
             <Route path="/" element={

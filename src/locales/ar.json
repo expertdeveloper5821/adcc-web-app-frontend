@@ -1256,6 +1256,80 @@
       }
     }
   },
+  "badges": {
+    "subtitle": "إدارة شارات الإنجاز والمكافآت لمجتمعك",
+    "createButton": "إنشاء شارة",
+    "totalBadges": "إجمالي الشارات",
+    "timesAwarded": "عدد مرات المنح",
+    "legendary": "أسطورية",
+    "epic": "ملحمية",
+    "filters": {
+      "search": "البحث في الشارات...",
+      "allCategories": "جميع الفئات",
+      "allRarities": "جميع الندرات"
+    },
+    "categories": {
+      "Distance": "المسافة",
+      "Event": "الفعالية",
+      "Social": "اجتماعي",
+      "Achievement": "إنجاز",
+      "Special": "مميز"
+    },
+    "rarities": {
+      "Common": "عادية",
+      "Rare": "نادرة",
+      "Epic": "ملحمية",
+      "Legendary": "أسطورية"
+    },
+    "empty": {
+      "errorTitle": "تعذر تحميل الشارات",
+      "errorBody": "يرجى التحقق من الاتصال والمحاولة مرة أخرى.",
+      "noResults": "لم يتم العثور على شارات",
+      "tryFilters": "حاول تعديل عوامل التصفية",
+      "createFirst": "أنشئ أول شارة للبدء"
+    },
+    "deleteModal": {
+      "title": "حذف الشارة؟",
+      "body": "هل أنت متأكد من حذف هذه الشارة؟ لا يمكن التراجع عن هذا الإجراء.",
+      "confirm": "حذف",
+      "cancel": "إلغاء"
+    },
+    "toasts": {
+      "loadError": "فشل في تحميل الشارات. يرجى المحاولة مرة أخرى.",
+      "deleteSuccess": "تم حذف الشارة بنجاح",
+      "deleteError": "فشل في حذف الشارة",
+      "missingRequired": "يرجى ملء جميع الحقول المطلوبة",
+      "updateSuccess": "تم تحديث الشارة بنجاح",
+      "createSuccess": "تم إنشاء الشارة بنجاح",
+      "saveError": "فشل في حفظ الشارة. يرجى المحاولة مرة أخرى."
+    },
+    "create": {
+      "titleEdit": "تعديل الشارة",
+      "titleCreate": "إنشاء شارة",
+      "subtitleEdit": "تحديث شارة الإنجاز",
+      "subtitleCreate": "إنشاء شارة إنجاز جديدة",
+      "basicInfo": "المعلومات الأساسية",
+      "nameLabel": "اسم الشارة *",
+      "namePlaceholder": "مثال: بطل 100 كم",
+      "descriptionLabel": "الوصف *",
+      "descriptionPlaceholder": "صف ما تمثله هذه الشارة...",
+      "iconLabel": "الأيقونة *",
+      "requirementsLabel": "المتطلبات *",
+      "requirementsPlaceholder": "مثال: إكمال 100 كم في المجموع",
+      "classification": "التصنيف",
+      "categoryLabel": "الفئة *",
+      "rarityLabel": "الندرة *",
+      "pointsLabel": "النقاط المطلوبة",
+      "pointsPlaceholder": "0",
+      "previewTitle": "معاينة",
+      "previewName": "اسم الشارة",
+      "previewDescription": "وصف الشارة",
+      "previewRequirements": "المتطلبات",
+      "actionsTitle": "الإجراءات",
+      "updateButton": "تحديث الشارة",
+      "createButton": "إنشاء الشارة"
+    }
+  },
   "users": {
     "title": "المستخدمون",
     "subtitle": "إدارة حسابات المستخدمين والصلاحيات",
@@ -1357,6 +1431,23 @@
     "notifications": "الإشعارات",
     "eventReminders": "تذكيرات الفعاليات",
     "communityUpdates": "تحديثات المجتمع"
+  },
+  "languages": {
+    "title": "اللغات",
+    "subtitle": "إدارة لغات التطبيق وتعيين اللغة الافتراضية",
+    "supported": "اللغات المدعومة",
+    "default": "اللغة الافتراضية",
+    "available": "اللغات المتاحة",
+    "code": "الرمز",
+    "nativeName": "الاسم المحلي",
+    "defaultBadge": "افتراضي",
+    "setDefault": "تعيين كافتراضي",
+    "english": "الإنجليزية",
+    "arabic": "العربية",
+    "hint": "تعيين اللغة الافتراضية يؤثر على لغة التطبيق الأولية للمستخدمين الجدد. يمكن للمستخدمين تغيير اللغة من الشريط العلوي.",
+    "toasts": {
+      "defaultSet": "تم تحديث اللغة الافتراضية"
+    }
   },
   "cms": {
     "title": "إدارة المحتوى",
