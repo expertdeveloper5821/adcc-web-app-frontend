@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, Star, MessageCircle, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { getStoreItems, approveStoreItem, rejectStoreItem, featureStoreItem, StoreItem } from '../../services/storeApi';
 
 export function MarketplaceModeration() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<StoreItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,12 +18,12 @@ export function MarketplaceModeration() {
       const data = await getStoreItems();
       setItems(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load marketplace items');
-      toast.error('Failed to load marketplace items');
+      setError(err instanceof Error ? err.message : t('marketplace.toasts.loadError'));
+      toast.error(t('marketplace.toasts.loadError'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchItems();
@@ -33,13 +35,13 @@ export function MarketplaceModeration() {
       setActionId(itemId);
       const res = await approveStoreItem(itemId);
       if (res?.success) {
-        toast.success(res.message ?? 'Item approved');
+        toast.success(res.message ?? t('marketplace.toasts.itemApproved'));
         await fetchItems();
       } else {
-        toast.error(res?.message ?? 'Failed to approve item');
+        toast.error(res?.message ?? t('marketplace.toasts.approveFailed'));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to approve item');
+      toast.error(err instanceof Error ? err.message : t('marketplace.toasts.approveFailed'));
     } finally {
       setActionId(null);
     }
@@ -51,13 +53,13 @@ export function MarketplaceModeration() {
       setActionId(itemId);
       const res = await rejectStoreItem(itemId);
       if (res?.success) {
-        toast.success(res.message ?? 'Item rejected');
+        toast.success(res.message ?? t('marketplace.toasts.itemRejected'));
         await fetchItems();
       } else {
-        toast.error(res?.message ?? 'Failed to reject item');
+        toast.error(res?.message ?? t('marketplace.toasts.rejectFailed'));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to reject item');
+      toast.error(err instanceof Error ? err.message : t('marketplace.toasts.rejectFailed'));
     } finally {
       setActionId(null);
     }
@@ -69,13 +71,13 @@ export function MarketplaceModeration() {
       setActionId(itemId);
       const res = await featureStoreItem(itemId);
       if (res?.success) {
-        toast.success(res.message ?? 'Item featured');
+        toast.success(res.message ?? t('marketplace.toasts.itemFeatured'));
         await fetchItems();
       } else {
-        toast.error(res?.message ?? 'Failed to feature item');
+        toast.error(res?.message ?? t('marketplace.toasts.featureFailed'));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to feature item');
+      toast.error(err instanceof Error ? err.message : t('marketplace.toasts.featureFailed'));
     } finally {
       setActionId(null);
     }
@@ -93,8 +95,8 @@ export function MarketplaceModeration() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Marketplace Moderation</h1>
-          <p style={{ color: '#666' }}>Review and manage marketplace listings</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('marketplace.title')}</h1>
+          <p style={{ color: '#666' }}>{t('marketplace.subtitle')}</p>
         </div>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: '#C12D32' }} />
@@ -107,8 +109,8 @@ export function MarketplaceModeration() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Marketplace Moderation</h1>
-          <p style={{ color: '#666' }}>Review and manage marketplace listings</p>
+          <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('marketplace.title')}</h1>
+          <p style={{ color: '#666' }}>{t('marketplace.subtitle')}</p>
         </div>
         <div className="p-6 rounded-2xl bg-red-50 text-red-700">
           {error}
@@ -120,13 +122,13 @@ export function MarketplaceModeration() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl mb-2" style={{ color: '#333' }}>Marketplace Moderation</h1>
-        <p style={{ color: '#666' }}>Review and manage marketplace listings</p>
+        <h1 className="text-3xl mb-2" style={{ color: '#333' }}>{t('marketplace.title')}</h1>
+        <p style={{ color: '#666' }}>{t('marketplace.subtitle')}</p>
       </div>
 
       {items.length === 0 ? (
         <div className="p-6 rounded-2xl shadow-sm bg-white text-center" style={{ color: '#666' }}>
-          No marketplace items to review.
+          {t('marketplace.empty')}
         </div>
       ) : (
         <div className="space-y-4">
@@ -137,13 +139,15 @@ export function MarketplaceModeration() {
                   <img src={getItemImage(item)} alt={item.title} className="w-24 h-24 rounded-lg object-cover" />
                 ) : (
                   <div className="w-24 h-24 rounded-lg bg-gray-100 flex items-center justify-center" style={{ color: '#999' }}>
-                    No image
+                    {t('marketplace.noImage')}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg mb-1" style={{ color: '#333' }}>{item.title}</h3>
-                  {item.description && (
-                    <p className="text-sm mb-2 line-clamp-2" style={{ color: '#666' }}> seller :{item.createdBy?.fullName}</p>
+                  {item.createdBy?.fullName && (
+                    <p className="text-sm mb-2 line-clamp-2" style={{ color: '#666' }}>
+                      {t('marketplace.seller')} {item.createdBy.fullName}
+                    </p>
                   )}
                   {/* <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-2" style={{ color: '#666' }}>
                     {item.category && <span>Category: {item.category}</span>}
@@ -182,7 +186,7 @@ export function MarketplaceModeration() {
                       style={{ backgroundColor: '#CF9F0C' }}
                     >
                       <CheckCircle className="w-4 h-4" />
-                      <span>{actionId === (item.id ?? item._id) ? '...' : 'Approve'}</span>
+                      <span>{actionId === (item.id ?? item._id) ? '...' : t('marketplace.approve')}</span>
                     </button>
                     <button
                       onClick={() => handleFeature(item.id)}
@@ -191,7 +195,7 @@ export function MarketplaceModeration() {
                       style={{ backgroundColor: '#E1C06E', color: '#333' }}
                     >
                       <Star className="w-4 h-4" />
-                      <span>{actionId === (item.id ?? item._id) ? '...' : 'Feature'}</span>
+                      <span>{actionId === (item.id ?? item._id) ? '...' : t('marketplace.feature')}</span>
                     </button>
                     <button
                       onClick={() => handleReject(item.id)}
@@ -200,7 +204,7 @@ export function MarketplaceModeration() {
                       style={{ backgroundColor: '#C12D32' }}
                     >
                       <XCircle className="w-4 h-4" />
-                      <span>{actionId === (item.id ?? item._id) ? '...' : 'Reject'}</span>
+                      <span>{actionId === (item.id ?? item._id) ? '...' : t('marketplace.reject')}</span>
                     </button>
                   </div>
                 </div>

@@ -22,7 +22,7 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 }
 
 /**
- * Store/Marketplace item as returned by the backend (/v1/ar/store/items).
+ * Store/Marketplace item as returned by the backend (/v1/{lang}/store/items).
  * Backend uses _id; we expose id (mapped from _id) for app use.
  */
 export interface StoreItem {
@@ -67,12 +67,14 @@ export interface StoreItemsResponse {
 
 /**
  * Fetches the list of store/marketplace items from the backend.
+ * The language (en/ar) is injected automatically by the API interceptor
+ * based on the current locale, so we call the generic /v1/store/... path here.
  * Response shape: { success, message, data: { items, pagination } }.
  * @throws Error with a clear message when the API request fails.
  */
 export async function getStoreItems(): Promise<StoreItem[]> {
   try {
-    const { data } = await api.get<StoreItemsResponse>('/v1/ar/store/items');
+    const { data } = await api.get<StoreItemsResponse>('/v1/store/items');
     if (!data?.success || !Array.isArray(data?.data?.items)) {
       return [];
     }
@@ -100,7 +102,7 @@ interface StoreActionResponse {
 export async function approveStoreItem(itemId: string): Promise<StoreActionResponse> {
   try {
     const { data } = await api.post<StoreActionResponse>(
-      `/v1/ar/store/items/${itemId}/approve`
+      `/v1/store/items/${itemId}/approve`
     );
     return data;
   } catch (error) {
@@ -116,7 +118,7 @@ export async function approveStoreItem(itemId: string): Promise<StoreActionRespo
 export async function rejectStoreItem(itemId: string): Promise<StoreActionResponse> {
   try {
     const { data } = await api.post<StoreActionResponse>(
-      `/v1/ar/store/items/${itemId}/reject`
+      `/v1/store/items/${itemId}/reject`
     );
     return data;
   } catch (error) {
@@ -132,7 +134,7 @@ export async function rejectStoreItem(itemId: string): Promise<StoreActionRespon
 export async function featureStoreItem(itemId: string): Promise<StoreActionResponse> {
   try {
     const { data } = await api.patch<StoreActionResponse>(
-      `/v1/ar/store/items/${itemId}/feature`
+      `/v1/store/items/${itemId}/feature`
     );
     return data;
   } catch (error) {
