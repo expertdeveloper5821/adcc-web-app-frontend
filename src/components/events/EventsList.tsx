@@ -2,20 +2,20 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { UserRole } from '../../App';
-import { Plus, Search, Calendar, Users, MapPin, Star, Edit, Eye, UserCheck, Trophy, Ban, Archive } from 'lucide-react';
+import { Plus, Search, Calendar, Users, MapPin, Star, Edit, Eye, UserCheck, Trophy, Ban, Archive, ChevronLeft, ChevronRight } from 'lucide-react';
 import { availableCategories, availableCities } from '../../data/eventsData';
-import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
+import { getAllEvents, deleteEvent as deleteEventApi, disableEvent as disableEventApi, EventApiResponse } from '../../services/eventsApi';
 import { toast } from 'sonner';
 import { CardSkeleton } from '../ui/skeleton';
 import { getAllTracks, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { FiChevronDown } from "react-icons/fi";
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 interface EventsListProps {
   navigate: (page: string, params?: any) => void;
   role: UserRole;
 }
-
 
 export function EventsList({ role }: EventsListProps) {
   const navigate = useNavigate();
@@ -34,6 +34,12 @@ export function EventsList({ role }: EventsListProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState('');
+
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [eventToDisable, setEventToDisable] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 10;
 
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [communityFilter, setCommunityFilter] = useState('');
@@ -112,6 +118,11 @@ export function EventsList({ role }: EventsListProps) {
   };
 
 
+  // Reset to page 1 when any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, cityFilter, communityFilter, trackFilter, categoryFilter, featuredFilter]);
+
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
       const matchesSearch =
@@ -172,6 +183,12 @@ export function EventsList({ role }: EventsListProps) {
 
 
 
+  const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
+  const paginatedEvents = useMemo(() => {
+    const start = (currentPage - 1) * eventsPerPage;
+    return filteredEvents.slice(start, start + eventsPerPage);
+  }, [filteredEvents, currentPage]);
+
   const handleDelete = (eventId: string) => {
     setEventToDelete(eventId);
     setShowDeleteModal(true);
@@ -191,6 +208,28 @@ export function EventsList({ role }: EventsListProps) {
     } finally {
       setShowDeleteModal(false);
       setEventToDelete(null);
+    }
+  };
+
+  const handleDisable = (eventId: string) => {
+    setEventToDisable(eventId);
+    setShowDisableModal(true);
+  };
+
+  const confirmDisable = async () => {
+    if (!eventToDisable) return;
+    try {
+      await disableEventApi(eventToDisable);
+      setEvents(prev => prev.map(e => {
+        const id = (e as any)._id ?? (e as any).id;
+        return id === eventToDisable ? { ...e, status: 'Disabled' } : e;
+      }));
+      toast.success(t('events.toasts.disableSuccess', 'Event disabled successfully'));
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || t('events.toasts.disableError', 'Failed to disable event'));
+    } finally {
+      setShowDisableModal(false);
+      setEventToDisable(null);
     }
   };
 
@@ -416,7 +455,7 @@ export function EventsList({ role }: EventsListProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {filteredEvents.map((event) => {
+          {paginatedEvents.map((event) => {
             const eventId = (event as any)._id ?? (event as any).id;
             return (
               <div
@@ -542,8 +581,9 @@ export function EventsList({ role }: EventsListProps) {
                         </button>
                       )}
 
-                      {event.status !== 'Archived' && (
+                      {event.status !== 'Archived' && event.status !== 'Disabled' && (
                         <button
+                          onClick={() => handleDisable(eventId)}
                           className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all hover:shadow-md"
                           style={{ backgroundColor: '#FEE2E2', color: '#C12D32' }}
                         >
@@ -567,6 +607,74 @@ export function EventsList({ role }: EventsListProps) {
           )}
         </div>
       )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between p-4 rounded-2xl shadow-sm bg-white">
+          <span className="text-sm" style={{ color: '#666' }}>
+            {t('events.pagination.showing', {
+              from: (currentPage - 1) * eventsPerPage + 1,
+              to: Math.min(currentPage * eventsPerPage, filteredEvents.length),
+              total: filteredEvents.length,
+              defaultValue: `Showing ${(currentPage - 1) * eventsPerPage + 1}-${Math.min(currentPage * eventsPerPage, filteredEvents.length)} of ${filteredEvents.length}`,
+            })}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-40 hover:bg-gray-50"
+            >
+              <ChevronLeft className="w-4 h-4" style={{ color: '#666' }} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+              .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                if (idx > 0 && page - (arr[idx - 1] as number) > 1) acc.push('...');
+                acc.push(page);
+                return acc;
+              }, [])
+              .map((page, idx) =>
+                typeof page === 'string' ? (
+                  <span key={`ellipsis-${idx}`} className="px-2 text-sm" style={{ color: '#999' }}>...</span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className="w-9 h-9 rounded-lg text-sm transition-colors"
+                    style={{
+                      backgroundColor: currentPage === page ? '#C12D32' : 'transparent',
+                      color: currentPage === page ? '#fff' : '#666',
+                    }}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-40 hover:bg-gray-50"
+            >
+              <ChevronRight className="w-4 h-4" style={{ color: '#666' }} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={showDisableModal}
+        onClose={() => { setShowDisableModal(false); setEventToDisable(null); }}
+        onConfirm={confirmDisable}
+        title={t('events.edit.disableEvent', 'Disable Event') + '?'}
+        message={t('events.edit.disableConfirmMessage', 'This will prevent new registrations and hide the event from the public. You can re-enable it later.')}
+        confirmLabel={t('events.edit.disableEvent', 'Disable Event')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        icon={Ban}
+        iconBgColor="#FEE2E2"
+        iconColor="#EF4444"
+        confirmBgColor="#EF4444"
+      />
     </div>
   );
 }
