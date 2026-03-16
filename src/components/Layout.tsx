@@ -20,6 +20,9 @@ import { TracksList } from './tracks/TracksList';
 import { TrackCreate } from './tracks/TrackCreate';
 import { TrackDetail } from './tracks/TrackDetail';
 import { TrackEdit } from './tracks/TrackEdit';
+import { ChallengesList } from './challenges/ChallengesList';
+import { ChallengeDetail } from './challenges/ChallengeDetail';
+import { ChallengeCreate } from './challenges/ChallengeCreate';
 import { FeedModeration } from './feed/FeedModeration';
 import { MarketplaceModeration } from './marketplace/MarketplaceModeration';
 import { CMS } from './cms/CMS';
@@ -41,6 +44,7 @@ export function Layout() {
     if (path.startsWith('/events')) return 'events';
     if (path.startsWith('/communities')) return 'communities';
     if (path.startsWith('/tracks')) return 'tracks';
+    if (path.startsWith('/challenges')) return 'challenges';
     if (path.startsWith('/feed')) return 'feed';
     if (path.startsWith('/marketplace')) return 'marketplace';
     if (path.startsWith('/cms')) return 'cms';
@@ -87,8 +91,14 @@ export function Layout() {
             <Route path="/tracks" element={<TracksList role={currentRole} />} />
             <Route path="/tracks/create" element={<TrackCreate />} />
             <Route path="/tracks/:id" element={<TrackDetail role={currentRole} />} />
-            <Route path='/tracks/:id/edit' element={<TrackEdit role={currentRole} />} />
-            
+<Route path='/tracks/:id/edit' element={<TrackEdit role={currentRole} />} />
+
+            {/* Challenges Routes */}
+            <Route path="/challenges" element={<ChallengesList role={currentRole} />} />
+            <Route path="/challenges/create" element={<ChallengeCreate />} />
+            <Route path="/challenges/:id" element={<ChallengeDetail role={currentRole} />} />
+            <Route path="/challenges/:id/edit" element={<ChallengeCreate />} />
+
             {/* Other Routes */}
             <Route path="/feed" element={<FeedModeration />} />
             <Route path="/marketplace" element={<MarketplaceModeration />} />
