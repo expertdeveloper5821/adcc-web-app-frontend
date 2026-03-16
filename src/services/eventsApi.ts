@@ -162,10 +162,14 @@ export const createEvent = async (
     const formData = new FormData();
 
     formData.append("title", eventData.title || "");
+
+
+    if (eventData.titleAr) formData.append("titleAr", eventData.titleAr);
     formData.append("slug", eventData.slug || "");
     formData.append("category", eventData.category || "");
     formData.append("communityId", eventData.communityId || "");
     formData.append("description", eventData.description || "");
+    if (eventData.descriptionAr) formData.append("descriptionAr", eventData.descriptionAr);
     formData.append("address", eventData.address || "");
     formData.append("country", eventData.country || "");
     formData.append("city", eventData.city || "");
@@ -179,6 +183,11 @@ export const createEvent = async (
     formData.append("status", eventData.status || "Draft");
     formData.append("isFeatured", String(eventData.isFeatured ?? false));
     formData.append("allowCancellation", String(eventData.allowCancellation ?? true));
+    if (eventData.minAge != null) formData.append("minAge", String(eventData.minAge));
+    if (eventData.maxAge != null) formData.append("maxAge", String(eventData.maxAge));
+    if (eventData.eligibility) {
+      formData.append("eligibility", JSON.stringify(eventData.eligibility));
+    }
     if (eventData.schedule) {
       formData.append("schedule", JSON.stringify(eventData.schedule));
     }
@@ -293,6 +302,58 @@ export const updateEvent = async (
     return response.data;
   } catch (error) {
     console.error('Error updating event:', error);
+    throw error;
+  }
+};
+
+// Close event registration
+export const closeEventRegistration = async (id: string): Promise<EventApiResponse> => {
+  invalidateCache('events');
+  try {
+    const response = await api.patch<any>(`/v1/events/${id}/close-registration`);
+    if ((response.data as any).data) return (response.data as any).data;
+    return response.data;
+  } catch (error) {
+    console.error('Error closing registration:', error);
+    throw error;
+  }
+};
+
+// Reopen event registration
+export const reopenEventRegistration = async (id: string): Promise<EventApiResponse> => {
+  invalidateCache('events');
+  try {
+    const response = await api.patch<any>(`/v1/events/${id}/reopen-registration`);
+    if ((response.data as any).data) return (response.data as any).data;
+    return response.data;
+  } catch (error) {
+    console.error('Error reopening registration:', error);
+    throw error;
+  }
+};
+
+// Complete event
+export const completeEvent = async (id: string): Promise<EventApiResponse> => {
+  invalidateCache('events');
+  try {
+    const response = await api.patch<any>(`/v1/events/${id}/complete`);
+    if ((response.data as any).data) return (response.data as any).data;
+    return response.data;
+  } catch (error) {
+    console.error('Error completing event:', error);
+    throw error;
+  }
+};
+
+// Disable event
+export const disableEvent = async (id: string): Promise<EventApiResponse> => {
+  invalidateCache('events');
+  try {
+    const response = await api.patch<any>(`/v1/events/${id}/disable`);
+    if ((response.data as any).data) return (response.data as any).data;
+    return response.data;
+  } catch (error) {
+    console.error('Error disabling event:', error);
     throw error;
   }
 };

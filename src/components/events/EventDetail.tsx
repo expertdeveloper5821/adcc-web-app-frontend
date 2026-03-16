@@ -424,20 +424,27 @@ export function EventDetail({ role }: EventDetailProps) {
             {/* Eligibility */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
               <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.detail.eligibility')}</h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.ageRequirement')}</p>
-                  <p style={{ color: '#333' }}>{event.minAge}</p>
-                </div>
-                <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.bikeType')}</p>
-                  <p style={{ color: '#333' }}>{event.eligibility.bikeType}</p>
-                </div>
-                <div>
-                  <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.experienceLevel')}</p>
-                  {/* <p style={{ color: '#333' }}>{event.eligibility?.[0].experienceLevel}</p> */}
-                </div>
-              </div>
+              {(() => {
+                const elig = Array.isArray((event as any).eligibility)
+                  ? (event as any).eligibility[0]
+                  : (event as any).eligibility;
+                return (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.ageRequirement')}</p>
+                      <p style={{ color: '#333' }}>{event.minAge ? `${event.minAge}+` : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.bikeType')}</p>
+                      <p style={{ color: '#333' }}>{elig?.roadBikeOnly ? t('events.detail.roadBikeOnly', 'Road Bike Only') : t('events.detail.anyBike', 'Any')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.experienceLevel')}</p>
+                      <p style={{ color: '#333' }} className="capitalize">{elig?.experienceLevel || '-'}</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Rewards */}

@@ -3,12 +3,13 @@ import { ArrowLeft, FileText, Calendar, Clock, MapPin, Users, Settings, Award, I
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getEventById, updateEvent as updateEventApi, deleteEvent as deleteEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
+import { getEventById, updateEvent as updateEventApi, deleteEvent as deleteEventApi, disableEvent as disableEventApi, closeEventRegistration, reopenEventRegistration, completeEvent as completeEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
 import { getAllTracksEn, deleteTrack } from '../../services/trackService';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { formatToInputDate } from '../../utils/date';
 import { useLocale } from '../../contexts/LocaleContext';
 import { useTranslation } from 'react-i18next';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 interface EventEditProps {
   navigate: (page: string, params?: any) => void;
@@ -21,6 +22,7 @@ export function EventEdit({ role }: EventEditProps) {
   const { id } = useParams<{ id: string }>();
   // const navigate = useNavigate();
   // const eventId = id || '';
+  const [customAmenityInput, setCustomAmenityInput] = useState('');
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const { locale } = useLocale();
@@ -190,8 +192,10 @@ export function EventEdit({ role }: EventEditProps) {
     schedule: { time: string; title: string }[];
     amenities: string[];
     minAge: number;
-    eligibilityBike: string;
+    eligibilityHelmet: boolean;
+    eligibilityRoadBikeOnly: boolean;
     eligibilityExperience: string;
+    eligibilityGender: string;
     categories: string;
     rewardPoints: number;
     rewardBadge: string;
@@ -223,8 +227,10 @@ export function EventEdit({ role }: EventEditProps) {
     schedule: [],
     amenities: [],
     minAge: 18,
-    eligibilityBike: 'Any',
-    eligibilityExperience: 'Beginner',
+    eligibilityHelmet: false,
+    eligibilityRoadBikeOnly: false,
+    eligibilityExperience: 'all',
+    eligibilityGender: 'all',
     categories: '',
     rewardPoints: 50,
     rewardBadge: '',
@@ -245,7 +251,7 @@ export function EventEdit({ role }: EventEditProps) {
         city?: string;
         distance?: number;
         schedule?: { time: string; title: string }[];
-        eligibility?: { bikeType: string; experienceLevel: string };
+        eligibility?: { helmetRequired?: boolean; roadBikeOnly?: boolean; experienceLevel?: string; gender?: string }[] | { helmetRequired?: boolean; roadBikeOnly?: boolean; experienceLevel?: string; gender?: string };
         communityId?: string | { _id?: string; id?: string };
         community?: { _id?: string; id?: string };
         trackId?: string | { _id?: string; id?: string };
@@ -287,8 +293,10 @@ export function EventEdit({ role }: EventEditProps) {
         schedule: (ev.schedule && ev.schedule.length > 0) ? ev.schedule : [{ time: '', title: '' }],
         amenities: Array.isArray(ev.amenities) ? (ev.amenities as string[]) : [],
         minAge: ev.minAge ?? 18,
-        eligibilityBike: ev.eligibility?.bikeType ?? 'Any',
-        eligibilityExperience: ev.eligibility?.experienceLevel ?? 'Beginner',
+        eligibilityHelmet: (Array.isArray(ev.eligibility) ? ev.eligibility[0]?.helmetRequired : ev.eligibility?.helmetRequired) ?? false,
+        eligibilityRoadBikeOnly: (Array.isArray(ev.eligibility) ? ev.eligibility[0]?.roadBikeOnly : ev.eligibility?.roadBikeOnly) ?? false,
+        eligibilityExperience: (Array.isArray(ev.eligibility) ? ev.eligibility[0]?.experienceLevel : ev.eligibility?.experienceLevel) ?? 'all',
+        eligibilityGender: (Array.isArray(ev.eligibility) ? ev.eligibility[0]?.gender : ev.eligibility?.gender) ?? 'all',
         categories: '',
         rewardPoints: ev.rewards?.points ?? 50,
         rewardBadge: ev.rewards?.badgeName ?? '',
@@ -430,9 +438,9 @@ export function EventEdit({ role }: EventEditProps) {
   const handleCloseRegistration = async () => {
     if (!id) return;
     try {
-      await updateEventApi(id, { status: 'Full' });
-      setExistingEvent(prev => prev ? { ...prev, status: 'Full' } : prev);
-      setFormData(prev => ({ ...prev, status: 'Full' }));
+      await closeEventRegistration(id);
+      setExistingEvent(prev => prev ? { ...prev, status: 'Closed' } : prev);
+      setFormData(prev => ({ ...prev, status: 'Draft' }));
       toast.success(t('events.edit.toasts.registrationClosed'));
     } catch {
       toast.error(t('events.edit.toasts.updateError'));
@@ -442,7 +450,7 @@ export function EventEdit({ role }: EventEditProps) {
   const handleReopenRegistration = async () => {
     if (!id) return;
     try {
-      await updateEventApi(id, { status: 'Open' });
+      await reopenEventRegistration(id);
       setExistingEvent(prev => prev ? { ...prev, status: 'Open' } : prev);
       setFormData(prev => ({ ...prev, status: 'Open' }));
       toast.success(t('events.edit.toasts.registrationReopened'));
@@ -454,7 +462,7 @@ export function EventEdit({ role }: EventEditProps) {
   const handleMarkCompleted = async () => {
     if (!id) return;
     try {
-      await updateEventApi(id, { status: 'Completed' });
+      await completeEventApi(id);
       setExistingEvent(prev => prev ? { ...prev, status: 'Completed' } : prev);
       setFormData(prev => ({ ...prev, status: 'Completed' }));
       toast.success(t('events.edit.toasts.markedCompleted'));
@@ -466,9 +474,9 @@ export function EventEdit({ role }: EventEditProps) {
   const handleDisable = async () => {
     if (!id) return;
     try {
-      await updateEventApi(id, { status: 'Archived' });
-      setExistingEvent(prev => prev ? { ...prev, status: 'Archived' } : prev);
-      setFormData(prev => ({ ...prev, status: 'Archived' }));
+      await disableEventApi(id);
+      setExistingEvent(prev => prev ? { ...prev, status: 'Disabled' } : prev);
+      setFormData(prev => ({ ...prev, status: 'Draft' }));
       toast.success(t('events.edit.toasts.disabled'));
       setShowDisableModal(false);
     } catch {
@@ -527,8 +535,10 @@ export function EventEdit({ role }: EventEditProps) {
         amenities: formData.amenities,
         minAge: formData.minAge,
         eligibility: {
-          bikeType: formData.eligibilityBike,
+          helmetRequired: formData.eligibilityHelmet,
+          roadBikeOnly: formData.eligibilityRoadBikeOnly,
           experienceLevel: formData.eligibilityExperience,
+          gender: formData.eligibilityGender,
         },
         status: formData.status,
         isFeatured: formData.isFeatured,
@@ -612,16 +622,34 @@ export function EventEdit({ role }: EventEditProps) {
 
             </div>
 
-            {/* English Fields */}
-            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
+            {/* English & Arabic Fields - always show both */}
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.eventTitle')}</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  {t('events.edit.eventTitle')} <span className="text-gray-400">(English)</span>
+                </label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="Abu Dhabi Night Race Series – Round 3"
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  عنوان الحدث <span className="text-gray-400">(Arabic)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="سلسلة سباقات أبوظبي الليلية"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
                 />
               </div>
 
@@ -637,7 +665,9 @@ export function EventEdit({ role }: EventEditProps) {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.description')}</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  {t('events.edit.description')} <span className="text-gray-400">(English)</span>
+                </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -646,29 +676,10 @@ export function EventEdit({ role }: EventEditProps) {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
                 />
               </div>
-            </div>
-
-            {/* Arabic Fields */}
-            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  عنوان الحدث <span className="text-gray-400">(Event Title)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.titleAr}
-                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
-                  dir="rtl"
-                  lang="ar"
-                  placeholder="سلسلة سباقات أبوظبي الليلية"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
-                />
-              </div>
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  الوصف <span className="text-gray-400">(Description)</span>
+                  الوصف <span className="text-gray-400">(Arabic)</span>
                 </label>
                 <textarea
                   value={formData.descriptionAr}
@@ -681,20 +692,6 @@ export function EventEdit({ role }: EventEditProps) {
                   style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
                 />
               </div>
-
-              {/* English reference */}
-              {formData.title && (
-                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
-                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>{t('events.edit.englishReference')}</span>
-                  </div>
-                  <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
-                  {formData.description && (
-                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{formData.description}</p>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Common fields always visible */}
@@ -1055,12 +1052,43 @@ export function EventEdit({ role }: EventEditProps) {
             <div className="mt-4">
               <input
                 type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="e.g., Yas Marina Circuit, Abu Dhabi"
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
+                value={customAmenityInput}
+                onChange={(e) => setCustomAmenityInput(e.target.value)}
+                placeholder={t('events.create.placeholders.customAmenity', 'Add custom amenity...')}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
+              <button
+                onClick={() => {
+                  if (customAmenityInput.trim()) {
+                    toggleAmenity(customAmenityInput.trim());
+                    setCustomAmenityInput('');
+                  }
+                }}
+                className="mt-2 px-4 py-2 rounded-lg transition-all hover:shadow-md"
+                style={{ backgroundColor: '#ECC180', color: '#333' }}
+              >
+                {t('events.create.addCustomAmenity', 'Add Amenity')}
+              </button>
             </div>
+
+            {customAmenities.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-bold" style={{ color: '#333' }}>{t('events.create.customAmenities', 'Custom Amenities')}</h3>
+                <div className="space-y-2 mt-2">
+                  {customAmenities.map((amenity, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-sm" style={{ color: '#666' }}>{amenity}</span>
+                      <button
+                        onClick={() => toggleAmenity(amenity)}
+                        className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <X className="w-4 h-4" style={{ color: '#999' }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SECTION G - Eligibility */}
@@ -1084,15 +1112,28 @@ export function EventEdit({ role }: EventEditProps) {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.bikeType')}</label>
-                <input
-                  type="text"
-                  value={formData.eligibilityBike}
-                  onChange={(e) => setFormData({ ...formData, eligibilityBike: e.target.value })}
-                  placeholder="Road bike, Mountain bike, Any..."
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                />
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.eligibilityHelmet}
+                    onChange={(e) => setFormData({ ...formData, eligibilityHelmet: e.target.checked })}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.edit.helmetRequired', 'Helmet Required')}</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.eligibilityRoadBikeOnly}
+                    onChange={(e) => setFormData({ ...formData, eligibilityRoadBikeOnly: e.target.checked })}
+                    className="w-4 h-4"
+                    style={{ accentColor: '#C12D32' }}
+                  />
+                  <span className="text-sm" style={{ color: '#666' }}>{t('events.edit.roadBikeOnly', 'Road Bike Only')}</span>
+                </label>
               </div>
 
               <div>
@@ -1102,9 +1143,24 @@ export function EventEdit({ role }: EventEditProps) {
                   onChange={(e) => setFormData({ ...formData, eligibilityExperience: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="Beginner">{t('events.edit.experienceOptions.beginner')}</option>
-                  <option value="Intermediate">{t('events.edit.experienceOptions.intermediate')}</option>
-                  <option value="Advanced">{t('events.edit.experienceOptions.advanced')}</option>
+                  <option value="all">{t('events.edit.experienceOptions.all', 'All Levels')}</option>
+                  <option value="beginner">{t('events.edit.experienceOptions.beginner')}</option>
+                  <option value="intermediate">{t('events.edit.experienceOptions.intermediate')}</option>
+                  <option value="advanced">{t('events.edit.experienceOptions.advanced')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.edit.gender', 'Gender')}</label>
+                <select
+                  value={formData.eligibilityGender}
+                  onChange={(e) => setFormData({ ...formData, eligibilityGender: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="all">{t('events.edit.genderOptions.all', 'All')}</option>
+                  <option value="male">{t('events.edit.genderOptions.male', 'Male')}</option>
+                  <option value="female">{t('events.edit.genderOptions.female', 'Female')}</option>
+                  <option value="other">{t('events.edit.genderOptions.other', 'Other')}</option>
                 </select>
               </div>
             </div>
@@ -1410,22 +1466,7 @@ export function EventEdit({ role }: EventEditProps) {
             <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('events.create.visibilityRules')}</h3>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('common.status')}</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                >
-                  <option value="Draft">{t('events.create.statusOptions.draft')}</option>
-                  <option value="Open">{t('events.create.statusOptions.open')}</option>
-                  <option value="Full">{t('events.create.statusOptions.full')}</option>
-                  <option value="Completed">{t('events.create.statusOptions.completed')}</option>
-                  <option value="Archived">{t('events.create.statusOptions.archived')}</option>
-                </select>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200 space-y-3">
+              <div className="space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1474,6 +1515,34 @@ export function EventEdit({ role }: EventEditProps) {
 
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showDisableModal}
+        onClose={() => setShowDisableModal(false)}
+        onConfirm={handleDisable}
+        title={t('events.edit.disableEvent') + '?'}
+        message={t('events.edit.disableConfirmMessage', 'This will prevent new registrations and hide the event from the public. You can re-enable it later.')}
+        confirmLabel={t('events.edit.disableEvent')}
+        cancelLabel={t('common.cancel')}
+        icon={Ban}
+        iconBgColor="#FEE2E2"
+        iconColor="#EF4444"
+        confirmBgColor="#EF4444"
+      />
+
+      <ConfirmDialog
+        open={showArchiveModal}
+        onClose={() => setShowArchiveModal(false)}
+        onConfirm={handleArchive}
+        title={t('events.edit.archiveEvent') + '?'}
+        message={t('events.edit.archiveConfirmMessage', 'This will permanently remove the event and all its data. This action cannot be undone.')}
+        confirmLabel={t('events.edit.archiveEvent')}
+        cancelLabel={t('common.cancel')}
+        icon={Archive}
+        iconBgColor="#FEE2E2"
+        iconColor="#C12D32"
+        confirmBgColor="#C12D32"
+      />
     </div>
   );
 }
