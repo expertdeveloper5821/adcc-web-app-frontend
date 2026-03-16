@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon, Save, Plus, X, Globe, Send } from 'lucide-react';
-import { addEvent, Event, availableCategories } from '../../data/eventsData';
-import { getTracksByCountryAndCity } from '../../data/tracksData';
+import { availableCategories } from '../../data/eventsData';
 import { toast } from 'sonner';
 import { getAllTracksEn } from '../../services/trackService';
-import { createEvent, EventApiResponse } from '../../services/eventsApi';
+import { createEvent } from '../../services/eventsApi';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
-import { Input } from '../ui/input';
 import { UserRole } from '../../App';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../../contexts/LocaleContext';
 import { useTranslation } from 'react-i18next';
 
@@ -101,7 +99,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     maxParticipants: number;
     schedule: { time: string; title: string }[];
     amenities: string[];
-    eligibilityAge: string;
+    eligibilityAge: string | number;
     eligibilityBike: string;
     eligibilityExperience: string;
     rewardPoints: number;

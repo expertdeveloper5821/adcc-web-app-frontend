@@ -1297,6 +1297,80 @@
       }
     }
   },
+  "badges": {
+    "subtitle": "Manage achievement badges and rewards for your community",
+    "createButton": "Create Badge",
+    "totalBadges": "Total Badges",
+    "timesAwarded": "Times Awarded",
+    "legendary": "Legendary",
+    "epic": "Epic",
+    "filters": {
+      "search": "Search badges...",
+      "allCategories": "All Categories",
+      "allRarities": "All Rarities"
+    },
+    "categories": {
+      "Distance": "Distance",
+      "Event": "Event",
+      "Social": "Social",
+      "Achievement": "Achievement",
+      "Special": "Special"
+    },
+    "rarities": {
+      "Common": "Common",
+      "Rare": "Rare",
+      "Epic": "Epic",
+      "Legendary": "Legendary"
+    },
+    "empty": {
+      "errorTitle": "Unable to load badges",
+      "errorBody": "Please check your connection or try again later.",
+      "noResults": "No badges found",
+      "tryFilters": "Try adjusting your filters",
+      "createFirst": "Create your first badge to get started"
+    },
+    "deleteModal": {
+      "title": "Delete Badge?",
+      "body": "Are you sure you want to delete this badge? This action cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "toasts": {
+      "loadError": "Failed to load badges. Please try again.",
+      "deleteSuccess": "Badge deleted successfully",
+      "deleteError": "Failed to delete badge",
+      "missingRequired": "Please fill in all required fields",
+      "updateSuccess": "Badge updated successfully",
+      "createSuccess": "Badge created successfully",
+      "saveError": "Failed to save badge. Please try again."
+    },
+    "create": {
+      "titleEdit": "Edit Badge",
+      "titleCreate": "Create Badge",
+      "subtitleEdit": "Update achievement badge",
+      "subtitleCreate": "Create a new achievement badge",
+      "basicInfo": "Basic Information",
+      "nameLabel": "Badge Name *",
+      "namePlaceholder": "e.g., 100km Champion",
+      "descriptionLabel": "Description *",
+      "descriptionPlaceholder": "Describe what this badge represents...",
+      "iconLabel": "Icon *",
+      "requirementsLabel": "Requirements *",
+      "requirementsPlaceholder": "e.g., Complete 100km in total distance",
+      "classification": "Classification",
+      "categoryLabel": "Category *",
+      "rarityLabel": "Rarity *",
+      "pointsLabel": "Points Required",
+      "pointsPlaceholder": "0",
+      "previewTitle": "Preview",
+      "previewName": "Badge Name",
+      "previewDescription": "Badge description",
+      "previewRequirements": "Requirements",
+      "actionsTitle": "Actions",
+      "updateButton": "Update Badge",
+      "createButton": "Create Badge"
+    }
+  },
   "users": {
     "title": "Users",
     "subtitle": "Manage user accounts and permissions",
@@ -1398,6 +1472,23 @@
     "notifications": "Notifications",
     "eventReminders": "Event Reminders",
     "communityUpdates": "Community Updates"
+  },
+  "languages": {
+    "title": "Languages",
+    "subtitle": "Manage app languages and set default locale",
+    "supported": "Supported Languages",
+    "default": "Default Language",
+    "available": "Available Languages",
+    "code": "Code",
+    "nativeName": "Native Name",
+    "defaultBadge": "Default",
+    "setDefault": "Set as default",
+    "english": "English",
+    "arabic": "Arabic",
+    "hint": "Setting a default language affects the initial app locale for new users. Users can still switch language from the top bar.",
+    "toasts": {
+      "defaultSet": "Default language updated"
+    }
   },
   "cms": {
     "title": "Content Manager",
