@@ -8,7 +8,8 @@ import {
   Challenge,
 } from '../../services/challengesApi';
 import { getAllCommunities } from '../../services/communitiesApi';
-import { getBadges } from '../../data/badgesData';
+import { getAllBadges, Badge } from '../../services/badgesService';
+import { getBadgeEmoji } from '../../data/badgesIcons';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -47,7 +48,7 @@ export function ChallengeCreate() {
   const [communitySearch, setCommunitySearch] = useState('');
   const [communityPage, setCommunityPage] = useState(1);
   const communitiesPerPage = 6;
-  const badges = getBadges();
+  const [badges, setBadges] = useState<Badge[]>([]);
 
   const fetchExisting = useCallback(async () => {
     if (!challengeId) return;
@@ -92,6 +93,12 @@ export function ChallengeCreate() {
         );
       })
       .catch(() => toast.error(t('challenges.failedToLoadCommunities')));
+  }, [t]);
+
+  useEffect(() => {
+    getAllBadges()
+      .then((list) => setBadges(list))
+      .catch(() => toast.error(t('challenges.failedToLoadBadges')));
   }, [t]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -327,8 +334,8 @@ export function ChallengeCreate() {
               >
                 <option value="">{t('challenges.selectBadge')}</option>
                 {badges.map(badge => (
-                  <option key={badge.id} value={badge.name}>
-                    {badge.icon} {badge.name}
+                  <option key={badge.id} value={badge.id}>
+                    {getBadgeEmoji(badge.icon)} {badge.name}
                   </option>
                 ))}
               </select>
