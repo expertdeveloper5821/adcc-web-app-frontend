@@ -535,12 +535,26 @@
         "heading": "Feed Posts",
         "subheading": "Manage community announcements and updates",
         "createPost": "Create Post",
+        "postTitle": "Post Title",
+        "postTitlePlaceholder": "Enter post title...",
+        "postType": "Post Type",
+        "caption": "Caption",
+        "captionPlaceholder": "Write your post caption...",
+        "uploadMedia": "Upload Media",
+        "uploadHint": "Click to upload image",
+        "publishPost": "Publish Post",
+        "types": {
+          "announcement": "Announcement",
+          "highlight": "Highlight",
+          "awareness": "Awareness"
+        },
         "noPosts": "No posts yet",
         "noPostsBody": "Create your first community post to engage with members",
         "pin": "Pin to top",
         "unpin": "Unpin",
         "editPost": "Edit",
-        "deletePost": "Delete"
+        "deletePost": "Delete Post",
+        "deleteConfirm": "Are you sure you want to delete this post? This action cannot be undone."
       },
       "eventsTab": {
         "heading": "Community Events",

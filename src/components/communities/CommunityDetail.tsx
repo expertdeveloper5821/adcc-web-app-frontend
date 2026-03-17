@@ -11,7 +11,6 @@ import {
   MapPin,
   Award,
   Plus,
-  Pin,
   Trash2,
   FileImage,
   Upload,
@@ -20,9 +19,9 @@ import {
 } from 'lucide-react';
 import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage } from '../../services/communitiesApi';
 import { toast } from 'sonner';
-import { getFeedPostsByCommunity, deleteFeedPost, updateFeedPost } from '../../data/communitiesData';
 import { getAllTracks, Track } from '../../services/trackService';
 import { getAllEvents, EventApiResponse } from '../../services/eventsApi';
+import { getCommunityPosts, createCommunityPost, deleteCommunityPost as deleteCommunityPostApi, CommunityPost } from '../../services/communityPostsApi';
 import { DetailPageSkeleton } from '../ui/skeleton';
 
 
@@ -46,8 +45,12 @@ export function CommunityDetail() {
   const [communityEvents, setCommunityEvents] = useState<EventApiResponse[]>([]);
   const [galleryImages, setGalleryImages] = useState<Array<{ id: string; url: string; name: string }>>([]);
   const [uploading, setUploading] = useState(false);
-
-  const feedPosts = getFeedPostsByCommunity(communityId);
+  const [feedPosts, setFeedPosts] = useState<CommunityPost[]>([]);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostType, setNewPostType] = useState<'Announcement' | 'Highlight' | 'Awareness'>('Announcement');
+  const [newPostCaption, setNewPostCaption] = useState('');
+  const [newPostImage, setNewPostImage] = useState<File | null>(null);
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
 
   useEffect(() => {
     if (!communityId) {
@@ -123,6 +126,19 @@ export function CommunityDetail() {
     if (communityId) {
       fetchEvents();
     }
+  }, [communityId]);
+
+  // Fetch community feed posts
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const data = await getCommunityPosts(communityId, { limit: 50 });
+        setFeedPosts(data.posts);
+      } catch (error: any) {
+        console.error('Error fetching community posts:', error);
+      }
+    };
+    if (communityId) fetchPosts();
   }, [communityId]);
 
   // Load gallery images when community data is available
@@ -485,58 +501,38 @@ export function CommunityDetail() {
 
           {/* Posts List */}
           <div className="space-y-4">
-            {feedPosts.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0)).map((post) => (
+            {feedPosts.map((post) => (
               <div
-                key={post.id}
+                key={post._id}
                 className="rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition-all"
               >
                 <div className="flex items-start gap-4">
-                  {post.media.length > 0 && (
+                  {post.image && (
                     <img
-                      src={post.media[0].url}
+                      src={post.image}
                       alt={post.title}
                       className="w-32 h-32 rounded-xl object-cover"
                     />
                   )}
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold" style={{ color: '#333' }}>{post.title}</h3>
-                        {post.isPinned && (
-                          <Pin className="w-4 h-4" style={{ color: '#CF9F0C' }} />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="px-3 py-1 rounded-full text-xs font-medium text-white capitalize"
-                          style={{ backgroundColor: getPostTypeColor(post.type) }}
-                        >
-                          {post.type}
-                        </span>
-                      </div>
+                      <h3 className="text-lg font-semibold" style={{ color: '#333' }}>{post.title}</h3>
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-medium text-white capitalize"
+                        style={{ backgroundColor: getPostTypeColor(post.postType) }}
+                      >
+                        {post.postType}
+                      </span>
                     </div>
-                    <p className="mb-3" style={{ color: '#666' }}>{post.caption}</p>
+                    {post.caption && <p className="mb-3" style={{ color: '#666' }}>{post.caption}</p>}
                     <div className="flex items-center justify-between">
                       <div className="text-sm" style={{ color: '#999' }}>
-                        {t('communities.detail.byAuthor', { author: post.createdBy })} • {new Date(post.createdAt).toLocaleDateString()}
+                        {typeof post.createdBy === 'object' ? post.createdBy.fullName : ''} • {new Date(post.createdAt).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handlePinPost(post.id)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          title={post.isPinned ? t('communities.detail.feed.unpin') : t('communities.detail.feed.pin')}
-                        >
-                          <Pin className="w-4 h-4" style={{ color: '#666' }} />
-                        </button>
-                        <button
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          title={t('communities.detail.feed.editPost')}
-                        >
-                          <Edit className="w-4 h-4" style={{ color: '#666' }} />
-                        </button>
-                        <button
                           onClick={() => {
-                            setPostToDelete(post.id);
+                            setPostToDelete(post._id);
                             setShowPostDeleteModal(true);
                           }}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -843,9 +839,9 @@ export function CommunityDetail() {
       {showPostDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="rounded-2xl p-6 max-w-md w-full mx-4 bg-white">
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Delete Post</h3>
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.detail.feed.deletePost')}</h3>
             <p className="mb-6" style={{ color: '#666' }}>
-              Are you sure you want to delete this post? This action cannot be undone.
+              {t('communities.detail.feed.deleteConfirm', 'Are you sure you want to delete this post? This action cannot be undone.')}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -856,13 +852,18 @@ export function CommunityDetail() {
                 className="px-4 py-2 rounded-xl"
                 style={{ backgroundColor: '#ECC180', color: '#333' }}
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (postToDelete) {
-                    deleteFeedPost(postToDelete);
-                    toast.success(t('communities.detail.toasts.postDeleted', { defaultValue: 'Post deleted successfully' }));
+                    try {
+                      await deleteCommunityPostApi(communityId, postToDelete);
+                      setFeedPosts(prev => prev.filter(p => p._id !== postToDelete));
+                      toast.success(t('communities.detail.toasts.postDeleted', { defaultValue: 'Post deleted successfully' }));
+                    } catch (error: any) {
+                      toast.error(error?.response?.data?.message || t('communities.detail.toasts.postDeleteError', { defaultValue: 'Failed to delete post' }));
+                    }
                     setShowPostDeleteModal(false);
                     setPostToDelete(null);
                   }
@@ -870,7 +871,7 @@ export function CommunityDetail() {
                 className="px-4 py-2 rounded-xl text-white"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                Delete
+                {t('common.delete', 'Delete')}
               </button>
             </div>
           </div>
@@ -881,57 +882,96 @@ export function CommunityDetail() {
       {showCreatePost && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto bg-white">
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>Create Post</h3>
+            <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.detail.feed.createPost')}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Post Title</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.postTitle', 'Post Title')}</label>
                 <input
                   type="text"
+                  value={newPostTitle}
+                  onChange={(e) => setNewPostTitle(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
-                  placeholder="Enter post title..."
+                  placeholder={t('communities.detail.feed.postTitlePlaceholder', 'Enter post title...')}
                 />
               </div>
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Post Type</label>
-                <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]">
-                  <option>Announcement</option>
-                  <option>Highlight</option>
-                  <option>Awareness</option>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.postType', 'Post Type')}</label>
+                <select
+                  value={newPostType}
+                  onChange={(e) => setNewPostType(e.target.value as 'Announcement' | 'Highlight' | 'Awareness')}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
+                >
+                  <option value="Announcement">{t('communities.detail.feed.types.announcement', 'Announcement')}</option>
+                  <option value="Highlight">{t('communities.detail.feed.types.highlight', 'Highlight')}</option>
+                  <option value="Awareness">{t('communities.detail.feed.types.awareness', 'Awareness')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Caption</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.caption', 'Caption')}</label>
                 <textarea
                   rows={4}
+                  value={newPostCaption}
+                  onChange={(e) => setNewPostCaption(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
-                  placeholder="Write your post caption..."
+                  placeholder={t('communities.detail.feed.captionPlaceholder', 'Write your post caption...')}
                 />
               </div>
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>Upload Media</label>
-                <div className="border-2 border-dashed rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer" style={{ borderColor: '#ECC180' }}>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.uploadMedia', 'Upload Media')}</label>
+                <label className="border-2 border-dashed rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer block" style={{ borderColor: '#ECC180' }}>
                   <Upload className="w-12 h-12 mx-auto mb-3" style={{ color: '#999' }} />
-                  <p style={{ color: '#666' }}>Click to upload image or video</p>
-                </div>
+                  <p style={{ color: '#666' }}>{newPostImage ? newPostImage.name : t('communities.detail.feed.uploadHint', 'Click to upload image')}</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => setNewPostImage(e.target.files?.[0] || null)}
+                  />
+                </label>
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-6">
               <button
-                onClick={() => setShowCreatePost(false)}
+                onClick={() => {
+                  setShowCreatePost(false);
+                  setNewPostTitle('');
+                  setNewPostCaption('');
+                  setNewPostType('Announcement');
+                  setNewPostImage(null);
+                }}
                 className="px-4 py-2 rounded-xl"
                 style={{ backgroundColor: '#ECC180', color: '#333' }}
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
-                onClick={() => {
-                  toast.success(t('communities.detail.toasts.postCreated', { defaultValue: 'Post created successfully' }));
-                  setShowCreatePost(false);
+                disabled={isCreatingPost || !newPostTitle.trim()}
+                onClick={async () => {
+                  if (!newPostTitle.trim()) return;
+                  setIsCreatingPost(true);
+                  try {
+                    const created = await createCommunityPost(
+                      communityId,
+                      { title: newPostTitle.trim(), postType: newPostType, caption: newPostCaption.trim() || undefined },
+                      newPostImage || undefined
+                    );
+                    setFeedPosts(prev => [created, ...prev]);
+                    toast.success(t('communities.detail.toasts.postCreated', { defaultValue: 'Post created successfully' }));
+                    setShowCreatePost(false);
+                    setNewPostTitle('');
+                    setNewPostCaption('');
+                    setNewPostType('Announcement');
+                    setNewPostImage(null);
+                  } catch (error: any) {
+                    toast.error(error?.response?.data?.message || t('communities.detail.toasts.postCreateError', { defaultValue: 'Failed to create post' }));
+                  } finally {
+                    setIsCreatingPost(false);
+                  }
                 }}
-                className="px-4 py-2 rounded-xl text-white"
+                className="px-4 py-2 rounded-xl text-white disabled:opacity-50"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                Publish Post
+                {isCreatingPost ? t('common.saving', 'Saving...') : t('communities.detail.feed.publishPost', 'Publish Post')}
               </button>
             </div>
           </div>
@@ -977,12 +1017,5 @@ export function CommunityDetail() {
     }
   }
 
-  function handlePinPost(postId: string) {
-    const post = feedPosts.find((p) => p.id === postId);
-    if (post) {
-      updateFeedPost(postId, { isPinned: !post.isPinned });
-      toast.success(post.isPinned ? t('communities.detail.feed.unpin') : t('communities.detail.feed.pin'));
-    }
-  }
 }
 

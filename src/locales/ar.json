@@ -494,12 +494,26 @@
         "heading": "منشورات الموجز",
         "subheading": "إدارة إعلانات وتحديثات المجتمع",
         "createPost": "إنشاء منشور",
+        "postTitle": "عنوان المنشور",
+        "postTitlePlaceholder": "أدخل عنوان المنشور...",
+        "postType": "نوع المنشور",
+        "caption": "الوصف",
+        "captionPlaceholder": "اكتب وصف المنشور...",
+        "uploadMedia": "رفع وسائط",
+        "uploadHint": "انقر لرفع صورة",
+        "publishPost": "نشر المنشور",
+        "types": {
+          "announcement": "إعلان",
+          "highlight": "تسليط الضوء",
+          "awareness": "توعية"
+        },
         "noPosts": "لا توجد منشورات بعد",
         "noPostsBody": "أنشئ أول منشور للتفاعل مع الأعضاء",
         "pin": "تثبيت في الأعلى",
         "unpin": "إلغاء التثبيت",
         "editPost": "تعديل",
-        "deletePost": "حذف"
+        "deletePost": "حذف المنشور",
+        "deleteConfirm": "هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء."
       },
       "eventsTab": {
         "heading": "فعاليات المجتمع",
