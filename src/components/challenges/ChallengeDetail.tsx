@@ -165,14 +165,14 @@ export function ChallengeDetail({ role }: ChallengeDetailProps) {
               </div>
             </div>
           </div>
-
+         
           <div>
             <h3 className="text-lg mb-4" style={{ color: '#333' }}>{t('challenges.reward')}</h3>
             <div className="p-4 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
               <div className="flex items-center gap-3">
                 <Award className="w-12 h-12" style={{ color: '#C12D32' }} />
                 <div>
-                  <p className="font-medium" style={{ color: '#333' }}>{challenge.rewardBadge || t('challenges.noBadgeAssigned')}</p>
+                  <p className="font-medium" style={{ color: '#333' }}>{challenge.rewardBadgeName || challenge.rewardBadge || t('challenges.noBadgeAssigned')}</p>
                   <p className="text-sm" style={{ color: '#666' }}>{t('challenges.awardedUponCompletion')}</p>
                 </div>
               </div>

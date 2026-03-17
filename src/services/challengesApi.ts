@@ -17,6 +17,7 @@ export interface Challenge {
   completions: number;
   status: 'Active' | 'Upcoming' | 'Completed' | 'Draft';
   rewardBadge: string;
+  rewardBadgeName?: string;
   featured: boolean;
   image: string;
   createdBy?: string;
@@ -40,7 +41,7 @@ interface ChallengeApiRaw {
   participants?: number;
   completions?: number;
   status: Challenge['status'];
-  rewardBadge?: string;
+  rewardBadge?: string | { _id?: string; name?: string; icon?: string; image?: string; category?: string; rarity?: string };
   featured?: boolean;
   image?: string;
   createdBy?: string | { _id?: unknown };
@@ -97,12 +98,17 @@ function normalizeChallenge(raw: ChallengeApiRaw): Challenge {
     participants: raw.participants ?? 0,
     completions: raw.completions ?? 0,
     status: raw.status,
-    rewardBadge: raw.rewardBadge ?? '',
+    rewardBadge: typeof raw.rewardBadge === 'object' && raw.rewardBadge !== null
+      ? (raw.rewardBadge._id ?? '')
+      : (raw.rewardBadge as string ?? ''),
+    rewardBadgeName: typeof raw.rewardBadge === 'object' && raw.rewardBadge !== null
+      ? (raw.rewardBadge.name ?? '')
+      : undefined,
     featured: !!raw.featured,
     image: raw.image ?? 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=400',
     createdBy: typeof raw.createdBy === 'object' && raw.createdBy !== null && '_id' in raw.createdBy
       ? String((raw.createdBy as { _id: unknown })._id)
-      : raw.createdBy,
+      : raw.createdBy as string | undefined,
     communities: normalizeCommunityIds(raw.communities),
     communityNames: normalizeCommunityNames(raw.communities),
   };
@@ -179,8 +185,8 @@ export const createChallenge = async (payload: Partial<Challenge>, imageFile?: F
   invalidateCache('challenges');
   const fd = buildChallengeFormData(payload, imageFile);
   const response = await api.post<GetChallengeResponse & { data?: ChallengeApiRaw }>('/v1/challenges', fd);
-  const body = response.data as GetChallengeResponse & { data?: ChallengeApiRaw };
-  const raw = body.data ?? (body.id || (body as ChallengeApiRaw)._id ? (body as ChallengeApiRaw) : null);
+  const body = response.data as unknown as Record<string, unknown> & { data?: ChallengeApiRaw };
+  const raw = body.data ?? ((body as unknown as ChallengeApiRaw).id || (body as unknown as ChallengeApiRaw)._id ? (body as unknown as ChallengeApiRaw) : null);
   if (!raw) throw new Error('Invalid create response');
   return normalizeChallenge(raw);
 };
@@ -191,8 +197,8 @@ export const updateChallenge = async (id: string, payload: Partial<Challenge>, i
   invalidateCache(`challenge:${id}`);
   const fd = buildChallengeFormData(payload, imageFile);
   const response = await api.patch<GetChallengeResponse & { data?: ChallengeApiRaw }>(`/v1/challenges/${id}`, fd);
-  const body = response.data as GetChallengeResponse & { data?: ChallengeApiRaw };
-  const raw = body.data ?? (body.id || (body as ChallengeApiRaw)._id ? (body as ChallengeApiRaw) : null);
+  const body = response.data as unknown as Record<string, unknown> & { data?: ChallengeApiRaw };
+  const raw = body.data ?? ((body as unknown as ChallengeApiRaw).id || (body as unknown as ChallengeApiRaw)._id ? (body as unknown as ChallengeApiRaw) : null);
   if (!raw) throw new Error('Invalid update response');
   return normalizeChallenge(raw);
 };
