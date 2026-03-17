@@ -1,26 +1,36 @@
-import { api } from './api';
-import { getCached, setCache, invalidateCache } from '../utils/apiCache';
+import { api } from "./api";
+import { getCached, setCache, invalidateCache } from "../utils/apiCache";
 
 export type FacilityType =
-  | 'water'
-  | 'toilets'
-  | 'parking'
-  | 'lights'
-  | 'cafes'
-  | 'bikeRental'
-  | 'firstAid'
-  | 'changingRooms';
+  | "water"
+  | "toilets"
+  | "parking"
+  | "lights"
+  | "cafes"
+  | "bikeRental"
+  | "firstAid"
+  | "changingRooms";
 
 export interface ITrackFacility {
   facilities?: FacilityType[];
 }
 
 /** Backend track type literal (API uses "costal") */
-export type TrackTypeBackend = 'circuit' | 'road' | 'costal' | 'desert' | 'urban';
+export type TrackTypeBackend =
+  | "circuit"
+  | "road"
+  | "costal"
+  | "desert"
+  | "urban";
 
-export type SurfaceTypeBackend = 'asphalt' | 'concrete' | 'mixed';
+export type SurfaceTypeBackend = "asphalt" | "concrete" | "mixed";
 
-export type TrackStatusBackend = 'open' | 'limited' | 'closed' | 'archived' | 'disabled';
+export type TrackStatusBackend =
+  | "open"
+  | "limited"
+  | "closed"
+  | "archived"
+  | "disabled";
 
 /**
  * Backend ITrack shape (matches API /v1/tracks).
@@ -62,7 +72,10 @@ export interface ITrack {
 }
 
 /** Payload for POST {{baseUrl}}/v1/tracks - create track */
-export type CreateTrackRequest = Omit<ITrack, '_id' | 'createdAt' | 'updatedAt'> & {
+export type CreateTrackRequest = Omit<
+  ITrack,
+  "_id" | "createdAt" | "updatedAt"
+> & {
   title: string;
   description: string;
   city: string;
@@ -76,25 +89,25 @@ export type CreateTrackRequest = Omit<ITrack, '_id' | 'createdAt' | 'updatedAt'>
 
 /** Map form facility keys (e.g. bike_rental) to API FacilityType (e.g. bikeRental) */
 export const FACILITY_KEY_TO_API: Record<string, FacilityType> = {
-  bike_rental: 'bikeRental',
-  first_aid: 'firstAid',
-  changing_rooms: 'changingRooms',
-  lights: 'lights',
-  water: 'water',
-  parking: 'parking',
-  toilets: 'toilets',
-  cafes: 'cafes',
+  bike_rental: "bikeRental",
+  first_aid: "firstAid",
+  changing_rooms: "changingRooms",
+  lights: "lights",
+  water: "water",
+  parking: "parking",
+  toilets: "toilets",
+  cafes: "cafes",
 };
 
 export const UAE_CITIES = [
-  'Abu Dhabi',
-  'Dubai',
-  'Sharjah',
-  'Ajman',
-  'Umm Al Quwain',
-  'Ras Al Khaimah',
-  'Fujairah',
-  'Al Ain'
+  "Abu Dhabi",
+  "Dubai",
+  "Sharjah",
+  "Ajman",
+  "Umm Al Quwain",
+  "Ras Al Khaimah",
+  "Fujairah",
+  "Al Ain",
 ];
 
 export interface Track {
@@ -106,10 +119,10 @@ export interface Track {
   area: string;
   distance: number;
   elevation?: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   hasLighting: boolean;
-  safetyLevel: 'low' | 'medium' | 'high';
-  trafficLevel: 'lLow' | 'medium' | 'high';
+  safetyLevel: "low" | "medium" | "high";
+  trafficLevel: "lLow" | "medium" | "high";
   helmetRequired: boolean;
   nightRidingAllowed: boolean;
   safetyNotes: string;
@@ -127,8 +140,8 @@ export interface Track {
   longitude?: number;
   estimatedTime?: string;
   loopOptions?: number[];
-  surfaceType: 'Asphalt' | 'Concrete';
-  status: 'open' | 'limited' | 'closed' | 'archived' | 'disabled';
+  surfaceType: "Asphalt" | "Concrete";
+  status: "open" | "limited" | "closed" | "archived" | "disabled";
   slug?: string;
   avgtime?: string;
   facilities?: ITrackFacility[];
@@ -136,7 +149,10 @@ export interface Track {
   updatedAt?: string;
 }
 
-export interface TrackFormData extends Omit<Track, 'id' | 'createdAt' | 'eventsCount'> {
+export interface TrackFormData extends Omit<
+  Track,
+  "id" | "createdAt" | "eventsCount"
+> {
   id?: string;
 }
 
@@ -154,16 +170,23 @@ export interface TrackValidationRules {
   };
 }
 
-
 // Get all tracks (optionally with pagination; default limit 500 for dropdowns)
-export const getAllTracks = async (params?: { page?: number; limit?: number }): Promise<Track[]> => {
+export const getAllTracks = async (params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Track[]> => {
   const cacheKey = `tracks:${params?.page || 1}:${params?.limit || 500}`;
   const cached = getCached<Track[]>(cacheKey);
   if (cached) return cached;
 
   try {
-    const response = await api.get('/v1/tracks', { params: { limit: params?.limit ?? 500, page: params?.page ?? 1 } });
-    const body = response.data as { data?: Track[] | { tracks?: Track[] }; tracks?: Track[] };
+    const response = await api.get("/v1/tracks", {
+      params: { limit: params?.limit ?? 500, page: params?.page ?? 1 },
+    });
+    const body = response.data as {
+      data?: Track[] | { tracks?: Track[] };
+      tracks?: Track[];
+    };
     let result: Track[];
     if (Array.isArray(body?.data)) result = body.data;
     else {
@@ -176,21 +199,28 @@ export const getAllTracks = async (params?: { page?: number; limit?: number }): 
     setCache(cacheKey, result);
     return result;
   } catch (error) {
-    console.error('Error fetching tracks:', error);
+    console.error("Error fetching tracks:", error);
     throw error;
   }
 };
 
-
 // Get all tracks in English (for event forms where country/city filtering needs consistent English values)
-export const getAllTracksEn = async (params?: { page?: number; limit?: number }): Promise<Track[]> => {
+export const getAllTracksEn = async (params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Track[]> => {
   const cacheKey = `tracks_en:${params?.page || 1}:${params?.limit || 500}`;
   const cached = getCached<Track[]>(cacheKey);
   if (cached) return cached;
 
   try {
-    const response = await api.get('/v1/en/tracks', { params: { limit: params?.limit ?? 500, page: params?.page ?? 1 } });
-    const body = response.data as { data?: Track[] | { tracks?: Track[] }; tracks?: Track[] };
+    const response = await api.get("/v1/en/tracks", {
+      params: { limit: params?.limit ?? 500, page: params?.page ?? 1 },
+    });
+    const body = response.data as {
+      data?: Track[] | { tracks?: Track[] };
+      tracks?: Track[];
+    };
     let result: Track[];
     if (Array.isArray(body?.data)) result = body.data;
     else {
@@ -203,7 +233,7 @@ export const getAllTracksEn = async (params?: { page?: number; limit?: number })
     setCache(cacheKey, result);
     return result;
   } catch (error) {
-    console.error('Error fetching tracks:', error);
+    console.error("Error fetching tracks:", error);
     throw error;
   }
 };
@@ -214,11 +244,11 @@ export const getTrackById = async (trackId: string): Promise<Track> => {
     const response = await api.get<any>(`/v1/tracks/${trackId}`);
     // console.log('getTrackById response:', response.data);
     if ((response.data as any).data) {
-        return (response.data as any).data;
+      return (response.data as any).data;
     }
     return response.data;
   } catch (error) {
-    console.error('Error fetching track:', error);
+    console.error("Error fetching track:", error);
     throw error;
   }
 };
@@ -230,12 +260,32 @@ export interface TrackImageFiles {
   galleryImages?: File[];
 }
 
-function buildTrackFormData(trackData: Record<string, unknown>, imageFiles?: TrackImageFiles): FormData {
+function buildTrackFormData(
+  trackData: Record<string, unknown>,
+  imageFiles?: TrackImageFiles,
+): FormData {
   const formData = new FormData();
   const scalarKeys = [
-    'title', 'titleAr', 'slug', 'description', 'descriptionAr', 'trackType', 'country', 'city', 'area',
-    'distance', 'difficulty', 'surfaceType', 'elevation', 'estimatedTime', 'safetyNotes',
-    'helmetRequired', 'nightRidingAllowed', 'status', 'visibility', 'displayPriority',
+    "title",
+    "titleAr",
+    "slug",
+    "description",
+    "descriptionAr",
+    "trackType",
+    "country",
+    "city",
+    "area",
+    "distance",
+    "difficulty",
+    "surfaceType",
+    "elevation",
+    "estimatedTime",
+    "safetyNotes",
+    "helmetRequired",
+    "nightRidingAllowed",
+    "status",
+    "visibility",
+    "displayPriority",
   ];
   scalarKeys.forEach((key) => {
     const val = trackData[key];
@@ -243,17 +293,21 @@ function buildTrackFormData(trackData: Record<string, unknown>, imageFiles?: Tra
     formData.append(key, String(val));
   });
   if (trackData.loopOptions != null && Array.isArray(trackData.loopOptions)) {
-    formData.append('loopOptions', JSON.stringify(trackData.loopOptions));
+    formData.append("loopOptions", JSON.stringify(trackData.loopOptions));
   }
   if (trackData.facilities != null) {
     const f = trackData.facilities;
-    if (Array.isArray(f)) formData.append('facilities', JSON.stringify(f));
-    else formData.append('facilities', String(f));
+    if (Array.isArray(f)) formData.append("facilities", JSON.stringify(f));
+    else formData.append("facilities", String(f));
   }
-  if (imageFiles?.image instanceof File) formData.append('image', imageFiles.image);
-  if (imageFiles?.coverImage instanceof File) formData.append('coverImage', imageFiles.coverImage);
+  if (imageFiles?.image instanceof File)
+    formData.append("image", imageFiles.image);
+  if (imageFiles?.coverImage instanceof File)
+    formData.append("coverImage", imageFiles.coverImage);
   if (imageFiles?.galleryImages?.length) {
-    imageFiles.galleryImages.forEach((file) => formData.append('galleryImages', file));
+    imageFiles.galleryImages.forEach((file) =>
+      formData.append("galleryImages", file),
+    );
   }
   return formData;
 }
@@ -261,20 +315,32 @@ function buildTrackFormData(trackData: Record<string, unknown>, imageFiles?: Tra
 // Create track – send as FormData (same key names as backend)
 export const createTrack = async (
   trackData: CreateTrackRequest | TrackFormData,
-  imageFiles?: TrackImageFiles
+  imageFiles?: TrackImageFiles,
 ): Promise<Track & { success?: boolean; message?: string }> => {
-  invalidateCache('tracks');
+  invalidateCache("tracks");
   try {
-    const d = (trackData as unknown) as Record<string, unknown>;
+    const d = trackData as unknown as Record<string, unknown>;
     const formData = buildTrackFormData(d, imageFiles);
-    const response = await api.post<{ data?: Track; success?: boolean; message?: string }>('/v1/tracks', formData);
-    const body = response.data as { data?: Track; success?: boolean; message?: string };
+    const response = await api.post<{
+      data?: Track;
+      success?: boolean;
+      message?: string;
+    }>("/v1/tracks", formData);
+    const body = response.data as {
+      data?: Track;
+      success?: boolean;
+      message?: string;
+    };
     if (body?.data) {
-      return { ...body.data, success: body.success ?? true, message: body.message };
+      return {
+        ...body.data,
+        success: body.success ?? true,
+        message: body.message,
+      };
     }
     return body as Track & { success?: boolean; message?: string };
   } catch (error) {
-    console.error('Error creating track:', error);
+    console.error("Error creating track:", error);
     throw error;
   }
 };
@@ -283,51 +349,53 @@ export const createTrack = async (
 export const updateTrack = async (
   trackId: string,
   trackData: Partial<TrackFormData>,
-  imageFiles?: TrackImageFiles
+  imageFiles?: TrackImageFiles,
 ): Promise<Track> => {
-  invalidateCache('tracks');
+  invalidateCache("tracks");
   try {
-    const d = { ...trackData, galleryImages: trackData.galleryImages ?? [] } as Record<string, unknown>;
+    const d = {
+      ...trackData,
+      galleryImages: trackData.galleryImages ?? [],
+    } as Record<string, unknown>;
     const formData = buildTrackFormData(d, imageFiles);
     const response = await api.patch<any>(`/v1/tracks/${trackId}`, formData);
     if ((response.data as any).data) return (response.data as any).data;
     return response.data;
   } catch (error) {
-    console.error('Error updating track:', error);
+    console.error("Error updating track:", error);
     throw error;
   }
 };
 
 // Delete track
 export const deleteTrack = async (id: string): Promise<void> => {
-  invalidateCache('tracks');
+  invalidateCache("tracks");
   try {
-        await api.delete(`/v1/tracks/${id}`);
-    } catch (error) {
-        console.error('Error deleting track:', error);
-        throw error;
-    }
-}
+    await api.delete(`/v1/tracks/${id}`);
+  } catch (error) {
+    console.error("Error deleting track:", error);
+    throw error;
+  }
+};
 
 // disable track
 export const disableTrack = async (id: string): Promise<void> => {
   try {
-        await api.patch(`/v1/tracks/${id}/disable`);
-    } catch (error) {
-        console.error('Error deleting track:', error);
-        throw error;
-    }
-}
+    await api.patch(`/v1/tracks/${id}/disable`);
+  } catch (error) {
+    console.error("Error deleting track:", error);
+    throw error;
+  }
+};
 // enable track
 export const enableTrack = async (id: string): Promise<void> => {
   try {
-        await api.patch(`/v1/tracks/${id}/enable`);
-    } catch (error) {
-        console.error('Error deleting track:', error);
-        throw error;
-    }
-}
-
+    await api.patch(`/v1/tracks/${id}/enable`);
+  } catch (error) {
+    console.error("Error deleting track:", error);
+    throw error;
+  }
+};
 
 /**
  * Track related Events
@@ -338,38 +406,36 @@ export const getTrackResults = async (trackId: string): Promise<any[]> => {
     const response = await api.get(`/v1/tracks/${trackId}/events/results`);
     // return response.data.data;
     if ((response.data as any).data) {
-        return (response.data as any).data;
+      return (response.data as any).data;
     }
   } catch (error) {
-    console.error('Error fetching track events:', error);
+    console.error("Error fetching track events:", error);
     throw error;
   }
 };
-
 
 /**
  * Track Community related Events
  */
 
-export const trackCommunityResults = async (trackId: string): Promise<any[]> => {
+export const trackCommunityResults = async (
+  trackId: string,
+): Promise<any[]> => {
   try {
     const response = await api.get(`/v1/tracks/${trackId}/events/results`);
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching track events:', error);
+    console.error("Error fetching track events:", error);
     throw error;
   }
 };
-
 
 export const archiveTrack = async (id: string) => {
   try {
     const response = await api.patch(`/v1/tracks/${id}/archive`);
     return response.data;
   } catch (error) {
-    console.error('Error track archive:', error);
+    console.error("Error track archive:", error);
     throw error;
   }
 };
-
-

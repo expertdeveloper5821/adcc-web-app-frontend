@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import { UserRole } from '../../App';
 import { createTrack, type CreateTrackRequest, type FacilityType, FACILITY_KEY_TO_API } from '../../services/trackService';
+import { FACILITY_VALUE_TO_API_TEXT } from '../../constants/track.constants';
 import { useForm, Controller } from 'react-hook-form';
 import { compressImage } from '../../utils/imageUtils';
 import { useLocale } from '../../contexts/LocaleContext';
@@ -280,10 +281,13 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
 
     const slug = (data.slug?.trim() || slugify(title)).trim() || `track-${Date.now()}`;
 
-    // Map form facility keys to API FacilityType (e.g. bike_rental -> bikeRental); backend expects flat array
+    // Map form facility keys to API FacilityType, then to API text (e.g. water -> 'water stations')
     const facilitiesMapped: FacilityType[] = (data.facilities || [])
       .map((key) => FACILITY_KEY_TO_API[key] ?? key)
       .filter((v): v is FacilityType => Boolean(v));
+    const facilitiesForApi = facilitiesMapped.length
+      ? facilitiesMapped.map((v) => FACILITY_VALUE_TO_API_TEXT[v] ?? v)
+      : undefined;
 
     const payload: CreateTrackRequest = {
       title,
@@ -301,7 +305,7 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
       elevation: String(data.elevationGain ?? 0),
       estimatedTime: data.estimatedTime || undefined,
       loopOptions: data.loopOptions,
-      facilities: facilitiesMapped.length ? facilitiesMapped : undefined,
+      facilities: facilitiesForApi as FacilityType[] | undefined,
       safetyNotes: data.safetyNotes || undefined,
       helmetRequired: data.helmetRequired,
       nightRidingAllowed: data.nightRidingAllowed,
