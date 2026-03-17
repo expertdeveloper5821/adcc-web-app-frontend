@@ -18,43 +18,45 @@ export function EventParticipants({ role }: EventParticipantsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-// const [participantsData, setParticipantsData] = useState<any[]>([]);
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!eventId || eventId === 'undefined') {
-        setIsLoading(false);
-        return;
-      }
-      try {
-        setIsLoading(true);
-        const resultsData = await getEventResults(eventId);
-        // Normalize status to lowercase hyphen form so badge colors persist after refresh
-        const normalizeStatus = (s: string | undefined) => {
-          if (!s) return 'registered';
-          return String(s).toLowerCase().replace(/_/g, '-');
-        };
-        // Normalize API payload into the flat shape expected by the UI
-        const mapped = (Array.isArray(resultsData) ? resultsData : []).map((p: any) => ({
-          id: p._id || p.id,
-          userId: p.user?._id || p.userId,
-          userName: p.user?.fullName || p.userName || '-',
-          userCommunity: p.user?.email || p.userCommunity || '-',
-          status: normalizeStatus(p.status),
-          registeredAt: p.createdAt || p.registeredAt || null,
-          checkedInAt: p.checkedInAt || null,
-          rank: p.rank,
-          time: p.time,
-        }));
-        setParticipantsData(mapped);
-      } catch (error) {
-        toast.error('Failed to load event participants');
-        console.error(error); 
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
+
+  const normalizeStatus = (s: string | undefined) => {
+    if (!s) return 'registered';
+    return String(s).toLowerCase().replace(/_/g, '-');
+  };
+
+  const mapResultsFromBackend = (resultsData: any[]) =>
+    (Array.isArray(resultsData) ? resultsData : []).map((p: any) => ({
+      id: p._id || p.id,
+      userId: p.user?._id || p.userId,
+      userName: p.user?.fullName || p.userName || '-',
+      userCommunity: p.user?.email || p.userCommunity || '-',
+      status: normalizeStatus(p.status),
+      registeredAt: p.createdAt || p.registeredAt || null,
+      checkedInAt: p.checkedInAt || null,
+      rank: p.rank,
+      time: p.time,
+    }));
+
+  const fetchParticipants = React.useCallback(async (silent = false) => {
+    if (!eventId || eventId === 'undefined') {
+      setIsLoading(false);
+      return;
+    }
+    try {
+      if (!silent) setIsLoading(true);
+      const resultsData = await getEventResults(eventId);
+      setParticipantsData(mapResultsFromBackend(resultsData));
+    } catch (error) {
+      toast.error('Failed to load event participants');
+      console.error(error);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
   }, [eventId]);
+
+  useEffect(() => {
+    fetchParticipants();
+  }, [fetchParticipants]);
 
   if (isLoading) {
     return (
@@ -78,13 +80,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
     if (!target || !target.userId || !eventId) return;
     try {
       await checkInParticipant(eventId, target.userId);
-      setParticipantsData((prev) =>
-        prev.map((p) =>
-          p.id === participantId
-            ? { ...p, status: 'checked-in', checkedInAt: new Date().toISOString() }
-            : p
-        )
-      );
+      await fetchParticipants(true);
       toast.success('Participant checked in');
     } catch (error) {
       console.error('Error checking in participant:', error);
@@ -97,13 +93,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
     if (!target || !target.userId || !eventId) return;
     try {
       await markParticipantNoShow(eventId, target.userId);
-      setParticipantsData((prev) =>
-        prev.map((p) =>
-          p.id === participantId
-            ? { ...p, status: 'no-show' }
-            : p
-        )
-      );
+      await fetchParticipants(true);
       toast.success('Marked as no-show');
     } catch (error) {
       console.error('Error marking participant no-show:', error);
@@ -121,7 +111,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
       if (!userId) return;
 
       await removeEventParticipant(eventId, userId);
-      setParticipantsData((prev) => prev.filter((p) => p.id !== participantId));
+      await fetchParticipants(true);
       toast.success('Participant removed');
     } catch (error) {
       console.error('Error removing participant:', error);
@@ -358,13 +348,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
                 if (!eventId) return;
                 try {
                   await checkInAllParticipants(eventId);
-                  setParticipantsData((prev) =>
-                    prev.map((p) =>
-                      !p.status || p.status === 'registered'
-                        ? { ...p, status: 'checked-in', checkedInAt: new Date().toISOString() }
-                        : p
-                    )
-                  );
+                  await fetchParticipants(true);
                   toast.success('All registered participants checked in');
                 } catch (error) {
                   console.error('Error checking in all participants:', error);
@@ -381,13 +365,7 @@ export function EventParticipants({ role }: EventParticipantsProps) {
                 if (!eventId) return;
                 try {
                   await markAllParticipantsNoShow(eventId);
-                  setParticipantsData((prev) =>
-                    prev.map((p) =>
-                      !p.status || p.status === 'registered' || p.status === 'checked-in'
-                        ? { ...p, status: 'no-show' }
-                        : p
-                    )
-                  );
+                  await fetchParticipants(true);
                   toast.success('All applicable participants marked as no-show');
                 } catch (error) {
                   console.error('Error marking all no-show:', error);
