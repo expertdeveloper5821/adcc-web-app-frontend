@@ -376,9 +376,88 @@ export const getEventResults = async (id: string): Promise<any[]> => {
     const response = await api.get(`/v1/events/${eventId}/results`);
     // Handle nested response structure
     const data = response.data?.data || response.data || [];
+    // console.log("dataaa" , data)
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error getting event results:', error);
     throw error;
   }
 };
+
+// Event participants operations
+
+export const checkInParticipant = async (
+  eventId: string,
+  userId: string
+): Promise<any> => {
+  try {
+    const response = await api.patch(`/v1/events/${eventId}/participants/${userId}/check-in`);
+    return (response as any).data?.data ?? response.data;
+  } catch (error) {
+    console.error('Error checking in participant:', error);
+    throw error;
+  }
+};
+
+export const markParticipantNoShow = async (
+  eventId: string,
+  userId: string
+): Promise<any> => {
+  try {
+    const response = await api.patch(`/v1/events/${eventId}/participants/${userId}/no-show`);
+    return (response as any).data?.data ?? response.data;
+  } catch (error) {
+    console.error('Error marking participant no-show:', error);
+    throw error;
+  }
+};
+
+export const checkInAllParticipants = async (eventId: string): Promise<any> => {
+  try {
+    const response = await api.patch(`/v1/events/${eventId}/participants/check-in-all`);
+    return (response as any).data?.data ?? response.data;
+  } catch (error) {
+    console.error('Error checking in all participants:', error);
+    throw error;
+  }
+};
+
+// Mark all event participants as no-show
+export const markAllParticipantsNoShow = async (eventId: string): Promise<any> => {
+  try {
+    const response = await api.patch(`/v1/events/${eventId}/participants/no-show-all`);
+    return (response as any).data?.data ?? response.data;
+  } catch (error) {
+    console.error('Error marking all participants no-show:', error);
+    throw error;
+  }
+};
+
+// Remove a participant from an event
+export const removeEventParticipant = async (
+  eventId: string,
+  userId: string
+): Promise<void> => {
+  try {
+    await api.delete(`/v1/events/${eventId}/participants/${userId}`);
+  } catch (error) {
+    console.error('Error removing event participant:', error);
+    throw error;
+  }
+};
+
+// Export event results as CSV (goes through axios interceptors)
+export const exportEventResultsCsv = async (eventId: string): Promise<Blob> => {
+  try {
+    const response = await api.get(`/v1/events/${eventId}/results/export`, {
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  } catch (error) {
+    console.error('Error exporting event results CSV:', error);
+    throw error;
+  }
+};
+
+
+
