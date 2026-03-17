@@ -155,7 +155,7 @@ export const createCommunity = async (
   }
 };
 
-// Update community (always FormData so backend requireMultipartFormData is satisfied; same key names)
+// Update community (always FormData so backend multer middleware is satisfied)
 export const updateCommunity = async (
   id: string,
   communityData: Partial<CreateCommunityRequest>,
@@ -193,27 +193,48 @@ export const updateCommunity = async (
   }
 };
 
-// Get all communities (optionally with pagination)
+// Get all communities (fetches all pages automatically)
 export const getAllCommunities = async (params?: { page?: number; limit?: number }): Promise<CommunityApiResponse[]> => {
-  const limit = params?.limit ?? 20;
-  const cacheKey = `communities:${params?.page ?? 1}:${limit}`;
+  const limit = params?.limit ?? 100;
+  const page = params?.page ?? 1;
+  const cacheKey = `communities:all`;
   const cached = getCached<CommunityApiResponse[]>(cacheKey);
   if (cached) return cached;
 
   try {
-    const response = await api.get<any>('/v1/communities', {
-      params: { page: params?.page ?? 1, limit },
-    });
-    const data = response.data;
-    const inner = (data as any).data;
-    let result: CommunityApiResponse[];
-    if (inner?.communities) result = inner.communities;
-    else if (Array.isArray((data as any).communities)) result = (data as any).communities;
-    else if (Array.isArray(inner)) result = inner;
-    else if (Array.isArray(data)) result = data;
-    else result = [];
-    setCache(cacheKey, result);
-    return result;
+    let allCommunities: CommunityApiResponse[] = [];
+    let currentPage = page;
+    let totalPages = 1;
+
+    do {
+      const response = await api.get<any>('/v1/communities', {
+        params: { page: currentPage, limit },
+      });
+      const data = response.data;
+      const inner = (data as any).data;
+
+      let result: CommunityApiResponse[] = [];
+      if (inner?.communities) result = inner.communities;
+      else if (Array.isArray((data as any).communities)) result = (data as any).communities;
+      else if (Array.isArray(inner)) result = inner;
+      else if (Array.isArray(data)) result = data;
+
+      allCommunities = [...allCommunities, ...result];
+
+      // Check pagination info to see if there are more pages
+      const pagination = inner?.pagination || (data as any).pagination;
+      if (pagination?.pages) {
+        totalPages = pagination.pages;
+      } else {
+        // No pagination info or no more results — stop
+        break;
+      }
+
+      currentPage++;
+    } while (currentPage <= totalPages);
+
+    setCache(cacheKey, allCommunities);
+    return allCommunities;
   } catch (error) {
     console.error('Error fetching communities:', error);
     throw error;

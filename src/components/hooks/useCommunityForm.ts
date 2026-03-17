@@ -133,7 +133,7 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
       // Legacy fields
       type: 'city',
       category: [],
-      location: 'Abu Dhabi, UAE',
+      location: 'Abu Dhabi',
       isActive: false,
     },
   });
@@ -144,9 +144,11 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
   // Initialize form with existing data
   useEffect(() => {
     if (initialData && isEditMode) {
-      // Parse location
-      const location = initialData.location || 'Abu Dhabi, UAE';
-      const [city = 'Abu Dhabi', country = 'UAE'] = location.split(', ');
+      // Parse location — backend stores just city name e.g. "Abu Dhabi"
+      const VALID_LOCATIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'];
+      const loc = initialData.location || '';
+      const city = VALID_LOCATIONS.includes(loc) ? loc : (VALID_LOCATIONS.includes((initialData as any).city ?? '') ? (initialData as any).city : loc || 'Abu Dhabi');
+      const country = (initialData as any).country || 'UAE';
 
       const categories = Array.isArray(initialData.category)
         ? initialData.category
@@ -196,7 +198,7 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
         // Legacy fields
         type: initialData.type || 'city',
         category: categories,
-        location: initialData.location || `${city}, ${country}`,
+        location: city,
         isActive: initialData.isActive,
       });
     }
@@ -204,8 +206,7 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
 
   // Update location when country/city changes
   useEffect(() => {
-    const location = `${selectedCity}, ${selectedCountry}`;
-    setValue('location', location);
+    setValue('location', selectedCity);
     setValue('city', selectedCity);
     setValue('country', selectedCountry);
   }, [selectedCity, selectedCountry, setValue]);

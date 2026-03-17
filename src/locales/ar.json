@@ -482,7 +482,14 @@
       "statusLabel": "الحالة",
       "visibilityLabel": "الرؤية",
       "featuredLabel": "مميز",
+      "createdLabel": "تاريخ الإنشاء",
       "managerLabel": "المدير",
+      "stats": {
+        "totalPosts": "إجمالي المنشورات",
+        "events": "الفعاليات",
+        "activeTracks": "المسارات النشطة",
+        "galleryItems": "عناصر المعرض"
+      },
       "feed": {
         "heading": "منشورات الموجز",
         "subheading": "إدارة إعلانات وتحديثات المجتمع",

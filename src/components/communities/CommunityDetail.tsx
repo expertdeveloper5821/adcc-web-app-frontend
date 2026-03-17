@@ -20,10 +20,9 @@ import {
 } from 'lucide-react';
 import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage } from '../../services/communitiesApi';
 import { toast } from 'sonner';
-import { getCommunity, getFeedPostsByCommunity, deleteFeedPost, updateFeedPost } from '../../data/communitiesData';
-// import { getAllTracks } from '../../data/tracksData';
-import { getAllTracks, deleteTrack, Track, archiveTrack } from '../../services/trackService';
-import { getAllEvents, deleteEvent as deleteEventApi, EventApiResponse } from '../../services/eventsApi';
+import { getFeedPostsByCommunity, deleteFeedPost, updateFeedPost } from '../../data/communitiesData';
+import { getAllTracks, Track } from '../../services/trackService';
+import { getAllEvents, EventApiResponse } from '../../services/eventsApi';
 import { DetailPageSkeleton } from '../ui/skeleton';
 
 
@@ -105,19 +104,15 @@ export function CommunityDetail() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const allEvents = await getAllEvents();
-        // Filter events for this community. communityId may be string or object.
+        const allEvents = await getAllEvents({ page: 1, limit: 100 });
+        // Filter events for this community. communityId may be a string or populated object.
         const filtered = allEvents.filter((event: any) => {
-          const match = (val: any) => {
-            if (!val) return false;
-            if (typeof val === 'string') return val === communityId;
-            if (typeof val === 'object') return val._id === communityId || val.id === communityId;
-            return false;
-          };
-          return match(event.communityId) || match(event.community);
+          const cid = event.communityId;
+          if (!cid) return false;
+          if (typeof cid === 'string') return cid === communityId;
+          if (typeof cid === 'object') return cid._id === communityId || cid.id === communityId;
+          return false;
         });
-        console.log('All Events:', allEvents);
-        console.log('Filtered Events for community:', filtered);
         setCommunityEvents(filtered);
       } catch (error: any) {
         console.error('Error fetching events:', error);
@@ -197,8 +192,6 @@ export function CommunityDetail() {
     }
   };
 
-  // console.log('CommunityEvents:', communityEvents);
-
   const handleDelete = async () => {
     try {
       await deleteCommunityApi(communityId);
@@ -237,8 +230,7 @@ export function CommunityDetail() {
         backgroundPosition: `center`,
         backgroundRepeat: `no-repeat`,
       }}>
-        {/* <img src={community.image} alt={community.title} className="w-full h-full  object-cover" /> */}
-        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" /> */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent rounded-2xl" />
 
         {/* Back button - top left only */}
         <button
@@ -262,11 +254,37 @@ export function CommunityDetail() {
               <div className="flex items-center gap-4 text-sm flex-wrap">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  <span>{community.city ?? community.location}</span>
+                  <span>{community.location || '—'}</span>
                 </div>
-                <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/20 backdrop-blur-sm">
-                  {typeof community.type === 'string' ? community.type : (Array.isArray(community.type) ? community.type.join(', ') : '')}
-                </span>
+                {(() => {
+                  const CITY_CATEGORIES = ['City Communities', 'المجتمعات الحضرية'];
+                  const PURPOSE_CATEGORIES = [
+                    'Awareness & Charity', 'Corporate', 'Education', 'Health', 'Special Purpose',
+                    'الوعي والخيرية', 'شركات', 'تعليمي', 'صحي',
+                  ];
+                  const FALLBACK_LABELS: Record<string, string> = {
+                    'communityTypes.nightRiders': 'Night Riders',
+                    'communityTypes.social/Weekend': 'Social / Weekend',
+                    'communityTypes.mtb/Trail': 'MTB / Trail',
+                    'communityTypes.education': 'Education',
+                    'communityTypes.health': 'Health',
+                  };
+                  const cleanLabel = (label: string): string => {
+                    if (FALLBACK_LABELS[label]) return FALLBACK_LABELS[label];
+                    if (label.startsWith('communityTypes.')) return label.replace('communityTypes.', '');
+                    return label;
+                  };
+                  const tags = (typeof community.type === 'string' ? [community.type] : (Array.isArray(community.type) ? community.type : [])).map(cleanLabel);
+                  const communityType = tags.length === 0 ? '' : tags.some(t => CITY_CATEGORIES.includes(t)) ? 'city' : tags.some(t => PURPOSE_CATEGORIES.includes(t)) ? 'purpose-based' : 'type';
+                  const typeColor = communityType === 'city' ? '#C12D32' : communityType === 'purpose-based' ? '#8B5CF6' : communityType === 'type' ? '#3B82F6' : '#999';
+                  const typeLabel = communityType === 'city' ? t('communities.card.cityType') : communityType === 'purpose-based' ? t('communities.card.purposeType') : communityType === 'type' ? t('communities.card.interestType') : '';
+
+                  return communityType ? (
+                    <span className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: typeColor }}>
+                      {typeLabel}
+                    </span>
+                  ) : null;
+                })()}
                 <div className="flex items-center gap-1">
                   <Users className="w-4 h-4" />
                   <span>{((community.stats?.members ?? Number(community.memberCount)) || 0).toLocaleString()} {t('communities.detail.members')}</span>
@@ -330,22 +348,22 @@ export function CommunityDetail() {
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <MessageSquare className="w-8 h-8 mb-3" style={{ color: '#C12D32' }} />
                 <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{community.postsCount ?? 0}</div>
-                <div className="text-sm" style={{ color: '#666' }}>Total Posts</div>
+                <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.totalPosts', 'Total Posts')}</div>
               </div>
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <Calendar className="w-8 h-8 mb-3" style={{ color: '#CF9F0C' }} />
                 <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{community.stats?.upcomingEvents ?? community.eventsCount ?? 0}</div>
-                <div className="text-sm" style={{ color: '#666' }}>Events</div>
+                <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.events', 'Events')}</div>
               </div>
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <Route className="w-8 h-8 mb-3" style={{ color: '#10B981' }} />
                 <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{allTracks.length}</div>
-                <div className="text-sm" style={{ color: '#666' }}>Active Tracks</div>
+                <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.activeTracks', 'Active Tracks')}</div>
               </div>
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <Image className="w-8 h-8 mb-3" style={{ color: '#8B5CF6' }} />
                 <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{galleryImages.length}</div>
-                <div className="text-sm" style={{ color: '#666' }}>Gallery Items</div>
+                <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.galleryItems', 'Gallery Items')}</div>
               </div>
             </div>
 
@@ -406,7 +424,7 @@ export function CommunityDetail() {
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: '#666' }}>Created</span>
+                  <span className="text-sm" style={{ color: '#666' }}>{t('communities.detail.createdLabel', 'Created')}</span>
                   <span className="text-sm" style={{ color: '#333' }}>
                     {community.createdAt ? new Date(community.createdAt).toLocaleDateString() : '—'}
                   </span>
@@ -596,19 +614,16 @@ export function CommunityDetail() {
                     <div className="flex items-center gap-2 mb-3 text-sm" style={{ color: '#666' }}>
                       <Calendar className="w-4 h-4" />
                       <span>
-                        {new Date(event.startDate || event.date).toLocaleDateString()} •{' '}
-                        {new Date(event.startDate || event.date).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {event.eventDate ? new Date(event.eventDate).toLocaleDateString() : '—'} •{' '}
+                        {event.eventTime || (event.eventDate ? new Date(event.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—')}
                       </span>
                     </div>
 
                     {/* Event Location */}
-                    {(event.location || event.venue) && (
+                    {(event.address || event.city) && (
                       <div className="flex items-center gap-2 mb-4 text-sm" style={{ color: '#666' }}>
                         <MapPin className="w-4 h-4" />
-                        <span>{event.location || event.venue}</span>
+                        <span>{event.address || event.city}</span>
                       </div>
                     )}
 
@@ -620,15 +635,19 @@ export function CommunityDetail() {
                     {/* Status Badge */}
                     <div className="flex items-center justify-between">
                       <span
-                        className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                        className="px-3 py-1 rounded-full text-xs font-medium text-white capitalize"
                         style={{
-                          backgroundColor: event.status === 'active' || event.isActive ? '#10B981' : '#6B7280',
+                          backgroundColor:
+                            event.status === 'Open' ? '#10B981' :
+                            event.status === 'Full' ? '#F59E0B' :
+                            event.status === 'Completed' ? '#3B82F6' :
+                            event.status === 'Draft' ? '#6B7280' : '#EF4444',
                         }}
                       >
-                        {event.status === 'active' || event.isActive ? t('common.active') : t('common.inactive')}
+                        {event.status || 'Unknown'}
                       </span>
                       <span className="text-xs" style={{ color: '#999' }}>
-                        {t('communities.detail.eventsTab.participants', { count: event.participants?.length || 0 })}
+                        {t('communities.detail.eventsTab.participants', { count: event.currentParticipants || 0 })}
                       </span>
                     </div>
                   </div>
@@ -653,54 +672,82 @@ export function CommunityDetail() {
       )}
 
       {/* Tracks Tab */}
-      {activeTab === 'tracks' && (
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.tracksTab.assignTracks')}</h2>
-            <p style={{ color: '#666' }}>{t('communities.detail.tracksTab.tracksHint')}</p>
-          </div>
+      {activeTab === 'tracks' && (() => {
+        // Community's directly associated track (populated object from backend)
+        const communityTrackObj = community.trackId as any;
+        const communityTrackId = communityTrackObj?._id || communityTrackObj?.id || (typeof communityTrackObj === 'string' ? communityTrackObj : null);
 
-          <div className="rounded-2xl p-6 bg-white shadow-sm">
-            <div className="space-y-3">
-              {allTracks.map((track) => (
-                <label
-                  key={track.id}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded border-gray-300"
-                    style={{ accentColor: '#C12D32' }}
-                    defaultChecked={Math.random() > 0.5}
-                  />
-                  <div className="flex items-center gap-4 flex-1">
+        // Tracks from community events
+        const eventTrackIds = new Set<string>();
+        communityEvents.forEach((event: any) => {
+          const tid = event.trackId?._id || event.trackId?.id || (typeof event.trackId === 'string' ? event.trackId : null);
+          if (tid && tid !== communityTrackId) eventTrackIds.add(tid);
+        });
+
+        // Match associated tracks from allTracks
+        const primaryTrack = communityTrackId ? allTracks.find(t => t.id === communityTrackId || (t as any)._id === communityTrackId) : null;
+        const eventTracks = allTracks.filter(t => eventTrackIds.has(t.id) || eventTrackIds.has((t as any)._id));
+
+        // Build display list with labels
+        const associatedTracks: { track: Track; label: string }[] = [];
+        if (primaryTrack) associatedTracks.push({ track: primaryTrack, label: 'Primary Track' });
+        eventTracks.forEach(t => associatedTracks.push({ track: t, label: 'From Events' }));
+
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.tracksTab.assignTracks')}</h2>
+                <p style={{ color: '#666' }}>{associatedTracks.length} {associatedTracks.length === 1 ? 'track' : 'tracks'} associated</p>
+              </div>
+            </div>
+
+            {associatedTracks.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {associatedTracks.map(({ track, label }) => (
+                  <div
+                    key={track.id || (track as any)._id}
+                    className="rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => navigate(`/tracks/${track.id || (track as any)._id}`)}
+                  >
                     <img
                       src={track.image}
                       alt={track.title}
-                      className="w-16 h-16 rounded-lg object-cover"
+                      className="w-full h-40 object-cover"
                     />
-                    <div className="flex-1">
-                      <div className="font-medium" style={{ color: '#333' }}>{track.title}</div>
-                      <div className="text-sm" style={{ color: '#666' }}>
-                        {track.distance}km • {track.difficulty}
+                    <div className="p-6">
+                      <h3 className="text-lg font-semibold mb-2" style={{ color: '#333' }}>{track.title}</h3>
+                      <div className="flex items-center gap-4 mb-3 text-sm" style={{ color: '#666' }}>
+                        {track.distance && <span>{track.distance} km</span>}
+                        {track.difficulty && (
+                          <>
+                            <span>•</span>
+                            <span className="capitalize">{track.difficulty}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: label === 'Primary Track' ? '#C12D32' : '#3B82F6' }}
+                        >
+                          {label}
+                        </span>
                       </div>
                     </div>
                   </div>
-                </label>
-              ))}
-            </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => toast.success(t('communities.detail.toasts.tracksAssigned'))}
-                className="px-6 py-3 rounded-xl text-white transition-all"
-                style={{ backgroundColor: '#C12D32' }}
-              >
-                {t('communities.detail.tracksTab.saveChanges')}
-              </button>
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
+                <Route className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+                <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>No Tracks Associated</h3>
+                <p style={{ color: '#666' }}>This community doesn't have any tracks assigned yet.</p>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Gallery Tab */}
       {activeTab === 'gallery' && (

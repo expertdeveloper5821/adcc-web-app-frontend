@@ -508,9 +508,9 @@
       "tabs": {
         "about": "about",
         "overview": "Overview",
-        "members": "members",
-        "events": "events",
-        "gallery": "gallery",
+        "members": "Members",
+        "events": "Events",
+        "gallery": "Gallery",
         "feed": "Feed Posts",
         "tracks": "Tracks"
       },
@@ -523,7 +523,14 @@
       "statusLabel": "Status",
       "visibilityLabel": "Visibility",
       "featuredLabel": "Featured",
+      "createdLabel": "Created",
       "managerLabel": "Manager",
+      "stats": {
+        "totalPosts": "Total Posts",
+        "events": "Events",
+        "activeTracks": "Active Tracks",
+        "galleryItems": "Gallery Items"
+      },
       "feed": {
         "heading": "Feed Posts",
         "subheading": "Manage community announcements and updates",

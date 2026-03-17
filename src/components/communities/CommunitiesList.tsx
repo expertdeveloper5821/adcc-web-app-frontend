@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Users, MapPin, Calendar, Star, Filter } from 'lucide-react';
+import { Plus, Search, Users, MapPin, Calendar, Star, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CardSkeleton } from '../ui/skeleton';
 import { UserRole } from '../../App';
 import { toast } from 'sonner';
@@ -46,21 +46,48 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const communitiesPerPage = 9;
 
 
-  /** Clean up raw i18n keys the backend may return (e.g. "communityTypes.awarenessSpecialCommunities") */
-  const FALLBACK_LABELS: Record<string, string> = {
-    'communityTypes.nightRiders': 'Night Riders',
-    'communityTypes.social/Weekend': 'Social / Weekend',
-    'communityTypes.mtb/Trail': 'MTB / Trail',
-    'communityTypes.education': 'Education',
-    'communityTypes.health': 'Health',
+  /** Map any raw key/camelCase/prefixed value back to English display name for t() lookup */
+  const CAMEL_TO_ENGLISH: Record<string, string> = {
+    'citycommunities': 'City Communities',
+    'groupcommunities': 'Group Communities',
+    'racingperformance': 'Racing & Performance',
+    'racing&performance': 'Racing & Performance',
+    'familyleisure': 'Family & Leisure',
+    'family&leisure': 'Family & Leisure',
+    'women(sherides)': 'Women (SheRides)',
+    'youth': 'Youth',
+    'socialweekend': 'Social / Weekend',
+    'social/weekend': 'Social / Weekend',
+    'nightriders': 'Night Riders',
+    'mtbtrail': 'MTB / Trail',
+    'mtb/trail': 'MTB / Trail',
+    'trainingclinics': 'Training & Clinics',
+    'training&clinics': 'Training & Clinics',
+    'awarenesscharity': 'Awareness & Charity',
+    'awareness&charity': 'Awareness & Charity',
+    'corporate': 'Corporate',
+    'education': 'Education',
+    'health': 'Health',
+    'specialpurpose': 'Special Purpose',
   };
   const cleanCategoryLabel = (label: string): string => {
-    if (FALLBACK_LABELS[label]) return FALLBACK_LABELS[label];
-    // Strip "communityTypes." prefix if backend returned a raw key
-    if (label.startsWith('communityTypes.')) return label.replace('communityTypes.', '');
-    return label;
+    // Strip prefix if present
+    const stripped = label.startsWith('communityTypes.') || label.startsWith('categories.')
+      ? label.replace(/^(communityTypes|categories)\./, '')
+      : label;
+    // Normalize to lowercase, remove spaces/special chars for lookup
+    const normalized = stripped.toLowerCase().replace(/[\s_&/()]/g, '');
+    if (CAMEL_TO_ENGLISH[normalized]) return CAMEL_TO_ENGLISH[normalized];
+    // Try with slash/special chars preserved
+    const normalizedWithSlash = stripped.toLowerCase().replace(/[\s_&()]/g, '');
+    if (CAMEL_TO_ENGLISH[normalizedWithSlash]) return CAMEL_TO_ENGLISH[normalizedWithSlash];
+    // If it's already a known English name, return as-is
+    if (Object.values(CAMEL_TO_ENGLISH).includes(stripped)) return stripped;
+    return stripped;
   };
 
   // Map API response to component format
@@ -78,17 +105,30 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       city: apiCommunity.location || apiCommunity.city || '',
       memberCount: apiCommunity.memberCount !== undefined ? String(apiCommunity.memberCount) : (apiCommunity.membersCount !== undefined ? String(apiCommunity.membersCount) : '0'),
       upcomingEventCount: apiCommunity.upcomingEventCount !== undefined ? String(apiCommunity.upcomingEventCount) : (apiCommunity.eventsCount !== undefined ? String(apiCommunity.eventsCount) : '0'),
-      // Category tags come from `type` array; fall back to `category` string
-      type: normalizeToArray(apiCommunity.type || apiCommunity.types || apiCommunity.tags || apiCommunity.category),
-      // Primary community classification derived from category tags
+      // Category tags from `category` field (comma-separated); cleaned for display
+      type: (() => {
+        const TYPE_MARKERS = ['City Communities', 'Special Purpose', 'Group Communities'];
+        const raw = apiCommunity.category || '';
+        if (raw) {
+          const cats = typeof raw === 'string'
+            ? raw.split(',').map(s => s.trim()).filter(Boolean).map(cleanCategoryLabel)
+            : [];
+          return cats.filter(t => !TYPE_MARKERS.includes(t));
+        }
+        // Fallback: use type array but exclude markers
+        const typeArr = Array.isArray(apiCommunity.type) ? apiCommunity.type : (typeof apiCommunity.type === 'string' ? [apiCommunity.type] : []);
+        return typeArr.map(cleanCategoryLabel).filter(t => !TYPE_MARKERS.includes(t));
+      })(),
+      // Primary community classification derived from `type` array
       communityType: (() => {
-        const tags = normalizeToArray(apiCommunity.type || apiCommunity.types || apiCommunity.tags || apiCommunity.category);
+        const tags = normalizeToArray(apiCommunity.type);
         return deriveCommunityType(tags);
       })(),
+      status: apiCommunity.isActive ? 'Active' : 'Disabled',
       description: apiCommunity.description || '',
       isActive: apiCommunity.isActive ?? false,
       isFeatured: apiCommunity.isFeatured ?? apiCommunity.featured ?? false,
-      logo: apiCommunity.image || 'https://images.unsplash.com/photo-1584981401957-03158e43750d?w=200',
+      logo: apiCommunity.logo || apiCommunity.image || 'https://images.unsplash.com/photo-1584981401957-03158e43750d?w=200',
       coverImage: apiCommunity.image || 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?w=800',
       membersCount: parseInt(String(apiCommunity.memberCount || apiCommunity.membersCount || 0)) || 0,
       eventsCount: parseInt(String(apiCommunity.upcomingEventCount || apiCommunity.eventsCount || 0)) || 0,
@@ -182,7 +222,12 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     return () => { i18n.off('languageChanged', onLanguageChanged); };
   }, [fetchCommunities, i18n]);
 
-  const filteredCommunities = communities.filter(community => {
+  // Reset to page 1 when any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, cityFilter, communityTypeFilter, statusFilter, categoryFilter, featuredFilter]);
+
+  const filteredCommunities = useMemo(() => communities.filter(community => {
     const q = searchTerm.toLowerCase();
     const matchesSearch = !q || community.name.toLowerCase().includes(q) || community.description.toLowerCase().includes(q);
     const matchesCity = cityFilter === 'all' || community.city === cityFilter;
@@ -191,7 +236,13 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     const matchesCategory = categoryFilter.length === 0 || (community.type || []).some(cat => categoryFilter.includes(cat));
     const matchesFeatured = featuredFilter === 'all' || (featuredFilter === 'yes' ? community.isFeatured : !community.isFeatured);
     return matchesSearch && matchesCity && matchesCommunityType && matchesStatus && matchesCategory && matchesFeatured;
-  });
+  }), [communities, searchTerm, cityFilter, communityTypeFilter, statusFilter, categoryFilter, featuredFilter]);
+
+  const totalPages = Math.ceil(filteredCommunities.length / communitiesPerPage);
+  const paginatedCommunities = useMemo(() => {
+    const start = (currentPage - 1) * communitiesPerPage;
+    return filteredCommunities.slice(start, start + communitiesPerPage);
+  }, [filteredCommunities, currentPage]);
 
   const canEdit = role === 'super-admin' || role === 'community-manager';
   const canCreate = role === 'super-admin' || role === 'community-manager';
@@ -221,7 +272,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
 
   const CITY_CATEGORIES = ['City Communities', 'المجتمعات الحضرية'];
   const PURPOSE_CATEGORIES = [
-    'Awareness & Charity', 'Corporate', 'Education', 'Health',
+    'Awareness & Charity', 'Corporate', 'Education', 'Health', 'Special Purpose',
     'الوعي والخيرية', 'شركات', 'تعليمي', 'صحي',
   ];
 
@@ -412,7 +463,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
         </div>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCommunities.map((community) => (
+        {paginatedCommunities.map((community) => (
           <div
             key={community.id}
             onClick={() => navigate(`/communities/${community.id}`)}
@@ -455,15 +506,15 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
                   </span>
                 </div>
               )}
-              {/* Category tags (already localized by backend) */}
+              {/* Category tags */}
               <div className="flex flex-wrap gap-1">
-                {(community.type || []).map((cat, i) => (
+                {(community.type || []).filter(cat => !['City Communities', 'Special Purpose', 'Group Communities'].includes(cat)).map((cat, i) => (
                   <span
                     key={i}
                     className="px-3 py-1 rounded-full text-xs"
                     style={{ backgroundColor: '#ECC180', color: '#333' }}
                   >
-                    {cat}
+                    {t(`data.communityCategories.${cat}`, cat)}
                   </span>
                 ))}
               </div>
@@ -505,6 +556,60 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
               ? t('communities.empty.tryFilters')
               : t('communities.empty.createFirst')}
           </p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between p-4 rounded-2xl shadow-sm bg-white">
+          <span className="text-sm" style={{ color: '#666' }}>
+            {t('communities.pagination.showing', {
+              from: (currentPage - 1) * communitiesPerPage + 1,
+              to: Math.min(currentPage * communitiesPerPage, filteredCommunities.length),
+              total: filteredCommunities.length,
+              defaultValue: `Showing ${(currentPage - 1) * communitiesPerPage + 1}-${Math.min(currentPage * communitiesPerPage, filteredCommunities.length)} of ${filteredCommunities.length}`,
+            })}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-40 hover:bg-gray-50"
+            >
+              <ChevronLeft className="w-4 h-4" style={{ color: '#666' }} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+              .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                if (idx > 0 && page - (arr[idx - 1] as number) > 1) acc.push('...');
+                acc.push(page);
+                return acc;
+              }, [])
+              .map((page, idx) =>
+                typeof page === 'string' ? (
+                  <span key={`ellipsis-${idx}`} className="px-2 text-sm" style={{ color: '#999' }}>...</span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className="w-9 h-9 rounded-lg text-sm transition-colors"
+                    style={{
+                      backgroundColor: currentPage === page ? '#C12D32' : 'transparent',
+                      color: currentPage === page ? '#fff' : '#666',
+                    }}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-40 hover:bg-gray-50"
+            >
+              <ChevronRight className="w-4 h-4" style={{ color: '#666' }} />
+            </button>
+          </div>
         </div>
       )}
 
