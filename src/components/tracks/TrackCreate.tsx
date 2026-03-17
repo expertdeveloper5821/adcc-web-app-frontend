@@ -609,7 +609,7 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                  <span className="text-sm" style={{ color: '#333' }}>{facility.label}</span>
+                  <span className="text-sm" style={{ color: '#333' }}>{t(`tracks.create.facilityOptions.${facility.key}`)}</span>
                 </label>
               ))}
             </div>

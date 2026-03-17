@@ -751,7 +751,7 @@ const handleDisable = async (id: string, name: string) => {
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
-                    <span className="font-medium">{facility.label}</span>
+                    <span className="font-medium">{t(`tracks.edit.facilityOptions.${facility.value}`)}</span>
                   </label>
                 );
               })}
