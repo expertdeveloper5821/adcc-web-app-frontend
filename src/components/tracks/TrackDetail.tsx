@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, MapPin, Users, Calendar, Trophy, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UserRole } from '../../App';
@@ -19,6 +19,7 @@ type TabType = 'overview' | 'events' | 'communities';
 export function TrackDetail({  role }: TrackDetailProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const trackId = id;
@@ -188,7 +189,10 @@ export function TrackDetail({  role }: TrackDetailProps) {
         </div>
 
         <button
-          onClick={() => trackIdForApi && navigate(`/tracks/${trackIdForApi}/edit`)}
+          onClick={() =>
+            trackIdForApi &&
+            navigate(`/tracks/${trackIdForApi}/edit`, { state: { from: location.pathname } })
+          }
           className="flex items-center gap-2 px-6 py-3 rounded-xl text-white transition-all hover:shadow-lg"
           style={{ backgroundColor: '#C12D32' }}
         >

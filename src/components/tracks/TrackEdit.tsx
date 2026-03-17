@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Archive, AlertTriangle, Globe } from 'lucide-react';
-import { getAllEvents } from '../../data/eventsData';
-import { getAllCommunities } from '../../data/communitiesData';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { UserRole } from '../../App';
-import { getTrackById, getTrackResults, trackCommunityResults, updateTrack, deleteTrack, disableTrack, enableTrack } from '../../services/trackService';
-import { FacilityType } from '@/types/track.types';
-import { TRACK_FACILITIES } from '@/constants/track.constants';
+import { getTrackById, getTrackResults, trackCommunityResults, updateTrack, deleteTrack, disableTrack, enableTrack, Track } from '../../services/trackService';
+import { FacilityType } from '../../types/track.types';
+import { TRACK_FACILITIES, FACILITY_VALUE_TO_API_TEXT, API_TEXT_TO_FACILITY_VALUE } from '../../constants/track.constants';
 import { useLocale } from '../../contexts/LocaleContext';
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../ui/skeleton';
@@ -20,6 +18,7 @@ interface TrackEditProps {
 export function TrackEdit({ role }: TrackEditProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const location = useLocation();
 
   const { id } = useParams<{ id: string }>();
   const trackId = id;
@@ -27,7 +26,7 @@ export function TrackEdit({ role }: TrackEditProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { locale } = useLocale();
-  const [ track, setTrack ] = useState<Track | null >(null);
+  const [ track, setTrack ] = useState< null | any | Track >(null);
 
   const [linkedEvents, setLinkedEvents] = useState<any[]>([]);
   const [linkedCommunities, setLinkedCommunities] = useState<any[]>([]);
@@ -36,6 +35,13 @@ export function TrackEdit({ role }: TrackEditProps) {
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+
+  const fromPath =
+    typeof (location.state as any)?.from === 'string' && (location.state as any).from.length
+      ? (location.state as any).from
+      : null;
+  console.log('fromPath', fromPath);
+  const backTarget = fromPath ?? '/tracks';
 
   // Load track data on component mount
   useEffect(() => {
@@ -159,9 +165,12 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     loopOptionInput: '',
     facilities: [] as string[],
     safetyNotes: '',
+    shortDescription: '',
     helmetRequired: true,
     nightRidingAllowed: false,
     status: 'open' as 'open' | 'limited' | 'closed',
+    image: '',
+    mapPreview: '',
     visibility: 'Public' as 'Public' | 'Hidden',
     displayPriority: 5,
     thumbnailImage: '',
@@ -191,7 +200,9 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     status: track.status || prev.status,
     image: track.image || prev.image,
     mapPreview: track.mapPreview || prev.mapPreview,
-    facilities: track.facilities || prev.facilities,
+    facilities: (track.facilities || prev.facilities).map((f: string) =>
+      API_TEXT_TO_FACILITY_VALUE[String(f).toLowerCase()] ?? f
+    ),
     estimatedTime: track.estimatedTime || prev.estimatedTime,
     // If backend returns loopOptions as CSV string, parse it into numbers
     loopOptions: (track as any).loopOptions
@@ -201,7 +212,6 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       : prev.loopOptions,
   }));
 }, [track]);
-
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -344,7 +354,7 @@ const handleGalleryUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         elevation: String(formData.elevation ?? ''),
         estimatedTime: formData.estimatedTime || undefined,
         loopOptions: (formData.loopOptions || []).length ? formData.loopOptions : undefined,
-        facilities: formData.facilities,
+        facilities: formData.facilities.map((v) => FACILITY_VALUE_TO_API_TEXT[v as keyof typeof FACILITY_VALUE_TO_API_TEXT] ?? v),
         safetyNotes: formData.safetyNotes,
         helmetRequired: Boolean(formData.helmetRequired),
         nightRidingAllowed: Boolean(formData.nightRidingAllowed),
@@ -367,7 +377,7 @@ const handleGalleryUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
       await updateTrack(trackId, payload, imageFiles);
 
       toast.success(t('tracks.edit.toasts.updateSuccess'));
-      navigate(`/tracks/${trackId}`);
+      navigate(backTarget);
     } catch (error: any) {
       console.error('Update error:', error?.response?.data || error);
       toast.error(t('tracks.edit.toasts.updateError'));
@@ -393,7 +403,7 @@ const handleDisable = async (id: string, name: string) => {
   try {
     await disableTrack(id);
     toast.success(t('tracks.edit.toasts.disabled'));
-    setTrack();
+    setTrack(null);
   } catch (error: any) {
     toast.error(error?.response?.data?.message || t('tracks.edit.toasts.disableError'));
   }
@@ -408,7 +418,7 @@ const handleDisable = async (id: string, name: string) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(`/tracks/${trackId}`) }
+            onClick={() => navigate(backTarget)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-6 h-6" style={{ color: '#333' }} />
@@ -727,7 +737,6 @@ const handleDisable = async (id: string, name: string) => {
             <div className="grid grid-cols-3 gap-4">
               {TRACK_FACILITIES.map((facility) => {
                 const isChecked = formData.facilities.includes(facility.value);
-
                 return (
                   <label
                     key={facility.value}
@@ -737,8 +746,8 @@ const handleDisable = async (id: string, name: string) => {
                   >
                    <input
                     type="checkbox"
-                    checked={formData.facilities.includes(facility)}
-                    onChange={() => toggleFacility(facility)}
+                    checked={formData.facilities.includes(facility.value)}
+                    onChange={() => toggleFacility(facility.value)}
                     className="w-4 h-4"
                     style={{ accentColor: '#C12D32' }}
                   />
@@ -974,7 +983,7 @@ const handleDisable = async (id: string, name: string) => {
 
             <button
               type="button"
-              onClick={() => navigate(`/tracks/${trackId}`)}
+              onClick={() => navigate(backTarget)}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >

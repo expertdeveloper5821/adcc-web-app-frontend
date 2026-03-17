@@ -252,7 +252,7 @@ export function TracksList({ role }: TracksListProps) {
         </div>
         <div className="p-4 rounded-xl bg-white shadow-sm">
           <p className="text-sm mb-1" style={{ color: '#666' }}>{t('tracks.totalDistance')}</p>
-          <p className="text-2xl" style={{ color: '#333' }}>{tracks.reduce((sum, t) => sum + t.distance, 0)} {t('common.km')}</p>
+          <p className="text-2xl" style={{ color: '#333' }}>{tracks.reduce((sum, t) => sum + t.distance, 0).toFixed(2)} {t('common.km')}</p>
         </div>
       </div>
 
@@ -374,24 +374,24 @@ export function TracksList({ role }: TracksListProps) {
                           <div className="flex items-center gap-3 mb-2">
                             <h3
                               className="text-xl cursor-pointer hover:underline"
-                              style={{ color: '#333' }}
+                              style={{ color: '#333', textTransform: 'capitalize' }}
                               onClick={() => trackId && navigate(`/tracks/${trackId}`)}
                             >
                               {track.title}
                             </h3>
                             <span
                               className="px-3 py-1 rounded-full text-xs text-white"
-                              style={{ backgroundColor: getStatusColor(track.status) }}
+                              style={{ backgroundColor: getStatusColor(track.status), textTransform: 'capitalize' }}
                             >
                               {t(`data.statuses.${track.status}`, track.status)}
                             </span>
-                            <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: '#ECC180', color: '#333' }}>
+                            <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: '#ECC180', color: '#333',textTransform: 'capitalize' }}>
                               {t(`data.trackTypes.${track.trackType}`, track.trackType)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mb-2">
                             <MapPin className="w-4 h-4" style={{ color: '#999' }} />
-                            <span className="text-sm" style={{ color: '#666' }}>{track.area}, {t(`data.locations.${track.city}`, track.city)}</span>
+                            <span className="text-sm" style={{ color: '#666',textTransform: 'capitalize' }}>{track.area}, {t(`data.locations.${track.city}`, track.city)}</span>
                           </div>
                         </div>
                       </div>
@@ -405,7 +405,7 @@ export function TracksList({ role }: TracksListProps) {
                           <div className="text-xs mb-1" style={{ color: '#999' }}>{t('tracks.card.difficulty')}</div>
                           <span
                             className="px-2 py-1 rounded text-xs text-white"
-                            style={{ backgroundColor: getDifficultyColor(track.difficulty) }}
+                            style={{ backgroundColor: getDifficultyColor(track.difficulty),textTransform: 'capitalize' }}
                           >
                             {track.difficulty ? t(`data.difficulties.${track.difficulty}`, track.difficulty) : t('tracks.card.na')}
                           </span>
