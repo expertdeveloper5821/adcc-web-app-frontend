@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Edit, Copy, Bell, ImageIcon, Trophy, UserCheck, Users, Star, Share2, Calendar, MapPin, Clock, Award, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
-import { getEvent } from '../../data/eventsData';
-import { getEventById, updateEvent as updateEventApi, EventApiResponse, getEventResults } from '../../services/eventsApi';
+
+import { getEventById, updateEvent as updateEventApi, EventApiResponse, getEventResults , getparticipants } from '../../services/eventsApi';
 import { DetailPageSkeleton } from '../ui/skeleton';
 
 interface EventDetailProps {
@@ -46,6 +46,7 @@ export function EventDetail({ role }: EventDetailProps) {
       const [fetchedEvent, fetchedParticipants] = await Promise.all([
         getEventById(eventId),
         getEventResults(eventId),
+        // getparticipants(eventId),
       ]);
       setEvent(fetchedEvent);
       setParticipants(fetchedParticipants);
