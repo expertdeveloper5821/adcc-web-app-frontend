@@ -353,6 +353,7 @@ export function EventDetail({ role }: EventDetailProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-start gap-3">
                   <Calendar className="w-5 h-5 mt-1" style={{ color: '#999' }} />
+                  
                   <div>
                     <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.date')}</p>
                     <p style={{ color: '#333' }}>
@@ -387,7 +388,11 @@ export function EventDetail({ role }: EventDetailProps) {
                   <Users className="w-5 h-5 mt-1" style={{ color: '#999' }} />
                   <div>
                     <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.community')}</p>
-                    <p style={{ color: '#333' }}>{event.communityName}</p>
+                    <p style={{ color: '#333' }}>
+                      {typeof event.communityId === 'object' && event.communityId
+                        ? (event.communityId as any).title || (event.communityId as any).name || ''
+                        : (event as any).communityName || ''}
+                    </p>
                   </div>
                 </div>
               </div>
