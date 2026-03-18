@@ -747,6 +747,15 @@
         "intermediate": "Intermediate",
         "advanced": "Advanced"
       },
+      "gender": "Gender",
+      "genderOptions": {
+        "all": "All",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "helmetRequired": "Helmet Required",
+      "roadBikeOnly": "Road Bike Only",
       "statusOptions": {
         "draft": "Draft",
         "open": "Open",
@@ -855,6 +864,8 @@
       "reopenRegistration": "Re-open Registration",
       "markCompleted": "Mark as Completed",
       "disableEvent": "Disable Event",
+      "disableConfirmTitle": "Disable Event?",
+      "disableConfirmMessage": "This will prevent new registrations and hide the event from the public. You can re-enable it later.",
       "archiveEvent": "Archive Event",
       "addScheduleRow": "Add schedule row",
       "coverImage": "Cover Image",
@@ -869,6 +880,15 @@
         "intermediate": "Intermediate",
         "advanced": "Advanced"
       },
+      "gender": "Gender",
+      "genderOptions": {
+        "all": "All",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "helmetRequired": "Helmet Required",
+      "roadBikeOnly": "Road Bike Only",
       "toasts": {
         "loadError": "Failed to load event. Please try again.",
         "notFound": "Event not found",
@@ -1750,5 +1770,9 @@
     "notificationsHint": "Notifications to participants will be listed here",
     "retry": "Retry",
     "cancel": "Cancel"
+  },
+  "member":{
+    "member-managaement": "Member Management",
+    "view-manage-community-members": "View and manage community members"
   }
 }

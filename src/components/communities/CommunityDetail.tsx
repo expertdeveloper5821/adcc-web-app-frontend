@@ -740,7 +740,7 @@ export function CommunityDetail() {
                     <div className="p-6">
                       <h3 className="text-lg font-semibold mb-2" style={{ color: '#333' }}>{track.title}</h3>
                       <div className="flex items-center gap-4 mb-3 text-sm" style={{ color: '#666' }}>
-                        {track.distance && <span>{track.distance} km</span>}
+                        {track.distance && <span>{track.distance} {t('common.km')}</span>}
                         {track.difficulty && (
                           <>
                             <span>•</span>
@@ -855,8 +855,8 @@ export function CommunityDetail() {
 
           <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
             <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-            <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>Member Management</h3>
-            <p style={{ color: '#666' }}>View and manage community members</p>
+            <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>{t('member.member-managaement')}</h3>
+            <p style={{ color: '#666' }}>{t('member.view-manage-community-members')}</p>
           </div>
         </div>
       )}

@@ -418,8 +418,22 @@
       "coverImage": "صورة الغلاف",
       "communityManager": "مدير المجتمع",
       "moderators": "المشرفون (اختيار متعدد)",
+      "status": "الحالة",
+      "statusOptions": {
+        "draft": "مسودة",
+        "active": "نشط"
+      },
       "visibility": "الرؤية",
+      "visibilityOptions": {
+        "public": "عام",
+        "private": "خاص"
+      },
       "joinMode": "طريقة الانضمام",
+      "joinModeOptions": {
+        "open": "مفتوح",
+        "approvalRequired": "يتطلب موافقة",
+        "inviteOnly": "بدعوة فقط"
+      },
       "displayPriority": "أولوية العرض",
       "noTracksInCity": "لا توجد مسارات متاحة في {{city}}",
       "oneTrackAssigned": "تم تعيين مسار واحد",
@@ -706,6 +720,15 @@
         "intermediate": "متوسط",
         "advanced": "متقدم"
       },
+      "gender": "الجنس",
+      "genderOptions": {
+        "all": "الكل",
+        "male": "ذكر",
+        "female": "أنثى",
+        "other": "أخرى"
+      },
+      "helmetRequired": "الخوذة مطلوبة",
+      "roadBikeOnly": "دراجة طريق فقط",
       "statusOptions": {
         "draft": "مسودة",
         "open": "مفتوح",
@@ -814,6 +837,8 @@
       "reopenRegistration": "إعادة فتح التسجيل",
       "markCompleted": "تحديد كمكتمل",
       "disableEvent": "تعطيل الفعالية",
+      "disableConfirmTitle": "تعطيل الفعالية؟",
+      "disableConfirmMessage": "سيؤدي هذا إلى منع التسجيلات الجديدة وإخفاء الفعالية من العرض العام. يمكنك إعادة تفعيلها لاحقاً.",
       "archiveEvent": "أرشفة الفعالية",
       "addScheduleRow": "إضافة صف جدول",
       "coverImage": "صورة الغلاف",
@@ -828,6 +853,15 @@
         "intermediate": "متوسط",
         "advanced": "متقدم"
       },
+      "gender": "الجنس",
+      "genderOptions": {
+        "all": "الكل",
+        "male": "ذكر",
+        "female": "أنثى",
+        "other": "أخرى"
+      },
+      "helmetRequired": "الخوذة مطلوبة",
+      "roadBikeOnly": "دراجة طريق فقط",
       "toasts": {
         "loadError": "فشل في تحميل الفعالية. يرجى المحاولة مرة أخرى.",
         "notFound": "الحدث غير موجود",
@@ -1709,5 +1743,9 @@
     "notificationsHint": "سيتم عرض الإشعارات المرسلة للمشاركين هنا",
     "retry": "إعادة المحاولة",
     "cancel": "إلغاء"
+  },
+  "member":{
+    "member-managaement": "إدارة الأعضاء",
+    "view-manage-community-members": "عرض وإدارة أعضاء المجتمع"
   }
 }
