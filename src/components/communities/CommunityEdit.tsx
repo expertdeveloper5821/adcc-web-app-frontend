@@ -1065,7 +1065,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
             </button>
 
             <button
-              onClick={() => navigate(`/community/${id}`)}
+              onClick={() => navigate(`/communities/${id}`)}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >

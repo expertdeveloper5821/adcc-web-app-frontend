@@ -268,16 +268,12 @@ export const getCommunityMembers = async(id: string): Promise<void> => {
   }
 }
 
-// Add gallery images to community
-export const addGalleryImages = async (id: string, images: string[] ): Promise<any> => {
+// Add gallery images to community (sends multipart/form-data so backend receive multipart with boundary)
+export const addGalleryImages = async (id: string, files: File[]): Promise<any> => {
   try {
-    const response = await api.post<any>(
-      `/v1/communities/${id}/gallery`,
-      { images }
-    );
-    console.log('📥 addGalleryImages response:', response.data);
-    
-    // Handle nested response structure
+    const formData = new FormData();
+    files.forEach((file) => formData.append('galleryImages', file));
+    const response = await api.post<any>(`/v1/communities/${id}/gallery`, formData);
     if ((response.data as any).data) {
       return (response.data as any).data;
     }

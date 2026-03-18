@@ -5,7 +5,7 @@ import { ArrowLeft, Edit, Copy, Bell, ImageIcon, Trophy, UserCheck, Users, Star,
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
 
-import { getEventById, updateEvent as updateEventApi, EventApiResponse, getEventResults , getparticipants } from '../../services/eventsApi';
+import { addEventGalleryImages, getEventById, updateEvent as updateEventApi, EventApiResponse, getEventResults } from '../../services/eventsApi';
 import { DetailPageSkeleton } from '../ui/skeleton';
 
 interface EventDetailProps {
@@ -24,6 +24,7 @@ export function EventDetail({ role }: EventDetailProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [updatingField, setUpdatingField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'participants' | 'results' | 'gallery' | 'notifications'>('overview');
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
   useEffect(() => {
     loadEvent();
@@ -55,6 +56,40 @@ export function EventDetail({ role }: EventDetailProps) {
       toast.error(t('events.detail.toasts.loadError'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !eventId || eventId === 'undefined' || files.length === 0) return;
+
+    setIsUploadingGallery(true);
+    try {
+      const result = await addEventGalleryImages(eventId, Array.from(files));
+
+      const nextGallery =
+        (result?.galleryImages && Array.isArray(result.galleryImages) && result.galleryImages) ||
+        (result?.data?.galleryImages && Array.isArray(result.data.galleryImages) && result.data.galleryImages) ||
+        null;
+
+      if (nextGallery) {
+        setEvent((prev) => (prev ? { ...prev, galleryImages: nextGallery } : prev));
+      } else if (result?.addedImages && Array.isArray(result.addedImages)) {
+        setEvent((prev) =>
+          prev ? { ...prev, galleryImages: [...(prev.galleryImages || []), ...result.addedImages] } : prev
+        );
+      } else {
+        const refreshed = await getEventById(eventId);
+        setEvent(refreshed);
+      }
+
+      toast.success(t('events.detail.toasts.galleryUploadSuccess'));
+    } catch (error: any) {
+      console.error('Error uploading event gallery images:', error);
+      toast.error(error?.response?.data?.message || t('events.detail.toasts.galleryUploadError'));
+    } finally {
+      setIsUploadingGallery(false);
+      e.target.value = '';
     }
   };
 
@@ -318,6 +353,7 @@ export function EventDetail({ role }: EventDetailProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-start gap-3">
                   <Calendar className="w-5 h-5 mt-1" style={{ color: '#999' }} />
+                  
                   <div>
                     <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.date')}</p>
                     <p style={{ color: '#333' }}>
@@ -352,7 +388,11 @@ export function EventDetail({ role }: EventDetailProps) {
                   <Users className="w-5 h-5 mt-1" style={{ color: '#999' }} />
                   <div>
                     <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.community')}</p>
-                    <p style={{ color: '#333' }}>{event.communityName}</p>
+                    <p style={{ color: '#333' }}>
+                      {typeof event.communityId === 'object' && event.communityId
+                        ? (event.communityId as any).title || (event.communityId as any).name || ''
+                        : (event as any).communityName || ''}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -576,7 +616,24 @@ export function EventDetail({ role }: EventDetailProps) {
 
       {activeTab === 'gallery' && (
         <div className="p-6 rounded-2xl bg-white shadow-sm">
-          <h3 className="text-lg mb-6" style={{ color: '#333' }}>{t('events.detail.galleryTab.heading')}</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg" style={{ color: '#333' }}>{t('events.detail.galleryTab.heading')}</h3>
+            <label
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all hover:shadow-md cursor-pointer"
+              style={{ backgroundColor: isUploadingGallery ? '#9CA3AF' : '#C12D32' }}
+            >
+              <Upload className="w-4 h-4" />
+              <span>{isUploadingGallery ? t('common.loading') : t('events.detail.galleryTab.upload')}</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                disabled={isUploadingGallery}
+                onChange={handleGalleryUpload}
+              />
+            </label>
+          </div>
           <div className="grid grid-cols-3 gap-4 mb-6">
             {event.galleryImages.length > 0 ? (
               event.galleryImages.map((img, index) => (
