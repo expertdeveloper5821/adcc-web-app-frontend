@@ -478,6 +478,7 @@
       "quickActions": "إجراءات سريعة",
       "editCommunity": "تعديل المجتمع",
       "featureOnHomepage": "تمييز على الصفحة الرئيسية",
+      "unfeatureFromHomepage": "إلغاء التمييز من الصفحة الرئيسية",
       "details": "التفاصيل",
       "statusLabel": "الحالة",
       "visibilityLabel": "الرؤية",
@@ -558,7 +559,10 @@
         "loadEventsError": "فشل في تحميل الفعاليات",
         "uploadError": "فشل في رفع الصور",
         "deleteImageError": "فشل في حذف الصورة",
-        "deleteError": "فشل في حذف المجتمع"
+        "deleteError": "فشل في حذف المجتمع",
+        "featuredSuccess": "تم تمييز المجتمع على الصفحة الرئيسية",
+        "unfeaturedSuccess": "تمت إزالة المجتمع من الصفحة الرئيسية",
+        "featureError": "فشل في تحديث حالة التمييز"
       },
       "feedFallback": {
         "heading": "موجز المجتمع",
@@ -898,6 +902,7 @@
       },
       "galleryTab": {
         "heading": "معرض الفعالية",
+        "upload": "رفع الصور",
         "noImages": "لا توجد صور في المعرض بعد"
       },
       "notificationsTab": {
@@ -921,6 +926,8 @@
         "registrationOpened": "تم فتح التسجيل",
         "registrationClosed": "تم إغلاق التسجيل",
         "loadError": "فشل في تحميل الفعالية. يرجى المحاولة مرة أخرى.",
+        "galleryUploadSuccess": "تم رفع صور المعرض",
+        "galleryUploadError": "فشل في رفع صور المعرض",
         "failedToUpdate": "فشل في التحديث",
         "failedToCancelEvent": "فشل في إلغاء الفعالية. يرجى المحاولة مرة أخرى."
       }

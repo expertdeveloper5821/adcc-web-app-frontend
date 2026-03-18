@@ -17,7 +17,7 @@ import {
   Route,
   Activity,
 } from 'lucide-react';
-import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage } from '../../services/communitiesApi';
+import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage, updateCommunity } from '../../services/communitiesApi';
 import { toast } from 'sonner';
 import { getAllTracks, Track } from '../../services/trackService';
 import { getAllEvents, EventApiResponse } from '../../services/eventsApi';
@@ -45,6 +45,7 @@ export function CommunityDetail() {
   const [communityEvents, setCommunityEvents] = useState<EventApiResponse[]>([]);
   const [galleryImages, setGalleryImages] = useState<Array<{ id: string; url: string; name: string }>>([]);
   const [uploading, setUploading] = useState(false);
+  const [isTogglingFeatured, setIsTogglingFeatured] = useState(false);
   const [feedPosts, setFeedPosts] = useState<CommunityPost[]>([]);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostType, setNewPostType] = useState<'Announcement' | 'Highlight' | 'Awareness'>('Announcement');
@@ -155,37 +156,29 @@ export function CommunityDetail() {
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || !communityId) return;
+    if (!files || !communityId || files.length === 0) return;
 
     setUploading(true);
     try {
-      const imageUrls: string[] = [];
+      const fileList = Array.from(files);
+      const result = await addGalleryImages(communityId, fileList);
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-
-        await new Promise<void>((resolve) => {
-          reader.onload = () => {
-            imageUrls.push(reader.result as string);
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-
-      // Call API to add images to backend
-      const result = await addGalleryImages(communityId, imageUrls);
-
-      // Update state with new images from backend
-      if (result.addedImages && result.addedImages.length > 0) {
+      if (result?.addedImages && result.addedImages.length > 0) {
         const newImages = result.addedImages.map((url: string, idx: number) => ({
           id: `${Date.now()}-${idx}`,
           url,
           name: `Image ${idx + 1}`,
         }));
-        setGalleryImages([...galleryImages, ...newImages]);
+        setGalleryImages((prev) => [...prev, ...newImages]);
         toast.success(t('communities.detail.toasts.galleryImagesAdded', { count: result.addedImages.length }));
+      } else if (result?.gallery && Array.isArray(result.gallery)) {
+        const newImages = result.gallery.slice(-fileList.length).map((url: string, idx: number) => ({
+          id: `${Date.now()}-${idx}`,
+          url,
+          name: `Image ${idx + 1}`,
+        }));
+        setGalleryImages((prev) => [...prev, ...newImages]);
+        toast.success(t('communities.detail.toasts.galleryImagesAdded', { count: fileList.length }));
       }
     } catch (error: any) {
       console.error('Error uploading images:', error);
@@ -193,6 +186,7 @@ export function CommunityDetail() {
     } finally {
       setUploading(false);
     }
+    e.target.value = '';
   };
 
   const handleGalleryDelete = async (id: string, imageUrl: string) => {
@@ -222,6 +216,26 @@ export function CommunityDetail() {
 
   const handleEdit = () => {
     navigate(`/communities/${communityId}/edit`);
+  };
+
+  const isFeaturedOnHomepage = !!(community?.isFeatured ?? community?.featured);
+
+  const handleToggleFeatured = async () => {
+    if (!communityId || !community) return;
+    const next = !isFeaturedOnHomepage;
+    setIsTogglingFeatured(true);
+    try {
+      const updated = await updateCommunity(communityId, { isFeatured: next });
+      setCommunity(updated);
+      toast.success(
+        next ? t('communities.detail.toasts.featuredSuccess') : t('communities.detail.toasts.unfeaturedSuccess')
+      );
+    } catch (error: any) {
+      console.error('Error toggling community featured:', error);
+      toast.error(error?.response?.data?.message || t('communities.detail.toasts.featureError'));
+    } finally {
+      setIsTogglingFeatured(false);
+    }
   };
 
   if (isLoading) {
@@ -469,11 +483,23 @@ export function CommunityDetail() {
                   <span>{t('communities.detail.eventsTab.createEvent')}</span>
                 </button>
                 <button
+                  onClick={handleToggleFeatured}
+                  disabled={isTogglingFeatured}
                   className="w-full flex items-center gap-2 px-4 py-3 rounded-xl transition-all hover:shadow-md"
-                  style={{ backgroundColor: '#E1C06E', color: '#333' }}
+                  style={{
+                    backgroundColor: isFeaturedOnHomepage ? '#10B981' : '#E1C06E',
+                    color: isFeaturedOnHomepage ? '#fff' : '#333',
+                    opacity: isTogglingFeatured ? 0.7 : 1,
+                  }}
                 >
                   <Award className="w-4 h-4" />
-                  <span>{t('communities.detail.featureOnHomepage')}</span>
+                  <span>
+                    {isTogglingFeatured
+                      ? t('common.saving')
+                      : isFeaturedOnHomepage
+                        ? t('communities.detail.unfeatureFromHomepage')
+                        : t('communities.detail.featureOnHomepage')}
+                  </span>
                 </button>
               </div>
             </div>

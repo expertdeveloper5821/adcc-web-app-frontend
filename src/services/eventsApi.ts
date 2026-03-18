@@ -384,6 +384,20 @@ export const getEventResults = async (id: string): Promise<any[]> => {
   }
 };
 
+// Add gallery images to an event (multipart/form-data)
+export const addEventGalleryImages = async (eventId: string, files: File[]): Promise<any> => {
+  try {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('galleryImages', file));
+    const response = await api.post<any>(`/v1/events/${eventId}/gallery`, formData);
+    if ((response.data as any)?.data) return (response.data as any).data;
+    return response.data;
+  } catch (error) {
+    console.error('Error adding event gallery images:', error);
+    throw error;
+  }
+};
+
 // Event participants operations
 
 export const checkInParticipant = async (
