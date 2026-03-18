@@ -111,9 +111,13 @@ console.log('errorss',errors);
         description: formData.description?.trim() || formData.descriptionAr?.trim() || '',
         ...(formData.titleAr ? { titleAr: formData.titleAr } : {}),
         ...(formData.descriptionAr ? { descriptionAr: formData.descriptionAr } : {}),
-        type: Array.isArray(selectedCategories) && selectedCategories.length > 0
-          ? selectedCategories
-          : [formData.communityType || 'city'],
+        type: (() => {
+          const ct = formData.communityType || communityType || 'city';
+          const typeMarker = ct === 'city' ? 'City Communities'
+            : ct === 'purpose-based' || ct === 'special' ? 'Special Purpose'
+            : 'Group Communities';
+          return [typeMarker];
+        })(),
         category: Array.isArray(selectedCategories) ? selectedCategories.join(', ') : '',
         location,
         isActive: formData.status === 'active',
@@ -202,10 +206,10 @@ console.log('errorss',errors);
 
             </div>
 
-            {/* English Fields */}
-            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
+            <div className="space-y-4">
+              {/* English Title */}
               <FormField
-                label={t('communities.create.communityName')}
+                label={`${t('communities.create.communityName')} (English)`}
                 name="title"
                 register={register}
                 error={errors.title}
@@ -213,34 +217,10 @@ console.log('errorss',errors);
                 placeholder={t('communities.create.placeholders.communityName')}
               />
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.create.slug')}</label>
-                <input
-                  type="text"
-                  value={String(form.watch('title') ?? '').toLowerCase().replace(/\s+/g, '-')}
-                  readOnly
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
-                  style={{ color: '#999' }}
-                />
-              </div>
-
-              <FormField
-                label={t('communities.create.description')}
-                name="description"
-                register={register}
-                error={errors.description}
-                required
-                as="textarea"
-                rows={4}
-                placeholder={t('communities.create.placeholders.description')}
-              />
-            </div>
-
-            {/* Arabic Fields */}
-            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+              {/* Arabic Title */}
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  اسم المجتمع <span className="text-gray-400">(Community Name)</span>
+                  اسم المجتمع <span className="text-gray-400">(Arabic)</span>
                 </label>
                 <input
                   {...register('titleAr')}
@@ -257,9 +237,34 @@ console.log('errorss',errors);
                 )}
               </div>
 
+              {/* Slug */}
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.create.slug')}</label>
+                <input
+                  type="text"
+                  value={String(form.watch('title') ?? '').toLowerCase().replace(/\s+/g, '-')}
+                  readOnly
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
+                  style={{ color: '#999' }}
+                />
+              </div>
+
+              {/* English Description */}
+              <FormField
+                label={`${t('communities.create.description')} (English)`}
+                name="description"
+                register={register}
+                error={errors.description}
+                required
+                as="textarea"
+                rows={4}
+                placeholder={t('communities.create.placeholders.description')}
+              />
+
+              {/* Arabic Description */}
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  الوصف <span className="text-gray-400">(Description)</span>
+                  الوصف <span className="text-gray-400">(Arabic)</span>
                 </label>
                 <textarea
                   {...register('descriptionAr')}
@@ -276,20 +281,6 @@ console.log('errorss',errors);
                   <p className="mt-1 text-sm text-red-600">{errors.descriptionAr.message}</p>
                 )}
               </div>
-
-              {/* English reference */}
-              {form.watch('title') && (
-                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <Globe className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs font-medium text-blue-400 mb-1">{t('common.englishReference')}</p>
-                    <p className="text-sm text-gray-700">{form.watch('title')}</p>
-                    {form.watch('description') && (
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{form.watch('description')}</p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Common fields (always visible) */}

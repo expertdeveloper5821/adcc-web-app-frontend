@@ -335,7 +335,7 @@ export function EventDetail({ role }: EventDetailProps) {
                   <Clock className="w-5 h-5 mt-1" style={{ color: '#999' }} />
                   <div>
                     <p className="text-sm mb-1" style={{ color: '#666' }}>{t('events.detail.labels.time')}</p>
-                    <p style={{ color: '#333' }}>{event.startTime} - {event.endTime}</p>
+                    <p style={{ color: '#333' }}>{event.eventTime} - {event.endTime}</p>
                   </div>
                 </div>
 

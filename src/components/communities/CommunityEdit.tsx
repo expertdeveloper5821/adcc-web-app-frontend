@@ -95,8 +95,10 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
   const [formData, setFormData] = useState<{
     title: string;
+    titleAr: string;
     slug: string;
     description: string;
+    descriptionAr: string;
     city: string;
     location: string;
     communityType: string;
@@ -123,8 +125,10 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     logo: string;
   }>({
     title: '',
+    titleAr: '',
     slug: '',
     description: '',
+    descriptionAr: '',
     city: '',
     location: '',
     communityType: 'city',
@@ -170,10 +174,10 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   useEffect(() => {
     if (!existingCommunity) return;
 
-    const loc = existingCommunity.location ?? (existingCommunity as any).city ?? '';
-    const [cityFromLocation = '', countryFromLocation = ''] = typeof loc === 'string' ? loc.split(',').map((s: string) => s.trim()) : ['', ''];
-    const city = existingCommunity.city ?? cityFromLocation ?? loc ?? '';
-    const country = existingCommunity.country ?? countryFromLocation ?? 'UAE';
+    const loc = existingCommunity.location ?? '';
+    const VALID_LOCATIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'];
+    const city = VALID_LOCATIONS.includes(loc) ? loc : (VALID_LOCATIONS.includes(existingCommunity.city ?? '') ? existingCommunity.city! : loc || 'Abu Dhabi');
+    const country = existingCommunity.country ?? 'UAE';
 
     const typeArr = Array.isArray(existingCommunity.type)
       ? existingCommunity.type
@@ -194,11 +198,19 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
     setFormData({
       title: existingCommunity.title ?? (existingCommunity as any).name ?? '',
+      titleAr: (existingCommunity as any).titleAr ?? '',
       slug: existingCommunity.slug ?? '',
       description: existingCommunity.description ?? '',
+      descriptionAr: (existingCommunity as any).descriptionAr ?? '',
       city: city || '',
       location: typeof loc === 'string' ? loc : `${city}, ${country}`,
-      communityType: (existingCommunity as any).communityType ?? typeArr[0] ?? 'city',
+      communityType: (() => {
+        const CITY_CATS = ['City Communities'];
+        const PURPOSE_CATS = ['Awareness & Charity', 'Corporate', 'Education', 'Health', 'Special Purpose'];
+        if (typeArr.some(t => CITY_CATS.includes(t))) return 'city';
+        if (typeArr.some(t => PURPOSE_CATS.includes(t))) return 'special';
+        return typeArr.length > 0 ? 'type' : 'city';
+      })(),
       category: typeof existingCommunity.category === 'string' ? existingCommunity.category : (existingCommunity.category?.[0] ?? ''),
       type: typeArr,
       country: country || 'UAE',
@@ -323,10 +335,6 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     //   return;
     // }
 
-    if (formData.communityType === 'special' && !formData.specialType) {
-      toast.error(t('communities.edit.toasts.missingSpecialType'));
-      return;
-    }
 
     // Backend: location must be one of "Abu Dhabi"|"Dubai"|"Al Ain"|"Sharjah"
     const location = COMMUNITY_LOCATION_OPTIONS.includes((formData.city || formData.location) as any)
@@ -337,8 +345,15 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     const communityData = {
       title: formData.title,
       description: formData.description,
-      type: Array.isArray(formData.type) && formData.type.length > 0 ? formData.type : [formData.communityType ?? 'city'],
-      category: typeof formData.category === 'string' ? formData.category : (Array.isArray(formData.category) ? formData.category[0] : ''),
+      ...(formData.titleAr?.trim() ? { titleAr: formData.titleAr.trim() } : {}),
+      ...(formData.descriptionAr?.trim() ? { descriptionAr: formData.descriptionAr.trim() } : {}),
+      type: (() => {
+        const typeMarker = formData.communityType === 'city' ? 'City Communities'
+          : formData.communityType === 'special' ? 'Special Purpose'
+          : 'Group Communities';
+        return [typeMarker];
+      })(),
+      category: Array.isArray(formData.type) ? formData.type.filter(t => !['City Communities', 'Special Purpose', 'Group Communities'].includes(t)).join(', ') : (formData.category || ''),
       location,
       area: formData.area || undefined,
       foundedYear: formData.foundedYear != null && formData.foundedYear !== '' ? Number(formData.foundedYear) : undefined,
@@ -455,8 +470,11 @@ export function CommunityEdit({ role }: CommunityEditProps) {
             </div>
 
             <div className="space-y-4">
+              {/* English Title */}
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.communityName')}</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  {t('communities.edit.communityName')} <span className="text-gray-400">(English)</span>
+                </label>
                 <input
                   type="text"
                   value={formData.title}
@@ -466,6 +484,24 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 />
               </div>
 
+              {/* Arabic Title */}
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المجتمع <span className="text-gray-400">(Arabic)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="أبوظبي لسباق الطرق"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
+                />
+              </div>
+
+              {/* Slug */}
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.slug')}</label>
                 <input
@@ -476,14 +512,34 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 />
               </div>
 
+              {/* English Description */}
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.description')}</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  {t('communities.edit.description')} <span className="text-gray-400">(English)</span>
+                </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder={t('communities.edit.placeholders.description')}
                   rows={4}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              {/* Arabic Description */}
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Arabic)</span>
+                </label>
+                <textarea
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  rows={4}
+                  placeholder="وصف المجتمع..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
                 />
               </div>
 
@@ -506,13 +562,13 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.city')}</label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="">Select category...</option>
-                  {availableCategories.map((c) => (
-                    <option key={c} value={c}>{t(`data.communityCategories.${c}`, c)}</option>
+                  <option value="">Select city...</option>
+                  {COMMUNITY_LOCATION_OPTIONS.map((c) => (
+                    <option key={c} value={c}>{t(`data.locations.${c}`, c)}</option>
                   ))}
                 </select>
               </div>
@@ -544,7 +600,16 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.communityType')}</label>
                 <select
                   value={formData.communityType}
-                  onChange={(e) => setFormData({ ...formData, communityType: e.target.value })}
+                  onChange={(e) => {
+                    const newType = e.target.value;
+                    // Remove old type markers, then add the correct one
+                    const TYPE_MARKERS = ['City Communities', 'Special Purpose'];
+                    const cleaned = (formData.type || []).filter(t => !TYPE_MARKERS.includes(t));
+                    let updatedType = cleaned;
+                    if (newType === 'city') updatedType = ['City Communities', ...cleaned];
+                    else if (newType === 'special') updatedType = ['Special Purpose', ...cleaned];
+                    setFormData({ ...formData, communityType: newType, type: updatedType });
+                  }}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
                   <option value="city">{t('communities.edit.typeOptions.city')}</option>
