@@ -59,6 +59,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     'familyleisure': 'Family & Leisure',
     'family&leisure': 'Family & Leisure',
     'women(sherides)': 'Women (SheRides)',
+    'womensherides': 'Women (SheRides)',
     'youth': 'Youth',
     'socialweekend': 'Social / Weekend',
     'social/weekend': 'Social / Weekend',
