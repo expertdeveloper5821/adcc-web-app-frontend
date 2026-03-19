@@ -46,7 +46,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     const fetchCommunity = async () => {
       try {
         setIsLoading(true);
-        const response = await getCommunityById(id);
+        const response = await getCommunityById(id, { lang: 'en' });
 
         setExistingCommunity(response);
       } catch (error) {
