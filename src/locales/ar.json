@@ -526,7 +526,9 @@
         "noPostsBody": "أنشئ أول منشور للتفاعل مع الأعضاء",
         "pin": "تثبيت في الأعلى",
         "unpin": "إلغاء التثبيت",
-        "editPost": "تعديل",
+        "editPost": "تعديل المنشور",
+        "updatePost": "تحديث المنشور",
+        "changeImage": "تغيير الصورة",
         "deletePost": "حذف المنشور",
         "deleteConfirm": "هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء."
       },
@@ -541,7 +543,12 @@
       "tracksTab": {
         "assignTracks": "تعيين المسارات",
         "tracksHint": "اختر المسارات لربطها بهذا المجتمع",
-        "saveChanges": "حفظ التغييرات"
+        "saveChanges": "حفظ التغييرات",
+        "noTracks": "لا توجد مسارات مرتبطة",
+        "noTracksBody": "لا توجد مسارات معينة لهذا المجتمع بعد.",
+        "primaryTrack": "المسار الرئيسي",
+        "fromEvents": "من الفعاليات",
+        "tracksAssociated": "{{count}} مسار مرتبط"
       },
       "gallery": {
         "heading": "المعرض",
@@ -576,7 +583,13 @@
         "deleteError": "فشل في حذف المجتمع",
         "featuredSuccess": "تم تمييز المجتمع على الصفحة الرئيسية",
         "unfeaturedSuccess": "تمت إزالة المجتمع من الصفحة الرئيسية",
-        "featureError": "فشل في تحديث حالة التمييز"
+        "featureError": "فشل في تحديث حالة التمييز",
+        "postCreated": "تم إنشاء المنشور بنجاح",
+        "postCreateError": "فشل في إنشاء المنشور",
+        "postUpdated": "تم تحديث المنشور بنجاح",
+        "postUpdateError": "فشل في تحديث المنشور",
+        "postDeleted": "تم حذف المنشور بنجاح",
+        "postDeleteError": "فشل في حذف المنشور"
       },
       "feedFallback": {
         "heading": "موجز المجتمع",

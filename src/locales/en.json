@@ -553,7 +553,9 @@
         "noPostsBody": "Create your first community post to engage with members",
         "pin": "Pin to top",
         "unpin": "Unpin",
-        "editPost": "Edit",
+        "editPost": "Edit Post",
+        "updatePost": "Update Post",
+        "changeImage": "Change Image",
         "deletePost": "Delete Post",
         "deleteConfirm": "Are you sure you want to delete this post? This action cannot be undone."
       },
@@ -568,7 +570,13 @@
       "tracksTab": {
         "assignTracks": "Assign Tracks",
         "tracksHint": "Select tracks to associate with this community",
-        "saveChanges": "Save Changes"
+        "saveChanges": "Save Changes",
+        "noTracks": "No Tracks Associated",
+        "noTracksBody": "This community doesn't have any tracks assigned yet.",
+        "primaryTrack": "Primary Track",
+        "fromEvents": "From Events",
+        "tracksAssociated": "{{count}} track associated",
+        "tracksAssociated_other": "{{count}} tracks associated"
       },
       "gallery": {
         "heading": "Gallery",
@@ -603,7 +611,13 @@
         "deleteError": "Failed to delete community",
         "featuredSuccess": "Community featured on homepage",
         "unfeaturedSuccess": "Community removed from homepage",
-        "featureError": "Failed to update featured status"
+        "featureError": "Failed to update featured status",
+        "postCreated": "Post created successfully",
+        "postCreateError": "Failed to create post",
+        "postUpdated": "Post updated successfully",
+        "postUpdateError": "Failed to update post",
+        "postDeleted": "Post deleted successfully",
+        "postDeleteError": "Failed to delete post"
       },
       "feedFallback": {
         "heading": "Community Feed",

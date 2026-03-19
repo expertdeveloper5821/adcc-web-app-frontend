@@ -21,8 +21,9 @@ import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiRe
 import { toast } from 'sonner';
 import { getAllTracks, Track } from '../../services/trackService';
 import { getAllEvents, EventApiResponse } from '../../services/eventsApi';
-import { getCommunityPosts, createCommunityPost, deleteCommunityPost as deleteCommunityPostApi, CommunityPost } from '../../services/communityPostsApi';
+import { getCommunityPosts, createCommunityPost, updateCommunityPost, deleteCommunityPost as deleteCommunityPostApi, CommunityPost } from '../../services/communityPostsApi';
 import { DetailPageSkeleton } from '../ui/skeleton';
+import { PostFormModal, PostFormData } from './PostFormModal';
 
 
 
@@ -47,11 +48,34 @@ export function CommunityDetail() {
   const [uploading, setUploading] = useState(false);
   const [isTogglingFeatured, setIsTogglingFeatured] = useState(false);
   const [feedPosts, setFeedPosts] = useState<CommunityPost[]>([]);
-  const [newPostTitle, setNewPostTitle] = useState('');
-  const [newPostType, setNewPostType] = useState<'Announcement' | 'Highlight' | 'Awareness'>('Announcement');
-  const [newPostCaption, setNewPostCaption] = useState('');
-  const [newPostImage, setNewPostImage] = useState<File | null>(null);
-  const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [postModal, setPostModal] = useState<{ mode: 'create' | 'edit'; post?: CommunityPost } | null>(null);
+  const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+
+  const openCreatePostModal = () => setPostModal({ mode: 'create' });
+  const openEditPostModal = (post: CommunityPost) => setPostModal({ mode: 'edit', post });
+  const closePostModal = () => setPostModal(null);
+
+  const handlePostSubmit = async (data: PostFormData, imageFile?: File) => {
+    setIsSubmittingPost(true);
+    try {
+      if (postModal?.mode === 'edit' && postModal.post) {
+        const updated = await updateCommunityPost(communityId, postModal.post._id, data, imageFile);
+        setFeedPosts(prev => prev.map(p => p._id === postModal.post!._id ? updated : p));
+        toast.success(t('communities.detail.toasts.postUpdated', { defaultValue: 'Post updated successfully' }));
+      } else {
+        const created = await createCommunityPost(communityId, data, imageFile);
+        setFeedPosts(prev => [created, ...prev]);
+        toast.success(t('communities.detail.toasts.postCreated', { defaultValue: 'Post created successfully' }));
+      }
+      closePostModal();
+    } catch (error: any) {
+      const key = postModal?.mode === 'edit' ? 'postUpdateError' : 'postCreateError';
+      const fallback = postModal?.mode === 'edit' ? 'Failed to update post' : 'Failed to create post';
+      toast.error(error?.response?.data?.message || t(`communities.detail.toasts.${key}`, { defaultValue: fallback }));
+    } finally {
+      setIsSubmittingPost(false);
+    }
+  };
 
   useEffect(() => {
     if (!communityId) {
@@ -114,7 +138,7 @@ export function CommunityDetail() {
           const cid = event.communityId;
           if (!cid) return false;
           if (typeof cid === 'string') return cid === communityId;
-          if (typeof cid === 'object') return cid._id === communityId || cid.id === communityId;
+          if (typeof cid === 'object') return String(cid._id) === communityId || String(cid.id) === communityId;
           return false;
         });
         setCommunityEvents(filtered);
@@ -321,7 +345,7 @@ export function CommunityDetail() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  <span>{community.stats?.upcomingEvents ?? community.eventsCount ?? 0} {t('communities.detail.events')}</span>
+                  <span>{communityEvents.length} {t('communities.detail.events')}</span>
                 </div>
               </div>
             </div>
@@ -377,12 +401,12 @@ export function CommunityDetail() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <MessageSquare className="w-8 h-8 mb-3" style={{ color: '#C12D32' }} />
-                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{community.postsCount ?? 0}</div>
+                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{feedPosts.length}</div>
                 <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.totalPosts', 'Total Posts')}</div>
               </div>
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <Calendar className="w-8 h-8 mb-3" style={{ color: '#CF9F0C' }} />
-                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{community.stats?.upcomingEvents ?? community.eventsCount ?? 0}</div>
+                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{communityEvents.length}</div>
                 <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.events', 'Events')}</div>
               </div>
               <div className="rounded-2xl p-6 bg-white shadow-sm">
@@ -516,7 +540,7 @@ export function CommunityDetail() {
               <p style={{ color: '#666' }}>{t('communities.detail.feed.subheading')}</p>
             </div>
             <button
-              onClick={() => setShowCreatePost(true)}
+              onClick={() => openCreatePostModal()}
               className="flex items-center gap-2 px-6 py-3 rounded-xl text-white transition-all"
               style={{ backgroundColor: '#C12D32' }}
             >
@@ -547,7 +571,7 @@ export function CommunityDetail() {
                         className="px-3 py-1 rounded-full text-xs font-medium text-white capitalize"
                         style={{ backgroundColor: getPostTypeColor(post.postType) }}
                       >
-                        {post.postType}
+                        {t(`communities.detail.feed.types.${post.postType.toLowerCase()}`, post.postType)}
                       </span>
                     </div>
                     {post.caption && <p className="mb-3" style={{ color: '#666' }}>{post.caption}</p>}
@@ -556,6 +580,13 @@ export function CommunityDetail() {
                         {typeof post.createdBy === 'object' ? post.createdBy.fullName : ''} • {new Date(post.createdAt).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEditPostModal(post)}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          title={t('communities.detail.feed.editPost', 'Edit Post')}
+                        >
+                          <Edit className="w-4 h-4" style={{ color: '#3B82F6' }} />
+                        </button>
                         <button
                           onClick={() => {
                             setPostToDelete(post._id);
@@ -579,7 +610,7 @@ export function CommunityDetail() {
                 <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.feed.noPosts')}</h3>
                 <p className="mb-6" style={{ color: '#666' }}>{t('communities.detail.feed.noPostsBody')}</p>
                 <button
-                  onClick={() => setShowCreatePost(true)}
+                  onClick={() => openCreatePostModal()}
                   className="px-6 py-3 rounded-xl text-white transition-all"
                   style={{ backgroundColor: '#C12D32' }}
                 >
@@ -712,15 +743,15 @@ export function CommunityDetail() {
 
         // Build display list with labels
         const associatedTracks: { track: Track; label: string }[] = [];
-        if (primaryTrack) associatedTracks.push({ track: primaryTrack, label: 'Primary Track' });
-        eventTracks.forEach(t => associatedTracks.push({ track: t, label: 'From Events' }));
+        if (primaryTrack) associatedTracks.push({ track: primaryTrack, label: t('communities.detail.tracksTab.primaryTrack') });
+        eventTracks.forEach(tr => associatedTracks.push({ track: tr, label: t('communities.detail.tracksTab.fromEvents') }));
 
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.tracksTab.assignTracks')}</h2>
-                <p style={{ color: '#666' }}>{associatedTracks.length} {associatedTracks.length === 1 ? 'track' : 'tracks'} associated</p>
+                <p style={{ color: '#666' }}>{t('communities.detail.tracksTab.tracksAssociated', { count: associatedTracks.length })}</p>
               </div>
             </div>
 
@@ -751,7 +782,7 @@ export function CommunityDetail() {
                       <div className="flex items-center justify-between">
                         <span
                           className="px-3 py-1 rounded-full text-xs font-medium text-white"
-                          style={{ backgroundColor: label === 'Primary Track' ? '#C12D32' : '#3B82F6' }}
+                          style={{ backgroundColor: label === t('communities.detail.tracksTab.primaryTrack') ? '#C12D32' : '#3B82F6' }}
                         >
                           {label}
                         </span>
@@ -763,8 +794,8 @@ export function CommunityDetail() {
             ) : (
               <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
                 <Route className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-                <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>No Tracks Associated</h3>
-                <p style={{ color: '#666' }}>This community doesn't have any tracks assigned yet.</p>
+                <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.tracksTab.noTracks')}</h3>
+                <p style={{ color: '#666' }}>{t('communities.detail.tracksTab.noTracksBody')}</p>
               </div>
             )}
           </div>
@@ -904,104 +935,21 @@ export function CommunityDetail() {
         </div>
       )}
 
-      {/* Create Post Modal */}
-      {showCreatePost && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto bg-white">
-            <h3 className="text-xl mb-4" style={{ color: '#333' }}>{t('communities.detail.feed.createPost')}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.postTitle', 'Post Title')}</label>
-                <input
-                  type="text"
-                  value={newPostTitle}
-                  onChange={(e) => setNewPostTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
-                  placeholder={t('communities.detail.feed.postTitlePlaceholder', 'Enter post title...')}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.postType', 'Post Type')}</label>
-                <select
-                  value={newPostType}
-                  onChange={(e) => setNewPostType(e.target.value as 'Announcement' | 'Highlight' | 'Awareness')}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
-                >
-                  <option value="Announcement">{t('communities.detail.feed.types.announcement', 'Announcement')}</option>
-                  <option value="Highlight">{t('communities.detail.feed.types.highlight', 'Highlight')}</option>
-                  <option value="Awareness">{t('communities.detail.feed.types.awareness', 'Awareness')}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.caption', 'Caption')}</label>
-                <textarea
-                  rows={4}
-                  value={newPostCaption}
-                  onChange={(e) => setNewPostCaption(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#C12D32]"
-                  placeholder={t('communities.detail.feed.captionPlaceholder', 'Write your post caption...')}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.detail.feed.uploadMedia', 'Upload Media')}</label>
-                <label className="border-2 border-dashed rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer block" style={{ borderColor: '#ECC180' }}>
-                  <Upload className="w-12 h-12 mx-auto mb-3" style={{ color: '#999' }} />
-                  <p style={{ color: '#666' }}>{newPostImage ? newPostImage.name : t('communities.detail.feed.uploadHint', 'Click to upload image')}</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={(e) => setNewPostImage(e.target.files?.[0] || null)}
-                  />
-                </label>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end mt-6">
-              <button
-                onClick={() => {
-                  setShowCreatePost(false);
-                  setNewPostTitle('');
-                  setNewPostCaption('');
-                  setNewPostType('Announcement');
-                  setNewPostImage(null);
-                }}
-                className="px-4 py-2 rounded-xl"
-                style={{ backgroundColor: '#ECC180', color: '#333' }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                disabled={isCreatingPost || !newPostTitle.trim()}
-                onClick={async () => {
-                  if (!newPostTitle.trim()) return;
-                  setIsCreatingPost(true);
-                  try {
-                    const created = await createCommunityPost(
-                      communityId,
-                      { title: newPostTitle.trim(), postType: newPostType, caption: newPostCaption.trim() || undefined },
-                      newPostImage || undefined
-                    );
-                    setFeedPosts(prev => [created, ...prev]);
-                    toast.success(t('communities.detail.toasts.postCreated', { defaultValue: 'Post created successfully' }));
-                    setShowCreatePost(false);
-                    setNewPostTitle('');
-                    setNewPostCaption('');
-                    setNewPostType('Announcement');
-                    setNewPostImage(null);
-                  } catch (error: any) {
-                    toast.error(error?.response?.data?.message || t('communities.detail.toasts.postCreateError', { defaultValue: 'Failed to create post' }));
-                  } finally {
-                    setIsCreatingPost(false);
-                  }
-                }}
-                className="px-4 py-2 rounded-xl text-white disabled:opacity-50"
-                style={{ backgroundColor: '#C12D32' }}
-              >
-                {isCreatingPost ? t('common.saving', 'Saving...') : t('communities.detail.feed.publishPost', 'Publish Post')}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Create / Edit Post Modal */}
+      {postModal && (
+        <PostFormModal
+          key={postModal.mode + (postModal.post?._id ?? '')}
+          mode={postModal.mode}
+          initialData={postModal.post ? {
+            title: postModal.post.title,
+            postType: postModal.post.postType,
+            caption: postModal.post.caption,
+            existingImage: postModal.post.image,
+          } : undefined}
+          isSubmitting={isSubmittingPost}
+          onSubmit={handlePostSubmit}
+          onClose={closePostModal}
+        />
       )}
 
       {/* Delete Community Confirmation Modal */}
