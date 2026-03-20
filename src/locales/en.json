@@ -566,7 +566,9 @@
         "noPostsBody": "Create your first community post to engage with members",
         "pin": "Pin to top",
         "unpin": "Unpin",
-        "editPost": "Edit",
+        "editPost": "Edit Post",
+        "updatePost": "Update Post",
+        "changeImage": "Change Image",
         "deletePost": "Delete Post",
         "deleteConfirm": "Are you sure you want to delete this post? This action cannot be undone."
       },
@@ -581,7 +583,13 @@
       "tracksTab": {
         "assignTracks": "Assign Tracks",
         "tracksHint": "Select tracks to associate with this community",
-        "saveChanges": "Save Changes"
+        "saveChanges": "Save Changes",
+        "noTracks": "No Tracks Associated",
+        "noTracksBody": "This community doesn't have any tracks assigned yet.",
+        "primaryTrack": "Primary Track",
+        "fromEvents": "From Events",
+        "tracksAssociated": "{{count}} track associated",
+        "tracksAssociated_other": "{{count}} tracks associated"
       },
       "gallery": {
         "heading": "Gallery",
@@ -616,7 +624,13 @@
         "deleteError": "Failed to delete community",
         "featuredSuccess": "Community featured on homepage",
         "unfeaturedSuccess": "Community removed from homepage",
-        "featureError": "Failed to update featured status"
+        "featureError": "Failed to update featured status",
+        "postCreated": "Post created successfully",
+        "postCreateError": "Failed to create post",
+        "postUpdated": "Post updated successfully",
+        "postUpdateError": "Failed to update post",
+        "postDeleted": "Post deleted successfully",
+        "postDeleteError": "Failed to delete post"
       },
       "feedFallback": {
         "heading": "Community Feed",
@@ -760,6 +774,15 @@
         "intermediate": "Intermediate",
         "advanced": "Advanced"
       },
+      "gender": "Gender",
+      "genderOptions": {
+        "all": "All",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "helmetRequired": "Helmet Required",
+      "roadBikeOnly": "Road Bike Only",
       "statusOptions": {
         "draft": "Draft",
         "open": "Open",
@@ -868,6 +891,8 @@
       "reopenRegistration": "Re-open Registration",
       "markCompleted": "Mark as Completed",
       "disableEvent": "Disable Event",
+      "disableConfirmTitle": "Disable Event?",
+      "disableConfirmMessage": "This will prevent new registrations and hide the event from the public. You can re-enable it later.",
       "archiveEvent": "Archive Event",
       "addScheduleRow": "Add schedule row",
       "coverImage": "Cover Image",
@@ -882,6 +907,15 @@
         "intermediate": "Intermediate",
         "advanced": "Advanced"
       },
+      "gender": "Gender",
+      "genderOptions": {
+        "all": "All",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "helmetRequired": "Helmet Required",
+      "roadBikeOnly": "Road Bike Only",
       "toasts": {
         "loadError": "Failed to load event. Please try again.",
         "notFound": "Event not found",
@@ -1803,5 +1837,9 @@
     "notificationsHint": "Notifications to participants will be listed here",
     "retry": "Retry",
     "cancel": "Cancel"
+  },
+  "member":{
+    "member-managaement": "Member Management",
+    "view-manage-community-members": "View and manage community members"
   }
 }

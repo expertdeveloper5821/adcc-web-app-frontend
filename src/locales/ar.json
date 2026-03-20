@@ -418,8 +418,22 @@
       "coverImage": "صورة الغلاف",
       "communityManager": "مدير المجتمع",
       "moderators": "المشرفون (اختيار متعدد)",
+      "status": "الحالة",
+      "statusOptions": {
+        "draft": "مسودة",
+        "active": "نشط"
+      },
       "visibility": "الرؤية",
+      "visibilityOptions": {
+        "public": "عام",
+        "private": "خاص"
+      },
       "joinMode": "طريقة الانضمام",
+      "joinModeOptions": {
+        "open": "مفتوح",
+        "approvalRequired": "يتطلب موافقة",
+        "inviteOnly": "بدعوة فقط"
+      },
       "displayPriority": "أولوية العرض",
       "noTracksInCity": "لا توجد مسارات متاحة في {{city}}",
       "oneTrackAssigned": "تم تعيين مسار واحد",
@@ -512,7 +526,9 @@
         "noPostsBody": "أنشئ أول منشور للتفاعل مع الأعضاء",
         "pin": "تثبيت في الأعلى",
         "unpin": "إلغاء التثبيت",
-        "editPost": "تعديل",
+        "editPost": "تعديل المنشور",
+        "updatePost": "تحديث المنشور",
+        "changeImage": "تغيير الصورة",
         "deletePost": "حذف المنشور",
         "deleteConfirm": "هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء."
       },
@@ -527,7 +543,12 @@
       "tracksTab": {
         "assignTracks": "تعيين المسارات",
         "tracksHint": "اختر المسارات لربطها بهذا المجتمع",
-        "saveChanges": "حفظ التغييرات"
+        "saveChanges": "حفظ التغييرات",
+        "noTracks": "لا توجد مسارات مرتبطة",
+        "noTracksBody": "لا توجد مسارات معينة لهذا المجتمع بعد.",
+        "primaryTrack": "المسار الرئيسي",
+        "fromEvents": "من الفعاليات",
+        "tracksAssociated": "{{count}} مسار مرتبط"
       },
       "gallery": {
         "heading": "المعرض",
@@ -562,7 +583,13 @@
         "deleteError": "فشل في حذف المجتمع",
         "featuredSuccess": "تم تمييز المجتمع على الصفحة الرئيسية",
         "unfeaturedSuccess": "تمت إزالة المجتمع من الصفحة الرئيسية",
-        "featureError": "فشل في تحديث حالة التمييز"
+        "featureError": "فشل في تحديث حالة التمييز",
+        "postCreated": "تم إنشاء المنشور بنجاح",
+        "postCreateError": "فشل في إنشاء المنشور",
+        "postUpdated": "تم تحديث المنشور بنجاح",
+        "postUpdateError": "فشل في تحديث المنشور",
+        "postDeleted": "تم حذف المنشور بنجاح",
+        "postDeleteError": "فشل في حذف المنشور"
       },
       "feedFallback": {
         "heading": "موجز المجتمع",
@@ -706,6 +733,15 @@
         "intermediate": "متوسط",
         "advanced": "متقدم"
       },
+      "gender": "الجنس",
+      "genderOptions": {
+        "all": "الكل",
+        "male": "ذكر",
+        "female": "أنثى",
+        "other": "أخرى"
+      },
+      "helmetRequired": "الخوذة مطلوبة",
+      "roadBikeOnly": "دراجة طريق فقط",
       "statusOptions": {
         "draft": "مسودة",
         "open": "مفتوح",
@@ -814,6 +850,8 @@
       "reopenRegistration": "إعادة فتح التسجيل",
       "markCompleted": "تحديد كمكتمل",
       "disableEvent": "تعطيل الفعالية",
+      "disableConfirmTitle": "تعطيل الفعالية؟",
+      "disableConfirmMessage": "سيؤدي هذا إلى منع التسجيلات الجديدة وإخفاء الفعالية من العرض العام. يمكنك إعادة تفعيلها لاحقاً.",
       "archiveEvent": "أرشفة الفعالية",
       "addScheduleRow": "إضافة صف جدول",
       "coverImage": "صورة الغلاف",
@@ -828,6 +866,15 @@
         "intermediate": "متوسط",
         "advanced": "متقدم"
       },
+      "gender": "الجنس",
+      "genderOptions": {
+        "all": "الكل",
+        "male": "ذكر",
+        "female": "أنثى",
+        "other": "أخرى"
+      },
+      "helmetRequired": "الخوذة مطلوبة",
+      "roadBikeOnly": "دراجة طريق فقط",
       "toasts": {
         "loadError": "فشل في تحميل الفعالية. يرجى المحاولة مرة أخرى.",
         "notFound": "الحدث غير موجود",
@@ -1767,5 +1814,9 @@
     "notificationsHint": "سيتم عرض الإشعارات المرسلة للمشاركين هنا",
     "retry": "إعادة المحاولة",
     "cancel": "إلغاء"
+  },
+  "member":{
+    "member-managaement": "إدارة الأعضاء",
+    "view-manage-community-members": "عرض وإدارة أعضاء المجتمع"
   }
 }

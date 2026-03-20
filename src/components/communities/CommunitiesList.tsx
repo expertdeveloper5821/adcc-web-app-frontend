@@ -108,7 +108,7 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
       upcomingEventCount: apiCommunity.upcomingEventCount !== undefined ? String(apiCommunity.upcomingEventCount) : (apiCommunity.eventsCount !== undefined ? String(apiCommunity.eventsCount) : '0'),
       // Category tags from `category` field (comma-separated); cleaned for display
       type: (() => {
-        const TYPE_MARKERS = ['City Communities', 'Special Purpose', 'Group Communities'];
+        const TYPE_MARKERS = ['City Communities', 'Special Purpose', 'Group Communities', 'مجتمعات المدن', 'غرض خاص', 'مجتمعات المجموعات'];
         const raw = apiCommunity.category || '';
         if (raw) {
           const cats = typeof raw === 'string'

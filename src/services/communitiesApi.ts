@@ -102,11 +102,15 @@ export type CommunityImageFiles = {
 };
 
 // Get community by ID
-export const getCommunityById = async (id: string): Promise<CommunityApiResponse> => {
+export const getCommunityById = async (id: string, options?: { lang?: string }): Promise<CommunityApiResponse> => {
   try {
-    const response = await api.get<any>(`/v1/communities/${id}`);
+    const headers: Record<string, string> = {};
+    if (options?.lang) {
+      headers['Accept-Language'] = options.lang;
+    }
+    const response = await api.get<any>(`/v1/communities/${id}`, { headers });
     // console.log('📥 getCommunityById response:', response.data);
-    
+
     // Handle nested response structure
     if ((response.data as any).data) {
       return (response.data as any).data;
