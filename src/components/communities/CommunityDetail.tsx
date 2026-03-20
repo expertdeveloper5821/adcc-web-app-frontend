@@ -890,7 +890,7 @@ export function CommunityDetail() {
             <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
               <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
               <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>Member Management</h3>
-              <p style={{ color: '#666' }}>View and manage community members</p>
+              <p style={{ color: '#666' }}>View and  manage community members</p>
             </div>
           ) : (
             <div className="rounded-2xl bg-white shadow-sm overflow-x-auto">
