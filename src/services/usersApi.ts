@@ -84,3 +84,9 @@ export async function getAllUsers(page = 1, limit = 10, role?: string): Promise<
 
   return { users: rawUsers.map(normalizeUser), pagination };
 }
+
+export async function updateUserVerified(userId: string, isVerified: boolean): Promise<User> {
+  const response = await api.patch(`/v1/user/${userId}/verified`, { isVerified });
+  const raw: UserApiRaw = response.data?.data || response.data;
+  return normalizeUser(raw);
+}
