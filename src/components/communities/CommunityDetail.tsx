@@ -17,7 +17,7 @@ import {
   Route,
   Activity,
 } from 'lucide-react';
-import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage, updateCommunity } from '../../services/communitiesApi';
+import { getCommunityById, deleteCommunity as deleteCommunityApi, CommunityApiResponse, getCommunityMembers, addGalleryImages, deleteGalleryImage, updateCommunity, CommunityMember } from '../../services/communitiesApi';
 import { toast } from 'sonner';
 import { getAllTracks, Track } from '../../services/trackService';
 import { getAllEvents, EventApiResponse } from '../../services/eventsApi';
@@ -41,7 +41,7 @@ export function CommunityDetail() {
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [showPostDeleteModal, setShowPostDeleteModal] = useState(false);
-  const [membersData, setMembersData] = useState<unknown>(null);
+  const [membersData, setMembersData] = useState<CommunityMember[]>([]);
   const [allTracks, setAllTracks] = useState<Track[]>([]);
   const [communityEvents, setCommunityEvents] = useState<EventApiResponse[]>([]);
   const [galleryImages, setGalleryImages] = useState<Array<{ id: string; url: string; name: string }>>([]);
@@ -117,8 +117,8 @@ export function CommunityDetail() {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const data = await getCommunityMembers(communityId) as unknown;
-        setMembersData(data);
+        const data = await getCommunityMembers(communityId);
+        setMembersData(Array.isArray(data) ? data : []);
       } catch (error: any) {
         console.error('Error fetching community members:', error);
         toast.error(error?.response?.data?.message || t('communities.detail.toasts.loadCommunityError'));
@@ -345,7 +345,7 @@ export function CommunityDetail() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  <span>{communityEvents.length} {t('communities.detail.events')}</span>
+                  <span>{communityEvents.length ?? 0} {t('communities.detail.events')}</span>
                 </div>
               </div>
             </div>
@@ -880,15 +880,54 @@ export function CommunityDetail() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold mb-2" style={{ color: '#333' }}>{t('communities.detail.membersTab.heading')}</h2>
-              <p style={{ color: '#666' }}>{((community.stats?.members ?? Number(community.memberCount)) || 0).toLocaleString()} total members</p>
+              <p style={{ color: '#666' }}>
+                {membersData.length.toLocaleString()} {t('communities.detail.members', 'members')}
+              </p>
             </div>
           </div>
 
-          <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
-            <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
-            <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>{t('member.member-managaement')}</h3>
-            <p style={{ color: '#666' }}>{t('member.view-manage-community-members')}</p>
-          </div>
+          {membersData.length === 0 ? (
+            <div className="rounded-2xl p-12 text-center bg-white shadow-sm">
+              <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#CCC' }} />
+              <h3 className="text-xl font-semibold mb-2" style={{ color: '#333' }}>Member Management</h3>
+              <p style={{ color: '#666' }}>View and  manage community members</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-white shadow-sm overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm" style={{ color: '#666' }}>{t('common.users', 'Name')}</th>
+                    <th className="text-left py-3 px-4 text-sm" style={{ color: '#666' }}>{t('auth.email', 'Email Address')}</th>
+                    <th className="text-left py-3 px-4 text-sm" style={{ color: '#666' }}>{t('common.status', 'Status')}</th>
+                    <th className="text-left py-3 px-4 text-sm" style={{ color: '#666' }}>{t('communities.detail.JoinAt', 'JoinedAt')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {membersData.map((m: any, idx: number) => {
+                    const id = m._id || m.id || `${idx}`;
+                    // Backend payload example:
+                    // { _id, userId: { _id, fullName, email }, role, joinedAt, status }
+                    const name = m.userId?.fullName || m.fullName || m.name || m.user?.fullName || '—';
+                    const email = m.userId?.email || m.email || m.user?.email || '—';
+                    const status = (m.status || m.memberStatus || m.userId?.status || m.user?.status || '').toString() || '—';
+                    const createdAt = m.joinedAt || m.createdAt || m.userId?.createdAt || m.user?.createdAt;
+
+                    return (
+                      <tr key={id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4" style={{ color: '#333' }}>{name}</td>
+                        <td className="py-3 px-4" style={{ color: '#666' }}>{email}</td>
+                        <td className="py-3 px-4" style={{ color: '#666' }}>{status}</td>
+                        <td className="py-3 px-4" style={{ color: '#666' }}>
+                          {createdAt ? new Date(createdAt).toLocaleDateString() : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

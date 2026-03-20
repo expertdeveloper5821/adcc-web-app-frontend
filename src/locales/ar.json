@@ -487,7 +487,7 @@
         "feed": "إعلانات الموجز",
         "tracks": "المسارات"
       },
-      "aboutHeading": "حول",
+      "aboutHeading": "حول هذا المسار",
       "associatedTeams": "الفرق المرتبطة",
       "quickActions": "إجراءات سريعة",
       "editCommunity": "تعديل المجتمع",
@@ -1023,6 +1023,9 @@
     "openTracks": "المسارات المفتوحة",
     "citiesCovered": "المدن المغطاة",
     "totalDistance": "إجمالي المسافة",
+    
+  
+
     "filters": {
       "search": "البحث في المسارات...",
       "allCities": "جميع المدن",
@@ -1138,6 +1141,29 @@
         "public": "عام",
         "hidden": "مخفي"
       },
+      "countryOptions": {
+        "UAE": "الإمارات العربية المتحدة",
+        "Saudi Arabia": "المملكة العربية السعودية",
+        "Kuwait": "الكويت",
+        "Bahrain": "البحرين",
+        "Oman": "عُمان",
+        "Qatar": "قطر"
+      },
+      "cityOptions": {
+        "Abu Dhabi": "أبوظبي",
+        "Dubai": "دبي",
+        "Sharjah": "الشارقة",
+        "Ajman": "عجمان",
+        "Umm Al Quwain": "أم القيوين",
+        "Ras Al Khaimah": "رأس الخيمة",
+        "Fujairah": "الفجيرة",
+        "Al Ain": "العين"
+      },
+
+      
+
+     
+ 
       "thumbnailLabel": "صورة المسار المصغرة *",
       "coverLabel": "صورة الغلاف *",
       "galleryLabel": "صور المعرض (متعددة)",
@@ -1265,6 +1291,25 @@
         "public": "عام",
         "hidden": "مخفي (للمسؤولين فقط)"
       },
+      "countryOptions": {
+        "UAE": "الإمارات العربية المتحدة",
+        "Saudi Arabia": "المملكة العربية السعودية",
+        "Kuwait": "الكويت",
+        "Bahrain": "البحرين",
+        "Oman": "عُمان",
+        "Qatar": "قطر"
+      },
+      "cityOptions": {
+        "Abu Dhabi": "أبوظبي",
+        "Dubai": "دبي",
+        "Sharjah": "الشارقة",
+        "Ajman": "عجمان",
+        "Umm Al Quwain": "أم القيوين",
+        "Ras Al Khaimah": "رأس الخيمة",
+        "Fujairah": "الفجيرة",
+        "Al Ain": "العين"
+      },
+ 
       "toasts": {
         "notFound": "المسار غير موجود",
         "updateSuccess": "تم تحديث المسار بنجاح",
@@ -1285,9 +1330,22 @@
         "overview": "نظرة عامة",
         "events": "فعاليات المسار",
         "safety": "السلامة",
-        "media": "الوسائط"
+        "media": "الوسائط",
+        "aboutHeading": "حول هذا المسار",
+        "noDescription": "لا يوجد وصف لهذا المسار",
+        "routeMap": "خريطة الطريق",
+        "communities": "المجتمعات",
+        "communitiesHeading": "المجتمعات المرتبطة",
+        "communitiesTab": {
+          "heading": "المجتمعات المرتبطة بهذا المسار ({{count}})",
+          "upcomingHeading": "المجتمعات القادمة على هذا المسار",
+          "noCommunities": "لا توجد مجتمعات مرتبطة بهذا المسار",
+          "viewAll": "عرض الكل"
+        }
       },
       "trackDetails": "تفاصيل المسار",
+      "aboutHeading": "حول هذا المسار",
+      "noDescription": "لا يوجد وصف لهذا المسار",
       "labels": {
         "distance": "المسافة",
         "elevation": "الارتفاع",

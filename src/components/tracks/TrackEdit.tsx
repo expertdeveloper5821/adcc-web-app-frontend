@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Archive, AlertTriangle, Globe } from 'lucide-react';
+import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Archive, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { getTrackById, getTrackResults, trackCommunityResults, updateTrack, deleteTrack, disableTrack, enableTrack, Track } from '../../services/trackService';
@@ -466,16 +466,34 @@ const handleDisable = async (id: string, name: string) => {
 
             </div>
 
-            {/* English Fields */}
-            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
+            {/* English & Arabic Fields - always show both (same as event/community) */}
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.trackName')}</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  {t('tracks.edit.trackName')} <span className="text-gray-400">(English)</span>
+                </label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder={t('tracks.edit.placeholders.trackName')}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المسار <span className="text-gray-400">(Arabic)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                  dir="rtl"
+                  lang="ar"
+                  placeholder="حلبة مرسى ياس"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
                 />
               </div>
 
@@ -491,7 +509,9 @@ const handleDisable = async (id: string, name: string) => {
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.description')}</label>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  {t('tracks.edit.description')} <span className="text-gray-400">(English)</span>
+                </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -500,29 +520,10 @@ const handleDisable = async (id: string, name: string) => {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
               </div>
-            </div>
-
-            {/* Arabic Fields */}
-            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
-              <div>
-                <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  اسم المسار <span className="text-gray-400">(Track Name)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.titleAr}
-                  onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
-                  dir="rtl"
-                  lang="ar"
-                  placeholder="حلبة مرسى ياس"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
-                  style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
-                />
-              </div>
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  الوصف <span className="text-gray-400">(Description)</span>
+                  الوصف <span className="text-gray-400">(Arabic)</span>
                 </label>
                 <textarea
                   value={formData.descriptionAr}
@@ -535,20 +536,6 @@ const handleDisable = async (id: string, name: string) => {
                   style={{ fontFamily: "'Noto Sans Arabic', 'Segoe UI', sans-serif" }}
                 />
               </div>
-
-              {/* English reference */}
-              {formData.title && (
-                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
-                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>{t('common.englishReference')}</span>
-                  </div>
-                  <p className="text-sm" style={{ color: '#1E40AF' }}>{formData.title}</p>
-                  {formData.description && (
-                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{formData.description}</p>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Common fields always visible */}
@@ -575,12 +562,12 @@ const handleDisable = async (id: string, name: string) => {
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                  <option value="UAE">United Arab Emirates</option>
-                  <option value="Saudi Arabia">Saudi Arabia</option>
-                  <option value="Kuwait">Kuwait</option>
-                  <option value="Bahrain">Bahrain</option>
-                  <option value="Oman">Oman</option>
-                  <option value="Qatar">Qatar</option>
+                 <option value="UAE">{t('tracks.edit.countryOptions.UAE')}</option>
+                  <option value="Saudi Arabia">{t('tracks.edit.countryOptions.Saudi Arabia')}</option>
+                  <option value="Kuwait">{t('tracks.edit.countryOptions.Kuwait')}</option>
+                  <option value="Bahrain">{t('tracks.edit.countryOptions.Bahrain')}</option>
+                  <option value="Oman">{t('tracks.edit.countryOptions.Oman')}</option>
+                  <option value="Qatar">{t('tracks.edit.countryOptions.Qatar')}</option>
                 </select>
               </div>
 
@@ -592,7 +579,7 @@ const handleDisable = async (id: string, name: string) => {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
                   {cities.map(city => (
-                    <option key={city} value={city}>{city}</option>
+                  <option key={city} value={city}>{t(`tracks.edit.cityOptions.${city}`)}</option>
                   ))}
                 </select>
               </div>

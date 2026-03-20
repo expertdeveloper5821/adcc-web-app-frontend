@@ -258,25 +258,36 @@ export const deleteCommunity = async (id: string): Promise<void> => {
 };
 
 
+export interface CommunityMember {
+  _id?: string;
+  id?: string;
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  createdAt?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
 // Get Community Members
-export const getCommunityMembers = async(id: string): Promise<void> => {
-  try{
-      const response = await api.get<any>(`/v1/communities/${id}/communityMembers`);
-      if ((response.data as any).data) {
-          return (response.data as any).data;
-      }
-    return response.data;
+export const getCommunityMembers = async (id: string): Promise<CommunityMember[]> => {
+  try {
+    const response = await api.get<any>(`/v1/communities/${id}/communityMembers`);
+    const data = (response.data as any)?.data ?? response.data;
+    if (Array.isArray(data)) return data as CommunityMember[];
+    if (Array.isArray(data?.members)) return data.members as CommunityMember[];
+    return [];
   } catch (error) {
     console.error('Error community members:', error);
     throw error;
   }
-}
+};
 
 // Add gallery images to community (sends multipart/form-data so backend receive multipart with boundary)
 export const addGalleryImages = async (id: string, files: File[]): Promise<any> => {
   try {
     const formData = new FormData();
-    files.forEach((file) => formData.append('galleryImages', file));
+    files.forEach((file) => formData.append('gallery', file));
     const response = await api.post<any>(`/v1/communities/${id}/gallery`, formData);
     if ((response.data as any).data) {
       return (response.data as any).data;
