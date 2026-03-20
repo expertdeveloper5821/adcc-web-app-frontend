@@ -1,5 +1,5 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
-import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save, Globe } from 'lucide-react';
+import { ArrowLeft, MapPin, Activity, Shield, Image as ImageIcon, Settings, Save } from 'lucide-react';
 import { addTrack, Track, availableFacilities } from '../../data/tracksData';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -389,15 +389,29 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
             }
             if (type === 'select') {
               const selectValue = value === undefined || value === null ? '' : String(value);
+              const optionLabelMap: Record<string, string> = {
+                trackType: 'tracks.create.trackTypeOptions',
+                difficulty: 'tracks.create.difficultyOptions',
+                surfaceType: 'tracks.create.surfaceOptions',
+                status: 'tracks.create.statusOptions',
+                visibility: 'tracks.create.visibilityOptions',
+                country: 'tracks.create.countryOptions',
+                city: 'tracks.create.cityOptions',
+              };
+              const translationPrefix = optionLabelMap[name];
+ 
               return (
                 <select
                   value={selectValue}
                   onChange={onChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
+
                   {options.map((opt: string) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
+                   <option key={opt} value={opt}>{translationPrefix ? t(`${translationPrefix}.${opt}`) : opt}</option>
+ 
+                   
+                   ))}
                 </select>
               );
             }
@@ -454,16 +468,32 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
 
             </div>
 
-            {/* English Fields */}
-            <div className="space-y-4" style={{ display: locale === 'en' ? 'block' : 'none' }}>
-              {formFields.filter(f => f.section === 1 && ['name', 'slug', 'description'].includes(f.name)).map(renderField)}
-            </div>
-
-            {/* Arabic Fields */}
-            <div className="space-y-4" style={{ display: locale === 'ar' ? 'block' : 'none' }}>
+            {/* English & Arabic Fields - always show both (same as event/community) */}
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  اسم المسار <span className="text-gray-400">(Track Name)</span>
+                  {t('tracks.create.trackName')} <span className="text-gray-400">(English)</span>
+                </label>
+                <Controller
+                  name="name"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field: { onChange, value } }) => (
+                    <input
+                      type="text"
+                      value={value || ''}
+                      onChange={onChange}
+                      placeholder={t('tracks.create.placeholders.trackName')}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                    />
+                  )}
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  اسم المسار <span className="text-gray-400">(Arabic)</span>
                 </label>
                 <Controller
                   name="nameAr"
@@ -484,8 +514,46 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
               </div>
 
               <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.create.slug')}</label>
+                <Controller
+                  name="slug"
+                  control={control}
+                  render={({ field: { value } }) => (
+                    <input
+                      type="text"
+                      value={value || ''}
+                      readOnly
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50"
+                      style={{ color: '#999' }}
+                    />
+                  )}
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>
-                  الوصف <span className="text-gray-400">(Description)</span>
+                  {t('tracks.create.description')} <span className="text-gray-400">(English)</span>
+                </label>
+                <Controller
+                  name="description"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field: { onChange, value } }) => (
+                    <textarea
+                      value={value || ''}
+                      onChange={onChange}
+                      placeholder={t('tracks.create.placeholders.description')}
+                      rows={4}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                    />
+                  )}
+                />
+                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#666' }}>
+                  الوصف <span className="text-gray-400">(Arabic)</span>
                 </label>
                 <Controller
                   name="descriptionAr"
@@ -504,20 +572,6 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
                   )}
                 />
               </div>
-
-              {/* English reference */}
-              {watch('name') && (
-                <div className="p-3 rounded-lg border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Globe className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
-                    <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>English reference</span>
-                  </div>
-                  <p className="text-sm" style={{ color: '#1E40AF' }}>{watch('name')}</p>
-                  {watch('description') && (
-                    <p className="text-xs mt-1" style={{ color: '#60A5FA' }}>{watch('description')}</p>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Common fields always visible */}
@@ -525,6 +579,10 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
               {formFields.filter(f => f.section === 1 && !['name', 'slug', 'description'].includes(f.name)).map(renderField)}
             </div>
           </div>
+
+
+
+
 
           {/* SECTION 2 - Route Details */}
           <div className="p-6 rounded-2xl shadow-sm bg-white">

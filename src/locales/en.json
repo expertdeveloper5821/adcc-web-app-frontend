@@ -501,6 +501,19 @@
       }
     },
     "detail": {
+      "aboutHeading": "About This Track",
+      "noDescription": "No description available.",
+      "routeMap": "Track Map",
+      "communities": "Communities",
+      "communitiesHeading": "Communities Using this Track",
+      "communitiesTab": {
+        "heading": "Communities Using this Track ({{count}})",
+        "upcomingHeading": "Upcoming Communities Using this Track",
+        "noCommunities": "No communities using this track",
+        "viewAll": "View All"
+      },
+
+
       "notFound": "Community not found",
       "editButton": "Edit Community",
       "members": "members",
@@ -514,7 +527,7 @@
         "feed": "Feed Posts",
         "tracks": "Tracks"
       },
-      "aboutHeading": "About",
+      "aboutHeading": "About This Track",
       "associatedTeams": "Associated Teams",
       "quickActions": "Quick Actions",
       "editCommunity": "Edit Community",
@@ -1135,6 +1148,25 @@
         "public": "Public",
         "hidden": "Hidden"
       },
+      "countryOptions": {
+        "UAE": "United Arab Emirates",
+        "Saudi Arabia": "Saudi Arabia",
+        "Kuwait": "Kuwait",
+        "Bahrain": "Bahrain",
+        "Oman": "Oman",
+        "Qatar": "Qatar"
+      },
+      "cityOptions": {
+        "Abu Dhabi": "Abu Dhabi",
+        "Dubai": "Dubai",
+        "Sharjah": "Sharjah",
+        "Ajman": "Ajman",
+        "Umm Al Quwain": "Umm Al Quwain",
+        "Ras Al Khaimah": "Ras Al Khaimah",
+        "Fujairah": "Fujairah",
+        "Al Ain": "Al Ain"
+      },
+ 
       "thumbnailLabel": "Track Thumbnail Image *",
       "coverLabel": "Cover Image *",
       "galleryLabel": "Gallery Images (multiple)",
@@ -1262,6 +1294,25 @@
         "public": "Public",
         "hidden": "Hidden (admin only)"
       },
+      "countryOptions": {
+        "UAE": "United Arab Emirates",
+        "Saudi Arabia": "Saudi Arabia",
+        "Kuwait": "Kuwait",
+        "Bahrain": "Bahrain",
+        "Oman": "Oman",
+        "Qatar": "Qatar"
+      },
+      "cityOptions": {
+        "Abu Dhabi": "Abu Dhabi",
+        "Dubai": "Dubai",
+        "Sharjah": "Sharjah",
+        "Ajman": "Ajman",
+        "Umm Al Quwain": "Umm Al Quwain",
+        "Ras Al Khaimah": "Ras Al Khaimah",
+        "Fujairah": "Fujairah",
+        "Al Ain": "Al Ain"
+      },
+ 
       "toasts": {
         "notFound": "Track not found",
         "updateSuccess": "Track updated successfully",
@@ -1284,6 +1335,8 @@
         "safety": "Safety",
         "media": "Media"
       },
+      "aboutHeading": "About This Track",
+      "noDescription": "No description available.",
       "trackDetails": "Track Details",
       "labels": {
         "distance": "Distance",

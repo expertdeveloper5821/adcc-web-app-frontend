@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useLocale } from '../../contexts/LocaleContext';
 import { Plus, Search, MapPin, Calendar, Users, Edit, Eye, Archive } from 'lucide-react';
 import { UserRole } from '../../App';
 import { toast } from 'sonner';
@@ -20,6 +21,7 @@ interface TracksListProps {
 export function TracksList({ role }: TracksListProps) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const { locale } = useLocale();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
@@ -122,8 +124,9 @@ export function TracksList({ role }: TracksListProps) {
   const filteredTracks = useMemo(() => {
     return tracks.filter(track => {
       const name = (track.title ?? '').toString();
+      const nameAr = (track.titleAr ?? '').toString();
       const search = (searchTerm ?? '').toString().toLowerCase();
-      const matchesSearch = name.toLowerCase().includes(search);
+      const matchesSearch = name.toLowerCase().includes(search) || nameAr.includes(searchTerm ?? '');
 
       const city = (track.city ?? '').toString();
       const matchesCity = cityFilter === 'all' || city === cityFilter;
@@ -366,7 +369,7 @@ export function TracksList({ role }: TracksListProps) {
                 <div key={trackId ?? track.id ?? `track-${index}`} className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-shadow">
                   <div className="flex gap-6">
                     <div className="flex-shrink-0 w-40 h-32 rounded-lg overflow-hidden">
-                      <img src={track.image || track.coverImage} alt={track.title} className="w-full h-full object-cover" />
+                      <img src={track.image || track.coverImage} alt={locale === 'ar' && track.titleAr ? track.titleAr : track.title} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-3">
@@ -377,7 +380,7 @@ export function TracksList({ role }: TracksListProps) {
                               style={{ color: '#333', textTransform: 'capitalize' }}
                               onClick={() => trackId && navigate(`/tracks/${trackId}`)}
                             >
-                              {track.title}
+                              {locale === 'ar' && track.titleAr ? track.titleAr : track.title}
                             </h3>
                             <span
                               className="px-3 py-1 rounded-full text-xs text-white"
@@ -458,7 +461,7 @@ export function TracksList({ role }: TracksListProps) {
                               <span className="text-sm">{t('tracks.card.edit')}</span>
                             </button>
                             <button
-                              onClick={() => trackId && handleArchive(trackId, track.title)}
+                              onClick={() => trackId && handleArchive(trackId, locale === 'ar' && track.titleAr ? track.titleAr : track.title)}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
                               style={{ color: '#666' }}
                             >

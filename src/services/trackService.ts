@@ -39,7 +39,9 @@ export type TrackStatusBackend =
 export interface ITrack {
   _id?: string;
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
   image?: string;
   coverImage?: string;
   city: string;
@@ -77,7 +79,9 @@ export type CreateTrackRequest = Omit<
   "_id" | "createdAt" | "updatedAt"
 > & {
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
   city: string;
   distance: number;
   elevation: string;
@@ -404,8 +408,10 @@ export const enableTrack = async (id: string): Promise<void> => {
 export const getTrackResults = async (trackId: string): Promise<any[]> => {
   try {
     const response = await api.get(`/v1/tracks/${trackId}/events/results`);
+    console.log("track api response" , response)
     // return response.data.data;
     if ((response.data as any).data) {
+
       return (response.data as any).data;
     }
   } catch (error) {
@@ -422,7 +428,7 @@ export const trackCommunityResults = async (
   trackId: string,
 ): Promise<any[]> => {
   try {
-    const response = await api.get(`/v1/tracks/${trackId}/events/results`);
+    const response = await api.get(`/v1/tracks/${trackId}/communities/results`);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching track events:", error);

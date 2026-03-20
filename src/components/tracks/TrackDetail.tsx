@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, MapPin, Users, Calendar, Trophy, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useLocale } from '../../contexts/LocaleContext';
 import { UserRole } from '../../App';
 import { getTrack, updateTrack } from '../../data/tracksData';
 
@@ -18,6 +19,7 @@ type TabType = 'overview' | 'events' | 'communities';
 
 export function TrackDetail({  role }: TrackDetailProps) {
   const { t, i18n } = useTranslation();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
@@ -61,7 +63,9 @@ export function TrackDetail({  role }: TrackDetailProps) {
     const fetchEvents = async () => {
       try {
         const data = await getTrackResults(trackId);
+        // console.log('events data',data);
         setLinkedEvents(data || []);
+
       } catch (error) {
         console.error(error);
       }
@@ -69,6 +73,8 @@ export function TrackDetail({  role }: TrackDetailProps) {
     fetchEvents();
   }, [trackId]);
 
+
+  console.log('linked events',linkedEvents);
   useEffect(() => {
     if (!trackId) return;
     let cancelled = false;
@@ -135,6 +141,9 @@ export function TrackDetail({  role }: TrackDetailProps) {
     const d = e.eventDate ?? e.date;
     return d && new Date(d) >= new Date();
   });
+console.log('upcoming track',upcomingEvents);
+
+
 
   const handleDelete = async () => {
     if (!trackIdForApi || deleting) return;
@@ -172,7 +181,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
           </button>
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl" style={{ color: '#333' }}>{track.title}</h1>
+              <h1 className="text-3xl" style={{ color: '#333' }}>{locale === 'ar' && track.titleAr ? track.titleAr : track.title}</h1>
               <span
                 className="px-3 py-1 rounded-full text-xs capitalize text-white"
                 style={{
@@ -283,13 +292,13 @@ export function TrackDetail({  role }: TrackDetailProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Cover Image */}
             <div className="rounded-2xl overflow-hidden shadow-sm">
-              <img src={track.coverImage || track.image} alt={track.title ?? track.name} className="w-full h-64 object-cover" />
+              <img src={track.coverImage || track.image} alt={locale === 'ar' && track.titleAr ? track.titleAr : (track.title ?? track.name)} className="w-full h-64 object-cover" />
             </div>
 
             {/* Description */}
             <div className="p-6 rounded-2xl bg-white shadow-sm">
               <h3 className="text-lg mb-3" style={{ color: '#333' }}>{t('tracks.detail.aboutHeading', 'About This Track')}</h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>{track.description || t('tracks.detail.noDescription', 'No description available.')}</p>
+              <p style={{ color: '#666', lineHeight: '1.6' }}>{(locale === 'ar' && track.descriptionAr) ? track.descriptionAr : (track.description || t('tracks.detail.noDescription', 'No description available.'))}</p>
             </div>
 
             {/* Map Preview */}
@@ -551,7 +560,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
               <h3 className="text-xl" style={{ color: '#333' }}>{t('tracks.detail.deleteModal.title', 'Delete Track?')}</h3>
             </div>
             <p className="mb-6" style={{ color: '#666' }}>
-              {t('tracks.detail.deleteModal.body', { name: track.title ?? track.name, defaultValue: `This will permanently delete "${track.title ?? track.name}". This action cannot be undone.` })}
+              {t('tracks.detail.deleteModal.body', { name: locale === 'ar' && track.titleAr ? track.titleAr : (track.title ?? track.name), defaultValue: `This will permanently delete "${locale === 'ar' && track.titleAr ? track.titleAr : (track.title ?? track.name)}". This action cannot be undone.` })}
             </p>
             <div className="flex gap-3">
               <button
