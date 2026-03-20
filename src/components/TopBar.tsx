@@ -62,15 +62,15 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
 
   return (
     <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50 flex items-center justify-between px-8">
-      <div className="flex items-center gap-4 flex-1 max-w-2xl ml-64">
+      <div className={`flex items-center gap-4 flex-1 max-w-2xl ${isRtl ? 'mr-64' : 'ml-64'}`}>
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#999' }} />
+          <Search className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 ${isRtl ? 'right-3' : 'left-3'}`} style={{ color: '#999' }} />
           <input
             type="text"
             placeholder={t('topbar.search')}
             dir={isRtl ? 'rtl' : 'ltr'}
             lang={locale}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+            className={`w-full py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'}`}
             style={{ focusRing: '#C12D32' }}
           />
         </div>
@@ -113,12 +113,12 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+            <div className={`absolute top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 ${isRtl ? 'left-0' : 'right-0'}`}>
               {(Object.keys(roleKeys) as UserRole[]).map((role) => (
                 <button
                   key={role}
                   onClick={() => handleRoleChange(role)}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors"
+                  className={`w-full px-4 py-2 hover:bg-gray-50 transition-colors ${isRtl ? 'text-right' : 'text-left'}`}
                   style={{
                     backgroundColor: role === currentRole ? '#FFF9EF' : 'transparent',
                     color: '#333',
@@ -152,23 +152,23 @@ export function TopBar({ currentRole, setRole }: TopBarProps) {
           </button>
 
           {userMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+            <div className={`absolute top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 ${isRtl ? 'left-0' : 'right-0'}`}>
               {userProfile && (
                 <div className="px-4 py-3 border-b border-gray-200">
-                  <div className="text-sm font-semibold" style={{ color: '#333' }}>
+                  <div className={`text-sm font-semibold ${isRtl ? 'text-right' : 'text-left'}`} style={{ color: '#333' }}>
                     {userProfile.fullName}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: '#666' }}>
+                  <div className={`text-xs mt-1 ${isRtl ? 'text-right' : 'text-left'}`} style={{ color: '#666' }}>
                     {userProfile.email || userProfile.phone}
                   </div>
-                  <div className="text-xs mt-1 capitalize" style={{ color: '#999' }}>
+                  <div className={`text-xs mt-1 capitalize ${isRtl ? 'text-right' : 'text-left'}`} style={{ color: '#999' }}>
                     {t('topbar.role')} {userProfile.role}
                   </div>
                 </div>
               )}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-colors text-left"
+                className={`w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-colors ${isRtl ? 'flex-row-reverse text-right' : 'text-left'}`}
                 style={{ color: '#C12D32' }}
               >
                 <LogOut className="w-4 h-4" />

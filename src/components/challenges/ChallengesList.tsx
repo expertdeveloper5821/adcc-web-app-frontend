@@ -260,83 +260,85 @@ export function ChallengesList({ role }: ChallengesListProps) {
             className="p-6 rounded-2xl shadow-sm bg-white hover:shadow-md transition-all cursor-pointer relative group"
             onClick={() => navigate(`/challenges/${challenge.id}`)}
           >
-            {/* Featured Badge */}
-            {challenge.featured && (
-              <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: '#C12D32' }}>
-                {t('challenges.featured')}
-              </div>
-            )}
+            {/* Challenge Image */}
+            <div className="relative mb-4">
+              <img
+                src={challenge.image}
+                alt={challenge.title}
+                className="w-full h-40 object-cover rounded-lg"
+              />
 
-            {/* Actions Dropdown */}
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveDropdown(activeDropdown === challenge.id ? null : challenge.id);
-                }}
-                className="p-2 rounded-lg hover:bg-gray-100"
-              >
-                <MoreVertical className="w-5 h-5" style={{ color: '#666' }} />
-              </button>
+              {/* Featured Badge */}
+              {challenge.featured && (
+                <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style={{ backgroundColor: '#C12D32' }}>
+                  {t('challenges.featured')}
+                </div>
+              )}
 
-              {activeDropdown === challenge.id && (
-                <div
-                  className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10"
-                  onClick={(e) => e.stopPropagation()}
+              {/* Actions Dropdown */}
+              <div className="absolute top-3 right-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveDropdown(activeDropdown === challenge.id ? null : challenge.id);
+                  }}
+                  className="p-1.5 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white shadow-sm transition-all"
                 >
-                  <button
-                    onClick={() => {
-                      navigate(`/challenges/${challenge.id}`);
-                      setActiveDropdown(null);
-                    }}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                  <MoreVertical className="w-4 h-4" style={{ color: '#333' }} />
+                </button>
+
+                {activeDropdown === challenge.id && (
+                  <div
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Eye className="w-4 h-4" />
-                    {t('challenges.viewDetails')}
-                  </button>
-                  {canEdit && (
                     <button
                       onClick={() => {
-                        navigate(`/challenges/${challenge.id}/edit`);
+                        navigate(`/challenges/${challenge.id}`);
                         setActiveDropdown(null);
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
                     >
-                      <Edit className="w-4 h-4" />
-                      {t('common.edit')}
+                      <Eye className="w-4 h-4" />
+                      {t('challenges.viewDetails')}
                     </button>
-                  )}
-                  {canCreate && (
-                    <button
-                      onClick={() => handleDuplicate(challenge.id)}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <Copy className="w-4 h-4" />
-                      {t('challenges.duplicate')}
-                    </button>
-                  )}
-                  {canDelete && (
-                    <>
-                      <hr className="my-2" />
+                    {canEdit && (
                       <button
-                        onClick={() => setDeleteConfirm(challenge.id)}
-                        className="w-full px-4 py-2 text-left hover:bg-red-50 flex items-center gap-2 text-red-600"
+                        onClick={() => {
+                          navigate(`/challenges/${challenge.id}/edit`);
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
                       >
-                        <Trash2 className="w-4 h-4" />
-                        {t('common.delete')}
+                        <Edit className="w-4 h-4" />
+                        {t('common.edit')}
                       </button>
-                    </>
-                  )}
-                </div>
-              )}
+                    )}
+                    {canCreate && (
+                      <button
+                        onClick={() => handleDuplicate(challenge.id)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Copy className="w-4 h-4" />
+                        {t('challenges.duplicate')}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <>
+                        <hr className="my-2" />
+                        <button
+                          onClick={() => setDeleteConfirm(challenge.id)}
+                          className="w-full px-4 py-2 text-left hover:bg-red-50 flex items-center gap-2 text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {t('common.delete')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-
-            {/* Challenge Image */}
-            <img
-              src={challenge.image}
-              alt={challenge.title}
-              className="w-full h-40 object-cover rounded-lg mb-4"
-            />
 
             {/* Challenge Info */}
             <div className="space-y-3">

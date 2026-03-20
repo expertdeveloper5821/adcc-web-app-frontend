@@ -185,6 +185,15 @@ export function CommunityEdit({ role }: CommunityEditProps) {
         ? [existingCommunity.type]
         : [];
 
+    // Parse categories from the backend `category` string and merge into typeArr
+    // Backend stores selected categories as comma-separated string in `category` field
+    const categoryStr = typeof existingCommunity.category === 'string' ? existingCommunity.category : '';
+    const parsedCategories = categoryStr
+      .split(',')
+      .map(c => c.trim())
+      .filter(c => c && !typeArr.includes(c));
+    const mergedType = [...typeArr, ...parsedCategories];
+
     const raw = existingCommunity as unknown as Record<string, unknown>;
     const trackIdRaw = existingCommunity.trackId ?? (Array.isArray(raw.primaryTracks) ? raw.primaryTracks[0] : null) ?? raw.primaryTrackId ?? raw.track_id ?? (raw.track && typeof raw.track === 'object' ? (raw.track as { id?: string; _id?: string }).id ?? (raw.track as { _id?: string })._id : null) ?? raw.primaryTrackIds?.[0] ?? null;
     const primaryTrackStr =
@@ -211,8 +220,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
         if (typeArr.some(t => PURPOSE_CATS.includes(t))) return 'special';
         return typeArr.length > 0 ? 'type' : 'city';
       })(),
-      category: typeof existingCommunity.category === 'string' ? existingCommunity.category : (existingCommunity.category?.[0] ?? ''),
-      type: typeArr,
+      category: categoryStr,
+      type: mergedType,
       country: country || 'UAE',
       area: existingCommunity.area ?? '',
       primaryTrack: primaryTrackStr,

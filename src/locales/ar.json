@@ -484,7 +484,7 @@
         "members": "الأعضاء",
         "events": "الفعاليات",
         "gallery": "المعرض",
-        "feed": "منشورات الموجز",
+        "feed": "إعلانات الموجز",
         "tracks": "المسارات"
       },
       "aboutHeading": "حول",
@@ -506,31 +506,28 @@
         "galleryItems": "عناصر المعرض"
       },
       "feed": {
-        "heading": "منشورات الموجز",
+        "heading": "إعلانات الموجز",
         "subheading": "إدارة إعلانات وتحديثات المجتمع",
-        "createPost": "إنشاء منشور",
-        "postTitle": "عنوان المنشور",
-        "postTitlePlaceholder": "أدخل عنوان المنشور...",
-        "postType": "نوع المنشور",
+        "createPost": "إنشاء إعلان",
+        "postTitle": "عنوان الإعلان",
+        "postTitlePlaceholder": "أدخل عنوان الإعلان...",
+        "postType": "نوع الإعلان",
         "caption": "الوصف",
-        "captionPlaceholder": "اكتب وصف المنشور...",
-        "uploadMedia": "رفع وسائط",
-        "uploadHint": "انقر لرفع صورة",
-        "publishPost": "نشر المنشور",
+        "captionPlaceholder": "اكتب وصف الإعلان...",
+        "publishPost": "إنشاء",
         "types": {
           "announcement": "إعلان",
           "highlight": "تسليط الضوء",
           "awareness": "توعية"
         },
-        "noPosts": "لا توجد منشورات بعد",
-        "noPostsBody": "أنشئ أول منشور للتفاعل مع الأعضاء",
+        "noPosts": "لا توجد إعلانات بعد",
+        "noPostsBody": "أنشئ أول إعلان للتفاعل مع الأعضاء",
         "pin": "تثبيت في الأعلى",
         "unpin": "إلغاء التثبيت",
-        "editPost": "تعديل المنشور",
-        "updatePost": "تحديث المنشور",
-        "changeImage": "تغيير الصورة",
-        "deletePost": "حذف المنشور",
-        "deleteConfirm": "هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء."
+        "editPost": "تعديل الإعلان",
+        "updatePost": "تحديث",
+        "deletePost": "حذف الإعلان",
+        "deleteConfirm": "هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء."
       },
       "eventsTab": {
         "heading": "فعاليات المجتمع",

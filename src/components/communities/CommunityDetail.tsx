@@ -55,22 +55,22 @@ export function CommunityDetail() {
   const openEditPostModal = (post: CommunityPost) => setPostModal({ mode: 'edit', post });
   const closePostModal = () => setPostModal(null);
 
-  const handlePostSubmit = async (data: PostFormData, imageFile?: File) => {
+  const handlePostSubmit = async (data: PostFormData) => {
     setIsSubmittingPost(true);
     try {
       if (postModal?.mode === 'edit' && postModal.post) {
-        const updated = await updateCommunityPost(communityId, postModal.post._id, data, imageFile);
+        const updated = await updateCommunityPost(communityId, postModal.post._id, data);
         setFeedPosts(prev => prev.map(p => p._id === postModal.post!._id ? updated : p));
-        toast.success(t('communities.detail.toasts.postUpdated', { defaultValue: 'Post updated successfully' }));
+        toast.success(t('communities.detail.toasts.postUpdated', { defaultValue: 'Announcement updated successfully' }));
       } else {
-        const created = await createCommunityPost(communityId, data, imageFile);
+        const created = await createCommunityPost(communityId, data);
         setFeedPosts(prev => [created, ...prev]);
-        toast.success(t('communities.detail.toasts.postCreated', { defaultValue: 'Post created successfully' }));
+        toast.success(t('communities.detail.toasts.postCreated', { defaultValue: 'Announcement created successfully' }));
       }
       closePostModal();
     } catch (error: any) {
       const key = postModal?.mode === 'edit' ? 'postUpdateError' : 'postCreateError';
-      const fallback = postModal?.mode === 'edit' ? 'Failed to update post' : 'Failed to create post';
+      const fallback = postModal?.mode === 'edit' ? 'Failed to update announcement' : 'Failed to create announcement';
       toast.error(error?.response?.data?.message || t(`communities.detail.toasts.${key}`, { defaultValue: fallback }));
     } finally {
       setIsSubmittingPost(false);
@@ -944,7 +944,6 @@ export function CommunityDetail() {
             title: postModal.post.title,
             postType: postModal.post.postType,
             caption: postModal.post.caption,
-            existingImage: postModal.post.image,
           } : undefined}
           isSubmitting={isSubmittingPost}
           onSubmit={handlePostSubmit}
