@@ -19,9 +19,10 @@ export function PushNotifications() {
   const payload = useMemo(
     () => ({
       title: title.trim() || undefined,
-      message: message.trim() || undefined,
+      body: message.trim(),
+      audienceType: audience,
     }),
-    [title, message]
+    [title, message, audience]
   );
 
   const handleSend = async () => {
@@ -32,6 +33,10 @@ export function PushNotifications() {
     setLastResponse('');
     setLastError('');
     try {
+      if (!payload.body) {
+        toast.error('Message is required');
+        return;
+      }
       const response = await sendStaffWebPush(payload);
       setLastResponse(JSON.stringify(response, null, 2));
       toast.success('Push notification sent');

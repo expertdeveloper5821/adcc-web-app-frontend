@@ -174,11 +174,20 @@ export interface SendStaffWebPushResponse {
 // Send web push notification to staff (admin/staff users)
 export const sendStaffWebPush = async (payload: {
   title?: string;
-  message?: string;
+  body: string;
+  audienceType: string;
 }): Promise<SendStaffWebPushResponse> => {
   try {
     console.log('📋 sendStaffWebPush called');
-    const response = await api.post<SendStaffWebPushResponse>('/v1/push-notifications/web/send-to-staff', payload);
+    const formData = new FormData();
+    formData.append('body', payload.body);
+    formData.append('audienceType', payload.audienceType);
+    if (payload.title) formData.append('title', payload.title);
+
+    const response = await api.post<SendStaffWebPushResponse>(
+      '/v1/push-notifications/web/send-to-staff',
+      formData
+    );
     console.log('📥 sendStaffWebPush response:', response.data);
     return response.data;
   } catch (error) {
