@@ -1,24 +1,87 @@
-import React, { useState } from 'react';
-import { CheckCircle, XCircle, Ban, Trash2 } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, Ban } from 'lucide-react';
+import { toast } from 'sonner';
+import { FeedPost, getFeedPosts, moderateFeedPost, FeedPostStatus } from '../../services/feedPostsApi';
 
-type TabType = 'pending' | 'approved' | 'reported';
-
-const posts = [
-  { id: '1', user: 'Ahmed Al Mansoori', content: 'Great ride this morning! Weather was perfect.', status: 'pending', image: 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?w=200' },
-  { id: '2', user: 'Sara Ali', content: 'Looking forward to the Yas Island event next week!', status: 'pending', image: null },
-  { id: '3', user: 'Mohammed Hassan', content: 'Check out my new bike! Ready for the desert adventure.', status: 'reported', image: 'https://images.unsplash.com/photo-1716738634956-1494117b349b?w=200' },
-];
+type TabType = 'pending' | 'approved' | 'rejected';
 
 export function FeedModeration() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleApprove = (postId: string) => {
-    toast.success('Post approved');
+  const fetchPostsForTab = async (tab: TabType) => {
+    setIsLoading(true);
+    // Clear while loading so the spinner displays during tab switches.
+    setPosts([]);
+    try {
+      const query =
+        tab === 'rejected'
+          ? { reported: true as boolean, limit: 50 }
+          : { status: tab as FeedPostStatus, reported: false, limit: 50 };
+
+      const data = await getFeedPosts(query);
+
+      // In case backend returns mixed results for a query, enforce UI categorization here.
+      const filtered = data.filter((p) => {
+        const status = (p.status ?? '') as FeedPostStatus | '';
+        const isReported = p.reported === true;
+
+        // Rejected tab represents all reported posts.
+        if (tab === 'rejected') return isReported;
+        // If backend doesn't return status, default to the tab expectation.
+        if (tab === 'pending') return !isReported && (status === 'pending' || status === '');
+        // Approved tab should always show approved posts, even if reported flag is true.
+        if (tab === 'approved') return status === 'approved';
+        return false;
+      });
+
+      setPosts(filtered);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to load feed posts');
+      setPosts([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleReject = (postId: string) => {
-    toast.success('Post rejected');
+  useEffect(() => {
+    void fetchPostsForTab(activeTab);
+  }, [activeTab]);
+
+  const getPostId = (post: FeedPost): string | null => post._id ?? post.id ?? null;
+
+  const handleApprove = async (postId: string) => {
+    const nextStatus: FeedPostStatus = 'approved';
+    try {
+      await moderateFeedPost(postId, { status: nextStatus, reported: false });
+      toast.success('Post approved');
+      await fetchPostsForTab(activeTab);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to approve post');
+    }
+  };
+
+  const handleReject = async (postId: string) => {
+    const nextStatus: FeedPostStatus = 'pending';
+    try {
+      await moderateFeedPost(postId, { status: nextStatus, reported: false });
+      toast.success('Post rejected');
+      await fetchPostsForTab(activeTab);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to reject post');
+    }
+  };
+
+  const handleBanUser = async (postId: string) => {
+    try {
+      // "Ban User" maps to marking the post as reported=true (backend sets DB `reported` field).
+      await moderateFeedPost(postId, { reported: true, status: 'pending' });
+      toast.success('User reported');
+      await fetchPostsForTab(activeTab);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to report user');
+    }
   };
 
   return (
@@ -30,7 +93,7 @@ export function FeedModeration() {
 
       <div className="border-b border-gray-200">
         <div className="flex gap-6">
-          {(['pending', 'approved', 'reported'] as TabType[]).map((tab) => (
+          {(['pending', 'approved', 'rejected'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -47,18 +110,36 @@ export function FeedModeration() {
       </div>
 
       <div className="space-y-4">
-        {posts.filter(post => post.status === activeTab).map((post) => (
-          <div key={post.id} className="p-6 rounded-2xl shadow-sm bg-white">
+        {isLoading && posts.length === 0 ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: '#C12D32' }} />
+          </div>
+        ) : null}
+
+        {posts.map((post) => {
+          const postId = getPostId(post);
+          if (!postId) return null;
+
+          const userName =
+            typeof post.createdBy === 'string'
+              ? post.createdBy
+              : post.createdBy?.fullName ?? '—';
+
+          const imageUrl = post.image ?? (post as any).imageUrl ?? null;
+          const content = post.description || post.title || '';
+
+          return (
+            <div key={postId} className="p-6 rounded-2xl shadow-sm bg-white">
             <div className="flex items-start gap-4">
-              {post.image && (
-                <img src={post.image} alt="" className="w-20 h-20 rounded-lg object-cover" />
+              {imageUrl && (
+                <img src={imageUrl} alt="" className="w-20 h-20 rounded-lg object-cover" />
               )}
               <div className="flex-1">
-                <div className="text-sm mb-1" style={{ color: '#333' }}>{post.user}</div>
-                <p className="text-sm mb-4" style={{ color: '#666' }}>{post.content}</p>
+                <div className="text-sm mb-1" style={{ color: '#333' }}>{userName}</div>
+                <p className="text-sm mb-4" style={{ color: '#666' }}>{content}</p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleApprove(post.id)}
+                    onClick={() => handleApprove(postId)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm"
                     style={{ backgroundColor: '#CF9F0C' }}
                   >
@@ -66,14 +147,18 @@ export function FeedModeration() {
                     <span>Approve</span>
                   </button>
                   <button
-                    onClick={() => handleReject(post.id)}
+                    onClick={() => handleReject(postId)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm"
                     style={{ backgroundColor: '#C12D32' }}
                   >
                     <XCircle className="w-4 h-4" />
                     <span>Reject</span>
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm" style={{ backgroundColor: '#ECC180', color: '#333' }}>
+                  <button
+                    onClick={() => handleBanUser(postId)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
+                    style={{ backgroundColor: '#ECC180', color: '#333' }}
+                  >
                     <Ban className="w-4 h-4" />
                     <span>Ban User</span>
                   </button>
@@ -81,7 +166,8 @@ export function FeedModeration() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
