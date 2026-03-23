@@ -188,10 +188,10 @@ export const sendStaffWebPush = async (payload: {
       '/v1/push-notifications/web/send-to-staff',
       formData
     );
-    console.log('📥 sendStaffWebPush response:', response.data);
+    console.log('sendStaffWebPush response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ Error sending staff web push:', error);
+    console.error('Error sending staff web push:', error);
     throw error;
   }
 };
