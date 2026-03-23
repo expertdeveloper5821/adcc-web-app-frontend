@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { verifyFirebaseAuth, registerUser, getCurrentUser, logout as apiLogout, CurrentUserResponse } from '../services/authApi';
+import { verifyFirebaseAuth, registerUser, getCurrentUser, logout as apiLogout, CurrentUserResponse, registerFcmToken } from '../services/authApi';
+import { initFcmToken, clearStoredFcmToken, getLastSyncedFcmToken, markFcmTokenSynced, getFcmClientInfo, initForegroundMessageListener } from '../services/fcm';
 import { toast } from 'sonner';
 import i18n from '../i18n';
 
@@ -47,6 +48,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isHandlingAuthManually = useRef(false);
   // Flag to track if this is the initial mount (page reload)
   const isInitialMount = useRef(true);
+  // Flag to avoid duplicate FCM permission prompts
+  const hasRequestedFcmToken = useRef(false);
+  // Flag to send FCM token once per login session
+  const hasSyncedFcmToken = useRef(false);
 
   // Function to refresh user profile (defined early so it can be used in useEffect)
   const refreshUserProfile = async () => {
@@ -139,6 +144,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('🚪 User logged out, clearing tokens');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        clearStoredFcmToken();
+        hasRequestedFcmToken.current = false;
+        hasSyncedFcmToken.current = false;
         setUserProfile(null);
       }
       
@@ -148,6 +156,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user || !userProfile) return;
+    if (hasRequestedFcmToken.current) return;
+
+    hasRequestedFcmToken.current = true;
+    void initFcmToken().then(async (token) => {
+      if (token) {
+        console.log('✅ FCM token acquired:', token);
+        const lastSynced = getLastSyncedFcmToken();
+        if (!hasSyncedFcmToken.current || token !== lastSynced) {
+          try {
+            const clientInfo = getFcmClientInfo();
+            await registerFcmToken(token, clientInfo);
+            markFcmTokenSynced(token);
+            hasSyncedFcmToken.current = true;
+            // Refresh profile so UI sees the updated token list
+            await refreshUserProfile();
+          } catch (error) {
+            console.error('❌ Failed to sync FCM token to backend:', error);
+          }
+        }
+      }
+    });
+
+    void initForegroundMessageListener();
+  }, [user, userProfile]);
 
   const loginWithGoogle = async () => {
     try {
@@ -414,6 +449,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear tokens
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      clearStoredFcmToken();
+      hasRequestedFcmToken.current = false;
+      hasSyncedFcmToken.current = false;
       setUserProfile(null);
       
       toast.success(i18n.t('auth.toasts.logoutSuccess'));

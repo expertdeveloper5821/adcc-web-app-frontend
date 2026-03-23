@@ -23,6 +23,7 @@ VITE_FIREBASE_PROJECT_ID=your-project-id
 VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
 VITE_FIREBASE_APP_ID=your-app-id
+VITE_FIREBASE_VAPID_KEY=your-web-push-certificate-key-pair
 ```
 
 ### 3. Update Firebase Config
@@ -33,6 +34,11 @@ In Firebase Console:
 1. Go to Authentication → Sign-in method
 2. Enable "Email/Password" provider
 3. (Optional) Enable other providers like Phone, Google, etc.
+
+### 5. Enable Web Push (FCM)
+1. Go to Project Settings â†’ Cloud Messaging
+2. Generate a Web Push certificate (VAPID key)
+3. Copy the key into `VITE_FIREBASE_VAPID_KEY`
 
 ## Authentication Flow
 
