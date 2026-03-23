@@ -1494,7 +1494,18 @@
       "events": "الفعاليات",
       "joined": "تاريخ الانضمام",
       "actions": "الإجراءات"
-    }
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "menu": {
+      "setActive": "تفعيل",
+      "setInactive": "إلغاء التفعيل"
+    },
+    "loading": "جاري تحميل المستخدمين...",
+    "noUsers": "لم يتم العثور على مستخدمين",
+    "page": "صفحة {{current}} من {{total}}"
   },
   "feed": {
     "title": "إدارة المنشورات",
@@ -1606,7 +1617,39 @@
     "title": "إدارة المحتوى",
     "subtitle": "إدارة محتوى الصفحة الرئيسية والتطبيق",
     "addSection": "إضافة قسم",
-    "homepageSections": "أقسام الصفحة الرئيسية"
+    "editSection": "تعديل القسم",
+    "homepageSections": "أقسام الصفحة الرئيسية",
+    "searchPlaceholder": "البحث بالمفتاح أو العنوان أو الوصف...",
+    "search": "بحث",
+    "noSettings": "لا توجد أقسام محتوى. انقر على \"إضافة قسم\" لإنشاء واحد.",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ...",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "deleteTitle": "حذف القسم",
+    "deleteMessage": "هل أنت متأكد من حذف هذا القسم؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirm": "حذف",
+    "fields": {
+      "key": "المفتاح",
+      "label": "العنوان",
+      "group": "المجموعة",
+      "description": "الوصف",
+      "descriptionPlaceholder": "وصف مختصر لهذا القسم",
+      "value": "القيمة",
+      "valuePlaceholder": "نص أو كائن JSON أو أي قيمة محتوى",
+      "image": "صورة"
+    },
+    "toasts": {
+      "loadError": "فشل في تحميل أقسام المحتوى",
+      "createSuccess": "تم إنشاء القسم بنجاح",
+      "updateSuccess": "تم تحديث القسم بنجاح",
+      "deleteSuccess": "تم حذف القسم بنجاح",
+      "deleteError": "فشل في حذف القسم",
+      "saveError": "فشل في حفظ القسم",
+      "keyRequired": "المفتاح مطلوب"
+    }
   },
   "data": {
     "communityCategories": {

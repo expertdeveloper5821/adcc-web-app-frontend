@@ -1517,7 +1517,18 @@
       "events": "Events",
       "joined": "Joined",
       "actions": "Actions"
-    }
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "menu": {
+      "setActive": "Set Active",
+      "setInactive": "Set Inactive"
+    },
+    "loading": "Loading users...",
+    "noUsers": "No users found",
+    "page": "Page {{current}} of {{total}}"
   },
   "feed": {
     "title": "Feed Moderation",
@@ -1629,7 +1640,39 @@
     "title": "Content Manager",
     "subtitle": "Manage homepage and app content",
     "addSection": "Add Section",
-    "homepageSections": "Homepage Sections"
+    "editSection": "Edit Section",
+    "homepageSections": "Homepage Sections",
+    "searchPlaceholder": "Search by key, label or description...",
+    "search": "Search",
+    "noSettings": "No content sections found. Click \"Add Section\" to create one.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "create": "Create",
+    "update": "Update",
+    "deleteTitle": "Delete Section",
+    "deleteMessage": "Are you sure you want to delete this section? This action cannot be undone.",
+    "deleteConfirm": "Delete",
+    "fields": {
+      "key": "Key",
+      "label": "Label",
+      "group": "Group",
+      "description": "Description",
+      "descriptionPlaceholder": "Brief description of this section",
+      "value": "Value",
+      "valuePlaceholder": "Text, JSON object, or any content value",
+      "image": "Image"
+    },
+    "toasts": {
+      "loadError": "Failed to load content sections",
+      "createSuccess": "Section created successfully",
+      "updateSuccess": "Section updated successfully",
+      "deleteSuccess": "Section deleted successfully",
+      "deleteError": "Failed to delete section",
+      "saveError": "Failed to save section",
+      "keyRequired": "Key is required"
+    }
   },
   "data": {
     "communityCategories": {
