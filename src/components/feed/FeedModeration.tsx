@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Ban } from 'lucide-react';
 import { toast } from 'sonner';
-import { FeedPost, getFeedPosts, moderateFeedPost, FeedPostStatus } from '../../services/feedPostsApi';
+import {
+  FeedPost,
+  getFeedPosts,
+  moderateFeedPost,
+  moderateFeedUserBan,
+  FeedPostStatus,
+} from '../../services/feedPostsApi';
 
-type TabType = 'pending' | 'approved' | 'rejected';
+type TabType = 'pending' | 'approved' | 'reported';
 
 export function FeedModeration() {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
@@ -16,7 +22,7 @@ export function FeedModeration() {
     setPosts([]);
     try {
       const query =
-        tab === 'rejected'
+        tab === 'reported'
           ? { reported: true as boolean, limit: 50 }
           : { status: tab as FeedPostStatus, reported: false, limit: 50 };
 
@@ -27,8 +33,8 @@ export function FeedModeration() {
         const status = (p.status ?? '') as FeedPostStatus | '';
         const isReported = p.reported === true;
 
-        // Rejected tab represents all reported posts.
-        if (tab === 'rejected') return isReported;
+        // Reported tab represents all reported posts.
+        if (tab === 'reported') return isReported;
         // If backend doesn't return status, default to the tab expectation.
         if (tab === 'pending') return !isReported && (status === 'pending' || status === '');
         // Approved tab should always show approved posts, even if reported flag is true.
@@ -50,6 +56,11 @@ export function FeedModeration() {
   }, [activeTab]);
 
   const getPostId = (post: FeedPost): string | null => post._id ?? post.id ?? null;
+  const getUserId = (post: FeedPost): string | null => {
+    if (post.userId) return post.userId;
+    if (typeof post.createdBy !== 'string') return post.createdBy?._id ?? null;
+    return null;
+  };
 
   const handleApprove = async (postId: string) => {
     const nextStatus: FeedPostStatus = 'approved';
@@ -63,7 +74,7 @@ export function FeedModeration() {
   };
 
   const handleReject = async (postId: string) => {
-    const nextStatus: FeedPostStatus = 'pending';
+    const nextStatus: FeedPostStatus = 'rejected';
     try {
       await moderateFeedPost(postId, { status: nextStatus, reported: false });
       toast.success('Post rejected');
@@ -73,14 +84,13 @@ export function FeedModeration() {
     }
   };
 
-  const handleBanUser = async (postId: string) => {
+  const handleBanUser = async (userId: string, banFeedPost: boolean) => {
     try {
-      // "Ban User" maps to marking the post as reported=true (backend sets DB `reported` field).
-      await moderateFeedPost(postId, { reported: true, status: 'pending' });
-      toast.success('User reported');
+      await moderateFeedUserBan(userId, banFeedPost);
+      toast.success(banFeedPost ? 'User banned from feed' : 'User unbanned from feed');
       await fetchPostsForTab(activeTab);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || error?.message || 'Failed to report user');
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to update user ban status');
     }
   };
 
@@ -93,7 +103,7 @@ export function FeedModeration() {
 
       <div className="border-b border-gray-200">
         <div className="flex gap-6">
-          {(['pending', 'approved', 'rejected'] as TabType[]).map((tab) => (
+          {(['pending', 'approved', 'reported'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -118,6 +128,7 @@ export function FeedModeration() {
 
         {posts.map((post) => {
           const postId = getPostId(post);
+          const userId = getUserId(post);
           if (!postId) return null;
 
           const userName =
@@ -155,12 +166,18 @@ export function FeedModeration() {
                     <span>Reject</span>
                   </button>
                   <button
-                    onClick={() => handleBanUser(postId)}
+                    onClick={() => userId && handleBanUser(userId, !post.createdBy.banFeedPost)}
+                    disabled={!userId}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
-                    style={{ backgroundColor: '#ECC180', color: '#333' }}
+                    style={{
+                      backgroundColor: '#ECC180',
+                      color: '#333',
+                      opacity: userId ? 1 : 0.6,
+                      cursor: userId ? 'pointer' : 'not-allowed',
+                    }}
                   >
                     <Ban className="w-4 h-4" />
-                    <span>Ban User</span>
+                    <span>{post.createdBy.banFeedPost ? 'Unban User' : 'Ban User'}</span>
                   </button>
                 </div>
               </div>

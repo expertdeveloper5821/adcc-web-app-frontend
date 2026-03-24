@@ -1,17 +1,19 @@
 import axios, { AxiosError } from 'axios';
 import api from './api';
 
-export type FeedPostStatus = 'pending' | 'approved';
+export type FeedPostStatus = 'pending' | 'rejected' | 'approved';
 
 export interface FeedPost {
   _id?: string;
   id?: string;
+  userId?: string;
   title: string;
   description: string;
   status?: FeedPostStatus;
   reported?: boolean;
+  banFeedPost?: boolean;
   image?: string;
-  createdBy?: string | { _id?: string; fullName?: string; profileImage?: string };
+  createdBy?: string | { _id?: string; fullName?: string; profileImage?: string; banFeedPost?: boolean };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -37,6 +39,12 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
   }
   if (error instanceof Error) return error.message;
   return fallback;
+}
+
+function normalizeBoolean(value: unknown): boolean | undefined {
+  if (value === true || value === 'true' || value === 'True' || value === 1 || value === '1') return true;
+  if (value === false || value === 'false' || value === 'False' || value === 0 || value === '0') return false;
+  return undefined;
 }
 
 export interface GetFeedPostsParams {
@@ -74,17 +82,23 @@ export const getFeedPosts = async (params?: GetFeedPostsParams): Promise<FeedPos
       ...p,
       _id: p?._id ?? p?.id,
       id: p?.id ?? p?._id,
+      userId:
+        (typeof p?.userId === 'string' ? p.userId : p?.userId?._id) ??
+        (typeof p?.createdBy === 'string' ? undefined : p?.createdBy?._id),
       title: p?.title ?? '',
       description: p?.description ?? p?.caption ?? '',
       image: p?.image ?? p?.imageUrl ?? p?.coverImage,
+      banFeedPost: normalizeBoolean(
+        p?.banFeedPost ??
+        p?.user?.banFeedPost ??
+        p?.createdBy?.banFeedPost ??
+        p?.userId?.banFeedPost
+      ),
       // Normalize reported/status coming from backend (it may be "true"/"false" or "Pending"/"Approved").
       reported: (() => {
         const raw =
           p?.reported ?? p?.isReported ?? p?.report ?? p?.moderation?.reported ?? p?.moderation?.isReported;
-
-        if (raw === true || raw === 'true' || raw === 'True' || raw === 1 || raw === '1') return true;
-        if (raw === false || raw === 'false' || raw === 'False' || raw === 0 || raw === '0') return false;
-        return undefined;
+        return normalizeBoolean(raw);
       })(),
       status: (() => {
         const raw =
@@ -154,6 +168,23 @@ export const moderateFeedPost = async (postId: string, data: ModerateFeedPostDat
     return response.data?.data ?? response.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to moderate feed post'));
+  }
+};
+
+export const moderateFeedUserBan = async (userId: string, banFeedPost: boolean) => {
+  if (!userId) throw new Error('User id is required');
+
+  const formData = new FormData();
+  formData.append('banFeedPost', String(banFeedPost));
+
+  try {
+    const response = await api.patch<any>(
+      `/v1/feed-posts/moderation/users/${userId}/ban-feed-post`,
+      formData
+    );
+    return response.data?.data ?? response.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Failed to update user feed ban status'));
   }
 };
 
