@@ -1550,12 +1550,13 @@
     "messagePlaceholder": "نص الإشعار",
     "audience": "الجمهور",
     "audienceOptions": {
-      "allUsers": "جميع المستخدمين (12,458)",
-      "activeUsers": "المستخدمون النشطون (8,234)",
-      "eventParticipants": "المشاركون في الفعاليات",
-      "chapterMembers": "أعضاء الفروع"
+      "allUsers": "جميع المستخدمين ({{count}})",
+      "activeUsers": "المستخدمون النشطون ({{count}})",
+      "eventParticipants": "المشاركون في الفعاليات ({{count}})",
+      "chapterMembers": "أعضاء الفروع ({{count}})"
     },
     "schedule": "الجدول",
+    "sending": "جارٍ الإرسال...",
     "sendNotification": "إرسال الإشعار",
     "preview": "معاينة",
     "previewTitle": "عنوان الإشعار",
