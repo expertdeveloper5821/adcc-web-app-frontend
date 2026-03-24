@@ -524,7 +524,7 @@
         "members": "Members",
         "events": "Events",
         "gallery": "Gallery",
-        "feed": "Feed Posts",
+        "feed": "Feed Announcements",
         "tracks": "Tracks"
       },
       "aboutHeading": "About This Track",
@@ -546,31 +546,28 @@
         "galleryItems": "Gallery Items"
       },
       "feed": {
-        "heading": "Feed Posts",
+        "heading": "Feed Announcements",
         "subheading": "Manage community announcements and updates",
-        "createPost": "Create Post",
-        "postTitle": "Post Title",
-        "postTitlePlaceholder": "Enter post title...",
-        "postType": "Post Type",
+        "createPost": "Create Announcement",
+        "postTitle": "Announcement Title",
+        "postTitlePlaceholder": "Enter announcement title...",
+        "postType": "Announcement Type",
         "caption": "Caption",
-        "captionPlaceholder": "Write your post caption...",
-        "uploadMedia": "Upload Media",
-        "uploadHint": "Click to upload image",
-        "publishPost": "Publish Post",
+        "captionPlaceholder": "Write your announcement caption...",
+        "publishPost": "Create",
         "types": {
           "announcement": "Announcement",
           "highlight": "Highlight",
           "awareness": "Awareness"
         },
-        "noPosts": "No posts yet",
-        "noPostsBody": "Create your first community post to engage with members",
+        "noPosts": "No announcements yet",
+        "noPostsBody": "Create your first community announcement to engage with members",
         "pin": "Pin to top",
         "unpin": "Unpin",
-        "editPost": "Edit Post",
-        "updatePost": "Update Post",
-        "changeImage": "Change Image",
-        "deletePost": "Delete Post",
-        "deleteConfirm": "Are you sure you want to delete this post? This action cannot be undone."
+        "editPost": "Edit Announcement",
+        "updatePost": "Update",
+        "deletePost": "Delete Announcement",
+        "deleteConfirm": "Are you sure you want to delete this announcement? This action cannot be undone."
       },
       "eventsTab": {
         "heading": "Community Events",
@@ -1520,7 +1517,18 @@
       "events": "Events",
       "joined": "Joined",
       "actions": "Actions"
-    }
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "menu": {
+      "setActive": "Set Active",
+      "setInactive": "Set Inactive"
+    },
+    "loading": "Loading users...",
+    "noUsers": "No users found",
+    "page": "Page {{current}} of {{total}}"
   },
   "feed": {
     "title": "Feed Moderation",
@@ -1565,12 +1573,13 @@
     "messagePlaceholder": "Notification message",
     "audience": "Audience",
     "audienceOptions": {
-      "allUsers": "All Users (12,458)",
-      "activeUsers": "Active Users (8,234)",
-      "eventParticipants": "Event Participants",
-      "chapterMembers": "Chapter Members"
+      "allUsers": "All Users ({{count}})",
+      "activeUsers": "Active Users ({{count}})",
+      "eventParticipants": "Event Participants ({{count}})",
+      "chapterMembers": "Chapter Members ({{count}})"
     },
     "schedule": "Schedule",
+    "sending": "Sending...",
     "sendNotification": "Send Notification",
     "preview": "Preview",
     "previewTitle": "Notification Title",
@@ -1632,7 +1641,39 @@
     "title": "Content Manager",
     "subtitle": "Manage homepage and app content",
     "addSection": "Add Section",
-    "homepageSections": "Homepage Sections"
+    "editSection": "Edit Section",
+    "homepageSections": "Homepage Sections",
+    "searchPlaceholder": "Search by key, label or description...",
+    "search": "Search",
+    "noSettings": "No content sections found. Click \"Add Section\" to create one.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "create": "Create",
+    "update": "Update",
+    "deleteTitle": "Delete Section",
+    "deleteMessage": "Are you sure you want to delete this section? This action cannot be undone.",
+    "deleteConfirm": "Delete",
+    "fields": {
+      "key": "Key",
+      "label": "Label",
+      "group": "Group",
+      "description": "Description",
+      "descriptionPlaceholder": "Brief description of this section",
+      "value": "Value",
+      "valuePlaceholder": "Text, JSON object, or any content value",
+      "image": "Image"
+    },
+    "toasts": {
+      "loadError": "Failed to load content sections",
+      "createSuccess": "Section created successfully",
+      "updateSuccess": "Section updated successfully",
+      "deleteSuccess": "Section deleted successfully",
+      "deleteError": "Failed to delete section",
+      "saveError": "Failed to save section",
+      "keyRequired": "Key is required"
+    }
   },
   "data": {
     "communityCategories": {

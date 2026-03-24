@@ -484,7 +484,7 @@
         "members": "الأعضاء",
         "events": "الفعاليات",
         "gallery": "المعرض",
-        "feed": "منشورات الموجز",
+        "feed": "إعلانات الموجز",
         "tracks": "المسارات"
       },
       "aboutHeading": "حول هذا المسار",
@@ -506,31 +506,28 @@
         "galleryItems": "عناصر المعرض"
       },
       "feed": {
-        "heading": "منشورات الموجز",
+        "heading": "إعلانات الموجز",
         "subheading": "إدارة إعلانات وتحديثات المجتمع",
-        "createPost": "إنشاء منشور",
-        "postTitle": "عنوان المنشور",
-        "postTitlePlaceholder": "أدخل عنوان المنشور...",
-        "postType": "نوع المنشور",
+        "createPost": "إنشاء إعلان",
+        "postTitle": "عنوان الإعلان",
+        "postTitlePlaceholder": "أدخل عنوان الإعلان...",
+        "postType": "نوع الإعلان",
         "caption": "الوصف",
-        "captionPlaceholder": "اكتب وصف المنشور...",
-        "uploadMedia": "رفع وسائط",
-        "uploadHint": "انقر لرفع صورة",
-        "publishPost": "نشر المنشور",
+        "captionPlaceholder": "اكتب وصف الإعلان...",
+        "publishPost": "إنشاء",
         "types": {
           "announcement": "إعلان",
           "highlight": "تسليط الضوء",
           "awareness": "توعية"
         },
-        "noPosts": "لا توجد منشورات بعد",
-        "noPostsBody": "أنشئ أول منشور للتفاعل مع الأعضاء",
+        "noPosts": "لا توجد إعلانات بعد",
+        "noPostsBody": "أنشئ أول إعلان للتفاعل مع الأعضاء",
         "pin": "تثبيت في الأعلى",
         "unpin": "إلغاء التثبيت",
-        "editPost": "تعديل المنشور",
-        "updatePost": "تحديث المنشور",
-        "changeImage": "تغيير الصورة",
-        "deletePost": "حذف المنشور",
-        "deleteConfirm": "هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء."
+        "editPost": "تعديل الإعلان",
+        "updatePost": "تحديث",
+        "deletePost": "حذف الإعلان",
+        "deleteConfirm": "هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء."
       },
       "eventsTab": {
         "heading": "فعاليات المجتمع",
@@ -1497,7 +1494,18 @@
       "events": "الفعاليات",
       "joined": "تاريخ الانضمام",
       "actions": "الإجراءات"
-    }
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "menu": {
+      "setActive": "تفعيل",
+      "setInactive": "إلغاء التفعيل"
+    },
+    "loading": "جاري تحميل المستخدمين...",
+    "noUsers": "لم يتم العثور على مستخدمين",
+    "page": "صفحة {{current}} من {{total}}"
   },
   "feed": {
     "title": "إدارة المنشورات",
@@ -1542,12 +1550,13 @@
     "messagePlaceholder": "نص الإشعار",
     "audience": "الجمهور",
     "audienceOptions": {
-      "allUsers": "جميع المستخدمين (12,458)",
-      "activeUsers": "المستخدمون النشطون (8,234)",
-      "eventParticipants": "المشاركون في الفعاليات",
-      "chapterMembers": "أعضاء الفروع"
+      "allUsers": "جميع المستخدمين ({{count}})",
+      "activeUsers": "المستخدمون النشطون ({{count}})",
+      "eventParticipants": "المشاركون في الفعاليات ({{count}})",
+      "chapterMembers": "أعضاء الفروع ({{count}})"
     },
     "schedule": "الجدول",
+    "sending": "جارٍ الإرسال...",
     "sendNotification": "إرسال الإشعار",
     "preview": "معاينة",
     "previewTitle": "عنوان الإشعار",
@@ -1609,7 +1618,39 @@
     "title": "إدارة المحتوى",
     "subtitle": "إدارة محتوى الصفحة الرئيسية والتطبيق",
     "addSection": "إضافة قسم",
-    "homepageSections": "أقسام الصفحة الرئيسية"
+    "editSection": "تعديل القسم",
+    "homepageSections": "أقسام الصفحة الرئيسية",
+    "searchPlaceholder": "البحث بالمفتاح أو العنوان أو الوصف...",
+    "search": "بحث",
+    "noSettings": "لا توجد أقسام محتوى. انقر على \"إضافة قسم\" لإنشاء واحد.",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ...",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "deleteTitle": "حذف القسم",
+    "deleteMessage": "هل أنت متأكد من حذف هذا القسم؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirm": "حذف",
+    "fields": {
+      "key": "المفتاح",
+      "label": "العنوان",
+      "group": "المجموعة",
+      "description": "الوصف",
+      "descriptionPlaceholder": "وصف مختصر لهذا القسم",
+      "value": "القيمة",
+      "valuePlaceholder": "نص أو كائن JSON أو أي قيمة محتوى",
+      "image": "صورة"
+    },
+    "toasts": {
+      "loadError": "فشل في تحميل أقسام المحتوى",
+      "createSuccess": "تم إنشاء القسم بنجاح",
+      "updateSuccess": "تم تحديث القسم بنجاح",
+      "deleteSuccess": "تم حذف القسم بنجاح",
+      "deleteError": "فشل في حذف القسم",
+      "saveError": "فشل في حفظ القسم",
+      "keyRequired": "المفتاح مطلوب"
+    }
   },
   "data": {
     "communityCategories": {

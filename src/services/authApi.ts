@@ -72,6 +72,11 @@ export interface CurrentUserResponse {
   };
 }
 
+export interface RegisterFcmTokenResponse {
+  success: boolean;
+  message: string;
+}
+
 // Verify Firebase Auth Token (optionally pass provider so backend can save login data to MongoDB the same way for email and Google)
 export const verifyFirebaseAuth = async (
   idToken: string,
@@ -152,6 +157,66 @@ export const getCurrentUser = async (): Promise<CurrentUserResponse> => {
     return response.data;
   } catch (error) {
     console.error('❌ Error getting current user:', error);
+    throw error;
+  }
+};
+
+export interface SendStaffWebPushResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    successCount?: number;
+    failureCount?: number;
+    invalidTokensRemoved?: number;
+  };
+}
+
+// Send web push notification to staff (admin/staff users)
+export const sendStaffWebPush = async (payload: {
+  title?: string;
+  body: string;
+  audienceType: string;
+  scheduleDate?: string;
+  scheduleTime?: string;
+}): Promise<SendStaffWebPushResponse> => {
+  try {
+    console.log('📋 sendStaffWebPush called');
+    const formData = new FormData();
+    formData.append('body', payload.body);
+    formData.append('audienceType', payload.audienceType);
+    if (payload.title) formData.append('title', payload.title);
+    if (payload.scheduleDate) formData.append('scheduleDate', payload.scheduleDate);
+    if (payload.scheduleTime) formData.append('scheduleTime', payload.scheduleTime);
+
+    const response = await api.post<SendStaffWebPushResponse>(
+      '/v1/push-notifications/web/send-to-staff',
+      formData
+    );
+    console.log('sendStaffWebPush response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending staff web push:', error);
+    throw error;
+  }
+};
+
+// Register/update FCM token for current user
+export const registerFcmToken = async (
+  token: string,
+  meta?: { userAgent?: string; platform?: 'web' | 'android' | 'ios'; deviceId?: string }
+): Promise<RegisterFcmTokenResponse> => {
+  try {
+    console.log('📋 registerFcmToken called');
+    const response = await api.post<RegisterFcmTokenResponse>('/v1/user/fcm-token', {
+      token,
+      platform: meta?.platform ?? 'web',
+      userAgent: meta?.userAgent,
+      deviceId: meta?.deviceId,
+    });
+    console.log('📥 registerFcmToken response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error registering FCM token:', error);
     throw error;
   }
 };
