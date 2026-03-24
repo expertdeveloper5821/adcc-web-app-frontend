@@ -176,6 +176,8 @@ export const sendStaffWebPush = async (payload: {
   title?: string;
   body: string;
   audienceType: string;
+  scheduleDate?: string;
+  scheduleTime?: string;
 }): Promise<SendStaffWebPushResponse> => {
   try {
     console.log('📋 sendStaffWebPush called');
@@ -183,6 +185,8 @@ export const sendStaffWebPush = async (payload: {
     formData.append('body', payload.body);
     formData.append('audienceType', payload.audienceType);
     if (payload.title) formData.append('title', payload.title);
+    if (payload.scheduleDate) formData.append('scheduleDate', payload.scheduleDate);
+    if (payload.scheduleTime) formData.append('scheduleTime', payload.scheduleTime);
 
     const response = await api.post<SendStaffWebPushResponse>(
       '/v1/push-notifications/web/send-to-staff',

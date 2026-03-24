@@ -1573,12 +1573,13 @@
     "messagePlaceholder": "Notification message",
     "audience": "Audience",
     "audienceOptions": {
-      "allUsers": "All Users (12,458)",
-      "activeUsers": "Active Users (8,234)",
-      "eventParticipants": "Event Participants",
-      "chapterMembers": "Chapter Members"
+      "allUsers": "All Users ({{count}})",
+      "activeUsers": "Active Users ({{count}})",
+      "eventParticipants": "Event Participants ({{count}})",
+      "chapterMembers": "Chapter Members ({{count}})"
     },
     "schedule": "Schedule",
+    "sending": "Sending...",
     "sendNotification": "Send Notification",
     "preview": "Preview",
     "previewTitle": "Notification Title",
