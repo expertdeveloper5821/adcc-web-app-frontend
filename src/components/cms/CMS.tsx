@@ -393,15 +393,13 @@ export function CMS() {
           <div className="w-full max-w-xl h-screen overflow-auto rounded-2xl  bg-white p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg" style={{ color: '#333' }}>
-                Edit Content Item
+                Edit {selectedItem.label || selectedItem.key || selectedItem.title }
               </h3>
               <button onClick={closeEditForm} className="text-sm" style={{ color: '#666' }}>
                 Close
               </button>
             </div>
-            <label className="block   text-xl font-medium" style={{ color: '#333' }}>
-              {selectedItem.label || selectedItem.key || selectedItem.title }
-            </label>
+        
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* <div className="space-y-1">
