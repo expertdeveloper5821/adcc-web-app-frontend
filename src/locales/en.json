@@ -1646,6 +1646,11 @@
     "searchPlaceholder": "Search by key, label or description...",
     "search": "Search",
     "noSettings": "No content sections found. Click \"Add Section\" to create one.",
+    "noSectionItems": "No content entries found for this section.",
+    "imagePreview": "Image Preview",
+    "uploadImage": "Upload Image From Computer",
+    "imageNotAvailable": "No image available",
+    "selectedFile": "Selected file",
     "active": "Active",
     "inactive": "Inactive",
     "cancel": "Cancel",
@@ -1659,6 +1664,8 @@
       "key": "Key",
       "label": "Label",
       "group": "Group",
+      "title": "Title",
+      "titlePlaceholder": "Enter title",
       "description": "Description",
       "descriptionPlaceholder": "Brief description of this section",
       "value": "Value",
@@ -1672,6 +1679,7 @@
       "deleteSuccess": "Section deleted successfully",
       "deleteError": "Failed to delete section",
       "saveError": "Failed to save section",
+      "noEditableChanges": "No editable changes to save",
       "keyRequired": "Key is required"
     }
   },

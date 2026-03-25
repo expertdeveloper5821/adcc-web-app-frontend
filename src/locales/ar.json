@@ -1623,6 +1623,11 @@
     "searchPlaceholder": "البحث بالمفتاح أو العنوان أو الوصف...",
     "search": "بحث",
     "noSettings": "لا توجد أقسام محتوى. انقر على \"إضافة قسم\" لإنشاء واحد.",
+    "noSectionItems": "لا توجد عناصر محتوى في هذا القسم.",
+    "imagePreview": "معاينة الصورة",
+    "uploadImage": "رفع صورة من الكمبيوتر",
+    "imageNotAvailable": "لا توجد صورة",
+    "selectedFile": "الملف المحدد",
     "active": "نشط",
     "inactive": "غير نشط",
     "cancel": "إلغاء",
@@ -1636,6 +1641,8 @@
       "key": "المفتاح",
       "label": "العنوان",
       "group": "المجموعة",
+      "title": "العنوان",
+      "titlePlaceholder": "أدخل العنوان",
       "description": "الوصف",
       "descriptionPlaceholder": "وصف مختصر لهذا القسم",
       "value": "القيمة",
@@ -1649,6 +1656,7 @@
       "deleteSuccess": "تم حذف القسم بنجاح",
       "deleteError": "فشل في حذف القسم",
       "saveError": "فشل في حفظ القسم",
+      "noEditableChanges": "لا توجد تغييرات قابلة للتعديل للحفظ",
       "keyRequired": "المفتاح مطلوب"
     }
   },
