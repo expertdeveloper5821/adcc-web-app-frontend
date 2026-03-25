@@ -160,9 +160,24 @@ export function CMS() {
     active: true,
   });
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreviewUrl, setEditImagePreviewUrl] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editImageFile) {
+      setEditImagePreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(editImageFile);
+    setEditImagePreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [editImageFile]);
 
   const availableGroups = useMemo(() => {
     return Array.from(new Set(allItems.map((item) => item.group))).filter(Boolean);
@@ -207,12 +222,14 @@ export function CMS() {
       active: item.active ?? true,
     });
     setEditImageFile(null);
+    setEditImagePreviewUrl(null);
   };
 
   const closeEditForm = () => {
     setSelectedItem(null);
     setEditForm({ title: '', description: '', image: '', active: true });
     setEditImageFile(null);
+    setEditImagePreviewUrl(null);
   };
 
   const handleSaveEdit = async () => {
@@ -325,14 +342,14 @@ export function CMS() {
                         <GripVertical className="w-5 h-5" style={{ color: '#999' }} />
                         <div className="flex-1">
                           <div className="text-sm mb-1" style={{ color: '#333' }}>
-                            {item.title || item.label || item.key}
+                            {  item.key || item.title || item.label}
                           </div>
                           <div className="text-xs mb-1" style={{ color: '#666' }}>
                             {item.description || item.label}
                           </div>
-                          <div className="text-[11px]" style={{ color: '#999' }}>
+                          {/* <div className="text-[11px]" style={{ color: '#999' }}>
                             key: {item.key} | label: {item.label}
-                          </div>
+                          </div> */}
                         </div>
                         <button
                           onClick={() => handleToggleActive(item)}
@@ -372,8 +389,8 @@ export function CMS() {
       )}
 
       {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-6 space-y-4">
+        <div className="fixed inset-0  z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-xl h-screen overflow-auto rounded-2xl  bg-white p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg" style={{ color: '#333' }}>
                 Edit Content Item
@@ -382,6 +399,9 @@ export function CMS() {
                 Close
               </button>
             </div>
+            <label className="block   text-xl font-medium" style={{ color: '#333' }}>
+              {selectedItem.label || selectedItem.key || selectedItem.title }
+            </label>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* <div className="space-y-1">
@@ -429,16 +449,23 @@ export function CMS() {
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
-              <div className="md:col-span-2 space-y-1">
+              <div className="md:col-span-2 space-y-2">
                 <label className="block text-xs font-medium" style={{ color: '#666' }}>
-                  Image URL
+                  Image Preview
                 </label>
-                <input
-                  value={editForm.image}
-                  onChange={(event) => setEditForm((prev) => ({ ...prev, image: event.target.value }))}
-                  placeholder="Enter image URL"
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
+                <div className="w-full border rounded-lg p-2" style={{ backgroundColor: '#FAF7F2' }}>
+                  <img
+                    src={editImagePreviewUrl || selectedItem?.image || ''}
+                    alt=""
+                    className="w-full h-40 object-cover rounded-md"
+                    style={{ display: selectedItem?.image || editImagePreviewUrl ? 'block' : 'none' }}
+                  />
+                  {!selectedItem?.image && !editImagePreviewUrl ? (
+                    <div className="text-xs" style={{ color: '#999' }}>
+                      No image available
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="block text-xs font-medium" style={{ color: '#666' }}>
