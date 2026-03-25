@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 import { Edit, GripVertical, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 export interface ContentSetting {
   _id: string;
@@ -148,6 +149,7 @@ const fileToDataUrl = async (file: File): Promise<string> =>
   });
 
 export function CMS() {
+  const { t } = useTranslation();
   const [allItems, setAllItems] = useState<ContentSetting[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -160,9 +162,24 @@ export function CMS() {
     active: true,
   });
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreviewUrl, setEditImagePreviewUrl] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editImageFile) {
+      setEditImagePreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(editImageFile);
+    setEditImagePreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [editImageFile]);
 
   const availableGroups = useMemo(() => {
     return Array.from(new Set(allItems.map((item) => item.group))).filter(Boolean);
@@ -185,7 +202,7 @@ export function CMS() {
       const data = await getContentSettings({});
       setAllItems(data);
     } catch (error) {
-      const message = getApiErrorMessage(error, 'Failed to load content settings');
+      const message = getApiErrorMessage(error, t('cms.toasts.loadError'));
       setErrorMessage(message);
       setAllItems([]);
       toast.error(message);
@@ -207,12 +224,14 @@ export function CMS() {
       active: item.active ?? true,
     });
     setEditImageFile(null);
+    setEditImagePreviewUrl(null);
   };
 
   const closeEditForm = () => {
     setSelectedItem(null);
     setEditForm({ title: '', description: '', image: '', active: true });
     setEditImageFile(null);
+    setEditImagePreviewUrl(null);
   };
 
   const handleSaveEdit = async () => {
@@ -232,18 +251,18 @@ export function CMS() {
     if ((selectedItem.active ?? true) !== editForm.active) patchPayload.active = editForm.active;
 
     if (Object.keys(patchPayload).length === 0) {
-      toast.info('No editable changes to save');
+      toast.info(t('cms.toasts.noEditableChanges'));
       return;
     }
 
     setIsSavingEdit(true);
     try {
       await updateContentSetting(selectedItem.key, patchPayload);
-      toast.success('Content item updated successfully');
+      toast.success(t('cms.toasts.updateSuccess'));
       closeEditForm();
       await fetchAllGroupsSettings();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Failed to update content item'));
+      toast.error(getApiErrorMessage(error, t('cms.toasts.saveError')));
     } finally {
       setIsSavingEdit(false);
     }
@@ -253,26 +272,26 @@ export function CMS() {
     setTogglingKey(item.key);
     try {
       await updateContentSetting(item.key, { active: !(item.active ?? false) });
-      toast.success(`Item ${item.active ? 'deactivated' : 'activated'} successfully`);
+      toast.success(t('cms.toasts.updateSuccess'));
       await fetchAllGroupsSettings();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Failed to update active status'));
+      toast.error(getApiErrorMessage(error, t('cms.toasts.saveError')));
     } finally {
       setTogglingKey(null);
     }
   };
 
   const handleDelete = async (item: ContentSetting) => {
-    const confirmed = window.confirm(`Delete content item "${item.key}"?`);
+    const confirmed = window.confirm(`${t('cms.deleteMessage')}\n(${item.key})`);
     if (!confirmed) return;
 
     setIsDeleting(true);
     try {
       await deleteContentSetting(item.key);
-      toast.success('Content item deleted successfully');
+      toast.success(t('cms.toasts.deleteSuccess'));
       await fetchAllGroupsSettings();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Failed to delete content item'));
+      toast.error(getApiErrorMessage(error, t('cms.toasts.deleteError')));
     } finally {
       setIsDeleting(false);
     }
@@ -282,10 +301,10 @@ export function CMS() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl mb-2" style={{ color: '#333' }}>
-          Content Management
+          {t('cms.title')}
         </h1>
         <p style={{ color: '#666' }}>
-          Admin can edit, delete, and activate/deactivate seeded screen content.
+          {t('cms.subtitle')}
         </p>
       </div>
 
@@ -312,7 +331,7 @@ export function CMS() {
 
                 {groupData.length === 0 ? (
                   <div className="py-6 text-sm" style={{ color: '#666' }}>
-                    No content entries found for this section.
+                    {t('cms.noSectionItems')}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -325,14 +344,14 @@ export function CMS() {
                         <GripVertical className="w-5 h-5" style={{ color: '#999' }} />
                         <div className="flex-1">
                           <div className="text-sm mb-1" style={{ color: '#333' }}>
-                            {item.title || item.label || item.key}
+                            {  item.key || item.title || item.label}
                           </div>
                           <div className="text-xs mb-1" style={{ color: '#666' }}>
                             {item.description || item.label}
                           </div>
-                          <div className="text-[11px]" style={{ color: '#999' }}>
+                          {/* <div className="text-[11px]" style={{ color: '#999' }}>
                             key: {item.key} | label: {item.label}
-                          </div>
+                          </div> */}
                         </div>
                         <button
                           onClick={() => handleToggleActive(item)}
@@ -341,10 +360,10 @@ export function CMS() {
                           style={{ backgroundColor: item.active ? '#CF9F0C' : '#8A8A8A' }}
                         >
                           {togglingKey === item.key
-                            ? 'Saving...'
+                            ? t('cms.saving')
                             : item.active
-                              ? 'Active'
-                              : 'Inactive'}
+                              ? t('cms.active')
+                              : t('cms.inactive')}
                         </button>
                         <button
                           onClick={() => openEditForm(item)}
@@ -372,16 +391,17 @@ export function CMS() {
       )}
 
       {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-6 space-y-4">
+        <div className="fixed inset-0  z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-xl h-screen overflow-auto rounded-2xl  bg-white p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg" style={{ color: '#333' }}>
-                Edit Content Item
+                {t('cms.editSection')}: {selectedItem.label || selectedItem.key || selectedItem.title}
               </h3>
               <button onClick={closeEditForm} className="text-sm" style={{ color: '#666' }}>
-                Close
+                {t('cms.cancel')}
               </button>
             </div>
+        
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* <div className="space-y-1">
@@ -420,29 +440,36 @@ export function CMS() {
 
               <div className="md:col-span-2 space-y-1">
                 <label className="block text-xs font-medium" style={{ color: '#666' }}>
-                  Title
+                  {t('cms.fields.title')}
                 </label>
                 <input
                   value={editForm.title}
                   onChange={(event) => setEditForm((prev) => ({ ...prev, title: event.target.value }))}
-                  placeholder="Enter title"
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="md:col-span-2 space-y-1">
-                <label className="block text-xs font-medium" style={{ color: '#666' }}>
-                  Image URL
-                </label>
-                <input
-                  value={editForm.image}
-                  onChange={(event) => setEditForm((prev) => ({ ...prev, image: event.target.value }))}
-                  placeholder="Enter image URL"
+                  placeholder={t('cms.fields.titlePlaceholder')}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="block text-xs font-medium" style={{ color: '#666' }}>
-                  Upload Image From Computer
+                  {t('cms.imagePreview')}
+                </label>
+                <div className="w-full border rounded-lg p-2" style={{ backgroundColor: '#FAF7F2' }}>
+                  <img
+                    src={editImagePreviewUrl || selectedItem?.image || ''}
+                    alt=""
+                    className="w-full h-40 object-cover rounded-md"
+                    style={{ display: selectedItem?.image || editImagePreviewUrl ? 'block' : 'none' }}
+                  />
+                  {!selectedItem?.image && !editImagePreviewUrl ? (
+                    <div className="text-xs" style={{ color: '#999' }}>
+                      {t('cms.imageNotAvailable')}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="block text-xs font-medium" style={{ color: '#666' }}>
+                  {t('cms.uploadImage')}
                 </label>
                 <input
                   type="file"
@@ -455,20 +482,20 @@ export function CMS() {
                 />
                 {editImageFile ? (
                   <p className="text-xs" style={{ color: '#666' }}>
-                    Selected file: {editImageFile.name}
+                    {t('cms.selectedFile')}: {editImageFile.name}
                   </p>
                 ) : null}
               </div>
               <div className="md:col-span-2 space-y-1">
                 <label className="block text-xs font-medium" style={{ color: '#666' }}>
-                  Description
+                  {t('cms.fields.description')}
                 </label>
                 <textarea
                   value={editForm.description}
                   onChange={(event) =>
                     setEditForm((prev) => ({ ...prev, description: event.target.value }))
                   }
-                  placeholder="Enter description"
+                  placeholder={t('cms.fields.descriptionPlaceholder')}
                   rows={4}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
@@ -480,7 +507,7 @@ export function CMS() {
                     checked={editForm.active}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, active: event.target.checked }))}
                   />
-                  Active
+                  {t('cms.active')}
                 </label>
               </div>
             </div>
@@ -491,7 +518,7 @@ export function CMS() {
                 className="px-4 py-2 rounded-lg border"
                 style={{ color: '#666' }}
               >
-                Cancel
+                {t('cms.cancel')}
               </button>
               <button
                 onClick={handleSaveEdit}
@@ -499,7 +526,7 @@ export function CMS() {
                 className="px-4 py-2 rounded-lg text-white disabled:opacity-60"
                 style={{ backgroundColor: '#C12D32' }}
               >
-                {isSavingEdit ? 'Saving...' : 'Save Changes'}
+                {isSavingEdit ? t('cms.saving') : t('cms.update')}
               </button>
             </div>
           </div>
