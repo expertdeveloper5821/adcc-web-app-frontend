@@ -30,7 +30,8 @@ export function EventCreate({ role }: EventCreateProps) {
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { locale } = useLocale();
-
+  const [badgePreview, setBadgePreview] = useState<string | null>(null);
+  const [badgeImage, setBadgeImage] = useState<File | null>(null);
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (e.target.files?.[0]) {
     setThumbnailImage(e.target.files[0]);
@@ -42,6 +43,13 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files[0];
     setCoverImage(file);
     setCoverPreview(URL.createObjectURL(file));
+  }
+};
+
+const handleBadgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files?.[0]) {
+    setBadgeImage(e.target.files[0]);
+    setBadgePreview(URL.createObjectURL(e.target.files[0]));
   }
 };
 
@@ -418,6 +426,7 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         status: action === 'draft' ? 'Draft' : formData.status,
         isFeatured: !!formData.isFeatured,
         allowCancellation: !!formData.allowCancellation,
+        badgeImage: badgeImage || undefined,
       };
 
       await createEvent(payload);
@@ -999,6 +1008,8 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('events.create.badgeImage')}</label>
+                
+                <label htmlFor="badgeUpload">
                 <div
                   className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   style={{ borderColor: '#ECC180' }}
@@ -1007,6 +1018,21 @@ const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <p className="text-sm" style={{ color: '#666' }}>{t('events.create.badgeUpload')}</p>
                   <p className="text-xs mt-1" style={{ color: '#999' }}>{t('events.create.badgeHint')}</p>
                 </div>
+                <input
+                  id="badgeUpload"
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleBadgeChange}
+                />
+                {badgePreview && (
+                  <img
+                    src={badgePreview}
+                    alt="Preview"
+                    className="mt-4 rounded-lg w-full h-48 object-cover"
+                  />
+                )}
+                </label>
               </div>
             </div>
           </div>
