@@ -195,6 +195,10 @@ export const createEvent = async (
     if (eventData.amenities && Array.isArray(eventData.amenities)) {
       formData.append("amenities", JSON.stringify(eventData.amenities));
     }
+    
+    if(eventData.badgeImage instanceof File ) {
+  formData.append("badgeImage" ,  eventData.badgeImage)
+    }
 
     // Images: backend multer expects mainImage and eventImage (File objects only)
     if (eventData.mainImage instanceof File) {
@@ -204,12 +208,15 @@ export const createEvent = async (
       formData.append("eventImage", eventData.eventImage);
     }
 
+
     // Gallery images (if backend supports this field)
     if (eventData.galleryImages && Array.isArray(eventData.galleryImages)) {
       eventData.galleryImages.forEach((file: File) => {
         if (file instanceof File) formData.append("galleryImages", file);
       });
     }
+
+    
 
     // Do not set Content-Type: axios sets multipart/form-data with boundary for FormData
     const response = await api.post("/v1/events", formData);
