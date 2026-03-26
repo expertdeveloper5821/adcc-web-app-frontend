@@ -344,7 +344,7 @@ export function CMS() {
                         <GripVertical className="w-5 h-5" style={{ color: '#999' }} />
                         <div className="flex-1">
                           <div className="text-sm mb-1" style={{ color: '#333' }}>
-                            {  item.key || item.title || item.label}
+                            {  item.label || item.title }
                           </div>
                           <div className="text-xs mb-1" style={{ color: '#666' }}>
                             {item.description || item.label}
