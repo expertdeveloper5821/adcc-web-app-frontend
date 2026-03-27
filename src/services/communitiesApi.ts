@@ -18,7 +18,7 @@ export interface CommunityApiResponse {
   area?: string;
   image?: string;
   logo?: string;
-  trackId?: string;
+  trackId?: string | string[] | { _id?: string; id?: string } | Array<{ _id?: string; id?: string }>;
   primaryTracks?: string[];
   trackName?: string;
   distance?: number;
@@ -70,6 +70,7 @@ export interface CreateCommunityRequest {
   category: string;
   location?: string;
   image?: string;
+  trackId?: string | string[];
   trackName?: string;
   distance?: number;
   foundedYear?: number;
@@ -273,9 +274,20 @@ export interface CommunityMember {
 export const getCommunityMembers = async (id: string): Promise<CommunityMember[]> => {
   try {
     const response = await api.get<any>(`/v1/communities/${id}/communityMembers`);
-    const data = (response.data as any)?.data ?? response.data;
+    const root = response.data as any;
+    const data = root?.data ?? root;
+
+    // Support common backend response shapes:
+    // - []
+    // - { data: [] }
+    // - { data: { members: [] } }
+    // - { data: { communityMembers: [] } }
+    // - { members: [] } / { communityMembers: [] }
     if (Array.isArray(data)) return data as CommunityMember[];
     if (Array.isArray(data?.members)) return data.members as CommunityMember[];
+    if (Array.isArray(data?.communityMembers)) return data.communityMembers as CommunityMember[];
+    if (Array.isArray(root?.members)) return root.members as CommunityMember[];
+    if (Array.isArray(root?.communityMembers)) return root.communityMembers as CommunityMember[];
     return [];
   } catch (error) {
     console.error('Error community members:', error);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -50,6 +50,7 @@ export function CommunityDetail() {
   const [feedPosts, setFeedPosts] = useState<CommunityPost[]>([]);
   const [postModal, setPostModal] = useState<{ mode: 'create' | 'edit'; post?: CommunityPost } | null>(null);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+  const [selectedFeedPost, setSelectedFeedPost] = useState<CommunityPost | null>(null);
 
   const openCreatePostModal = () => setPostModal({ mode: 'create' });
   const openEditPostModal = (post: CommunityPost) => setPostModal({ mode: 'edit', post });
@@ -176,6 +177,58 @@ export function CommunityDetail() {
       }));
       setGalleryImages(galleryImageList);
     }
+  }, [community]);
+
+  /** Same track-association logic as the Tracks tab — used for overview stat count */
+  const associatedTracksForStats = useMemo(() => {
+    if (!community) return [];
+    const rawTrackIds = community.trackId;
+    const communityTrackIds = Array.isArray(rawTrackIds)
+      ? rawTrackIds
+          .map((tr) =>
+            typeof tr === 'string'
+              ? tr
+              : tr && typeof tr === 'object'
+                ? tr._id || tr.id
+                : null
+          )
+          .filter((id): id is string => !!id)
+      : typeof rawTrackIds === 'string'
+        ? [rawTrackIds]
+        : rawTrackIds && typeof rawTrackIds === 'object'
+          ? [rawTrackIds._id || rawTrackIds.id].filter((id): id is string => !!id)
+          : [];
+    const communityTrackIdSet = new Set(communityTrackIds);
+
+    const eventTrackIds = new Set<string>();
+    communityEvents.forEach((event: { trackId?: unknown }) => {
+      const tr = event.trackId as { _id?: string; id?: string } | string | undefined;
+      const tid =
+        tr && typeof tr === 'object'
+          ? tr._id || tr.id
+          : typeof tr === 'string'
+            ? tr
+            : null;
+      if (tid && !communityTrackIdSet.has(tid)) eventTrackIds.add(tid);
+    });
+
+    const primaryTracks = allTracks.filter(
+      (tr) => communityTrackIdSet.has(tr.id) || communityTrackIdSet.has((tr as { _id?: string })._id ?? '')
+    );
+    const eventTracks = allTracks.filter(
+      (tr) => eventTrackIds.has(tr.id) || eventTrackIds.has((tr as { _id?: string })._id ?? '')
+    );
+
+    const list: { track: Track; label: string }[] = [];
+    primaryTracks.forEach((tr) => list.push({ track: tr, label: t('communities.detail.tracksTab.primaryTrack') }));
+    eventTracks.forEach((tr) => list.push({ track: tr, label: t('communities.detail.tracksTab.fromEvents') }));
+    return list;
+  }, [community, allTracks, communityEvents, t]);
+
+  const memberCountDisplay = useMemo(() => {
+    const raw = community?.stats?.members ?? community?.memberCount;
+    const n = typeof raw === 'number' && !Number.isNaN(raw) ? raw : Number(raw);
+    return Number.isFinite(n) ? n : 0;
   }, [community]);
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -340,8 +393,8 @@ export function CommunityDetail() {
                   ) : null;
                 })()}
                 <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  <span>{((community.stats?.members ?? Number(community.memberCount)) || 0).toLocaleString()} {t('communities.detail.members')}</span>
+                  {/* <Users className="w-4 h-4" /> */}
+                  <span>{memberCountDisplay.toLocaleString()} {t('communities.detail.members')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -409,9 +462,11 @@ export function CommunityDetail() {
                 <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{communityEvents.length}</div>
                 <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.events', 'Events')}</div>
               </div>
+
               <div className="rounded-2xl p-6 bg-white shadow-sm">
                 <Route className="w-8 h-8 mb-3" style={{ color: '#10B981' }} />
-                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{allTracks.length}</div>
+                
+                <div className="text-2xl font-semibold mb-1" style={{ color: '#333' }}>{associatedTracksForStats.length}</div>
                 <div className="text-sm" style={{ color: '#666' }}>{t('communities.detail.stats.activeTracks', 'Active Tracks')}</div>
               </div>
               <div className="rounded-2xl p-6 bg-white shadow-sm">
@@ -554,7 +609,8 @@ export function CommunityDetail() {
             {feedPosts.map((post) => (
               <div
                 key={post._id}
-                className="rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition-all"
+                className="rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer"
+                onClick={() => setSelectedFeedPost(post)}
               >
                 <div className="flex items-start gap-4">
                   {post.image && (
@@ -581,14 +637,18 @@ export function CommunityDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => openEditPostModal(post)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditPostModal(post);
+                          }}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                           title={t('communities.detail.feed.editPost', 'Edit Post')}
                         >
                           <Edit className="w-4 h-4" style={{ color: '#3B82F6' }} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setPostToDelete(post._id);
                             setShowPostDeleteModal(true);
                           }}
@@ -726,25 +786,7 @@ export function CommunityDetail() {
 
       {/* Tracks Tab */}
       {activeTab === 'tracks' && (() => {
-        // Community's directly associated track (populated object from backend)
-        const communityTrackObj = community.trackId as any;
-        const communityTrackId = communityTrackObj?._id || communityTrackObj?.id || (typeof communityTrackObj === 'string' ? communityTrackObj : null);
-
-        // Tracks from community events
-        const eventTrackIds = new Set<string>();
-        communityEvents.forEach((event: any) => {
-          const tid = event.trackId?._id || event.trackId?.id || (typeof event.trackId === 'string' ? event.trackId : null);
-          if (tid && tid !== communityTrackId) eventTrackIds.add(tid);
-        });
-
-        // Match associated tracks from allTracks
-        const primaryTrack = communityTrackId ? allTracks.find(t => t.id === communityTrackId || (t as any)._id === communityTrackId) : null;
-        const eventTracks = allTracks.filter(t => eventTrackIds.has(t.id) || eventTrackIds.has((t as any)._id));
-
-        // Build display list with labels
-        const associatedTracks: { track: Track; label: string }[] = [];
-        if (primaryTrack) associatedTracks.push({ track: primaryTrack, label: t('communities.detail.tracksTab.primaryTrack') });
-        eventTracks.forEach(tr => associatedTracks.push({ track: tr, label: t('communities.detail.tracksTab.fromEvents') }));
+        const associatedTracks = associatedTracksForStats;
 
         return (
           <div className="space-y-6">
@@ -969,6 +1011,64 @@ export function CommunityDetail() {
               >
                 {t('common.delete', 'Delete')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feed Post Details Modal */}
+      {selectedFeedPost && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedFeedPost(null)}
+        >
+          <div
+            className="rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {selectedFeedPost.image && (
+              <img
+                src={selectedFeedPost.image}
+                alt={selectedFeedPost.title}
+                className="w-full h-80 md:h-[30rem] object-cover rounded-t-2xl"
+              />
+            )}
+            <div className="p-6">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <h3 className="text-2xl font-semibold" style={{ color: '#333' }}>
+                  {selectedFeedPost.title}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-3 py-2 rounded-lg text-sm text-white"
+                    style={{ backgroundColor: '#3B82F6' }}
+                    onClick={() => {
+                      openEditPostModal(selectedFeedPost);
+                      setSelectedFeedPost(null);
+                    }}
+                  >
+                    {t('common.edit', 'Edit')}
+                  </button>
+                  <button
+                    className="px-3 py-2 rounded-lg text-sm"
+                    style={{ backgroundColor: '#F3F4F6', color: '#374151' }}
+                    onClick={() => setSelectedFeedPost(null)}
+                  >
+                    {t('common.close', 'Close')}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap mb-4">
+                <span className="text-sm" style={{ color: '#666' }}>
+                  {typeof selectedFeedPost.createdBy === 'object' ? selectedFeedPost.createdBy.fullName : ''} •{' '}
+                  {new Date(selectedFeedPost.createdAt).toLocaleString()}
+                </span>
+              </div>
+
+              <p className="whitespace-pre-line leading-relaxed" style={{ color: '#444' }}>
+                {selectedFeedPost.caption || t('communities.detail.feed.noCaption', 'No details available for this announcement.')}
+              </p>
             </div>
           </div>
         </div>

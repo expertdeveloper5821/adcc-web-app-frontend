@@ -274,10 +274,12 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
     });
   }, [setValue]);
 
-  // Single selection only: selecting a track replaces current selection; click again to deselect
+  // Multi selection: toggle a track in/out of selected list
   const toggleTrack = useCallback((trackId: string) => {
-    setSelectedTrackIds(prev =>
-      prev.includes(trackId) ? [] : [trackId]
+    setSelectedTrackIds((prev) =>
+      prev.includes(trackId)
+        ? prev.filter((id) => id !== trackId)
+        : [...prev, trackId]
     );
   }, []);
 
