@@ -122,7 +122,7 @@ console.log('errorss',errors);
         location,
         isActive: formData.status === 'active',
         isFeatured: formData.isFeatured ?? false,
-        trackId: selectedTrackIds?.[0] ?? undefined,
+        trackId: selectedTrackIds?.length ? selectedTrackIds : undefined,
         purposeType: formData.purposeType ?? '',
         ridesThisMonth: String(formData.ridesThisMonth ?? ''),
         weeklyRides: String(formData.weeklyRides ?? ''),
