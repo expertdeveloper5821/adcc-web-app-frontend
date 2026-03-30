@@ -9,6 +9,8 @@ import { TRACK_FACILITIES, FACILITY_VALUE_TO_API_TEXT, API_TEXT_TO_FACILITY_VALU
 import { useLocale } from '../../contexts/LocaleContext';
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../ui/skeleton';
+import { gccCountries, getCitiesByCountry, type GCCCountry } from '../../data/gccLocations';
+import { translateGccCity, translateGccCountry } from '../../utils/locationI18n';
 
 interface TrackEditProps {
   navigate: (page: string, params?: any) => void;
@@ -187,6 +189,7 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     slug: (track as any).slug || prev.slug,
     description: track.description || prev.description,
     descriptionAr: (track as any).descriptionAr || prev.descriptionAr,
+    country: (track as any).country || prev.country,
     city: track.city || prev.city,
     area: track.area || prev.area,
     distance: track.distance ?? prev.distance,
@@ -212,6 +215,16 @@ const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       : prev.loopOptions,
   }));
 }, [track]);
+
+  const citiesForCountry = getCitiesByCountry((formData.country || '') as GCCCountry);
+
+  useEffect(() => {
+    if (!formData.country) return;
+    if (!citiesForCountry.length) return;
+    if (!formData.city || !citiesForCountry.includes(formData.city)) {
+      setFormData((prev) => ({ ...prev, city: citiesForCountry[0] }));
+    }
+  }, [formData.country, formData.city, citiesForCountry]);
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -410,8 +423,6 @@ const handleDisable = async (id: string, name: string) => {
 };
 
 
-  const cities = ['Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah', 'Al Ain'];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -559,15 +570,14 @@ const handleDisable = async (id: string, name: string) => {
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('tracks.edit.country')}</label>
                 <select
                   value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value, city: '' })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
-                 <option value="UAE">{t('tracks.edit.countryOptions.UAE')}</option>
-                  <option value="Saudi Arabia">{t('tracks.edit.countryOptions.Saudi Arabia')}</option>
-                  <option value="Kuwait">{t('tracks.edit.countryOptions.Kuwait')}</option>
-                  <option value="Bahrain">{t('tracks.edit.countryOptions.Bahrain')}</option>
-                  <option value="Oman">{t('tracks.edit.countryOptions.Oman')}</option>
-                  <option value="Qatar">{t('tracks.edit.countryOptions.Qatar')}</option>
+                  {gccCountries.map((country) => (
+                    <option key={country} value={country}>
+                      {translateGccCountry(t, country)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -576,10 +586,11 @@ const handleDisable = async (id: string, name: string) => {
                 <select
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  disabled={!formData.country}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {cities.map(city => (
-                  <option key={city} value={city}>{t(`tracks.edit.cityOptions.${city}`)}</option>
+                  {citiesForCountry.map((city) => (
+                    <option key={city} value={city}>{translateGccCity(t, city)}</option>
                   ))}
                 </select>
               </div>
