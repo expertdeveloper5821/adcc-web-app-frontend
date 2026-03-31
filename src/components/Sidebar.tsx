@@ -25,6 +25,7 @@ import {
 interface SidebarProps {
   currentRole: UserRole;
   currentPage: string;
+  permissionSet?: Set<string>;
 }
 
 interface MenuItemDef {
@@ -54,9 +55,31 @@ const menuItems: MenuItemDef[] = [
   { id: 'roles', labelKey: 'sidebar.roles', icon: <Shield className="w-5 h-5" />, roles: ['super-admin'], path: '/roles' },
 ];
 
-export function Sidebar({ currentRole, currentPage }: SidebarProps) {
+export function Sidebar({ currentRole, currentPage, permissionSet }: SidebarProps) {
   const { t } = useTranslation();
-  const visibleItems = menuItems.filter(item => item.roles.includes(currentRole));
+  const normalizePermissionKey = (key: string) =>
+    key.toLowerCase().replace(/[\s-]+/g, '_');
+  const hasPermission = (key: string) => {
+    if (!permissionSet) return true;
+    const aliases = key === 'app_configuration'
+      ? ['app_configuration', 'app_configure']
+      : [key];
+    const wanted = aliases.map(normalizePermissionKey);
+    for (const k of permissionSet) {
+      if (wanted.includes(normalizePermissionKey(k))) return true;
+    }
+    return false;
+  };
+
+  const visibleItems = menuItems
+    .filter(item => item.roles.includes(currentRole))
+    .filter((item) => {
+      if (item.id === 'events') return hasPermission('manage_events');
+      if (item.id === 'users') return hasPermission('manage_users');
+      if (item.id === 'feed' || item.id === 'marketplace') return hasPermission('moderate_content');
+      if (item.id === 'config') return hasPermission('app_configuration');
+      return true;
+    });
 
   return (
     <div className="scroller fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] overflow-x-scroll bg-white shadow-sm border-r border-gray-200 scroll-smooth">
