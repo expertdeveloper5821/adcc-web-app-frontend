@@ -120,7 +120,7 @@ export const getEventById = async (id: string): Promise<EventApiResponse> => {
     const response = await api.get<any>(`/v1/events/${id}`);
     // console.log('📋 getEventById called with id:', id);
     console.log('📥 getEventById response:', response.data);
-    
+
     // Handle nested response structure
     if ((response.data as any).data) {
       return (response.data as any).data;
@@ -128,6 +128,20 @@ export const getEventById = async (id: string): Promise<EventApiResponse> => {
     return response.data;
   } catch (error) {
     console.error('Error fetching event:', error);
+    throw error;
+  }
+};
+
+// Get event by ID in English (for edit forms — avoids localized values breaking dropdown matching)
+export const getEventByIdEn = async (id: string): Promise<EventApiResponse> => {
+  try {
+    const response = await api.get<any>(`/v1/en/events/${id}`);
+    if ((response.data as any).data) {
+      return (response.data as any).data;
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching event (en):', error);
     throw error;
   }
 };
@@ -402,6 +416,26 @@ export const addEventGalleryImages = async (eventId: string, files: File[]): Pro
     return response.data;
   } catch (error) {
     console.error('Error adding event gallery images:', error);
+    throw error;
+  }
+};
+
+// Delete gallery image from event
+export const deleteEventGalleryImage = async (
+  eventId: string,
+  imageUrl: string
+): Promise<any> => {
+  try {
+    const response = await api.delete<any>(
+      `/v1/events/${eventId}/gallery`,
+      { data: { imageUrl } }
+    );
+    if ((response.data as any)?.data) {
+      return (response.data as any).data;
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting event gallery image:', error);
     throw error;
   }
 };
