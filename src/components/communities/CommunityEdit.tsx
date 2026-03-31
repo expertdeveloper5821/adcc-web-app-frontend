@@ -9,6 +9,7 @@ import { getAllTracksEn, deleteTrack } from '../../services/trackService';
 import { CommunityFormData } from '../../types/community';
 import { availableCategories } from '../../data/communitiesData';
 import { DetailPageSkeleton } from '../ui/skeleton';
+import { getCitiesByCountry, type GCCCountry } from '../../data/gccLocations';
 
 
 interface CommunityEditProps {
@@ -23,6 +24,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
   const { id } = useParams<{ id: string }>();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const logoPreviewUrlRef = useRef<string | null>(null);
+  const coverPreviewUrlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMetadataLoading, setIsMetadataLoading] = useState(true);
 
@@ -170,14 +173,31 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     });
   }, [tracks, formData?.city]);
 
+  const citiesForCountry = useMemo(() => {
+    return getCitiesByCountry((formData.country || '') as GCCCountry);
+  }, [formData.country]);
+
+  // Keep city valid for selected country (when user changes country)
+  useEffect(() => {
+    if (!citiesForCountry.length) return;
+    if (!formData.city || !citiesForCountry.includes(formData.city)) {
+      setFormData((prev) => ({ ...prev, city: citiesForCountry[0] }));
+    }
+  }, [citiesForCountry, formData.city]);
+
 
   useEffect(() => {
     if (!existingCommunity) return;
 
     const loc = existingCommunity.location ?? '';
-    const VALID_LOCATIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'];
-    const city = VALID_LOCATIONS.includes(loc) ? loc : (VALID_LOCATIONS.includes(existingCommunity.city ?? '') ? existingCommunity.city! : loc || 'Abu Dhabi');
     const country = existingCommunity.country ?? 'UAE';
+
+    // Prefer explicit `city` field from backend; fallback to parsing `location`
+    const cityFromLocation =
+      typeof loc === 'string' && loc.includes(',')
+        ? loc.split(',')[0].trim()
+        : String(loc || '').trim();
+    const city = String((existingCommunity as any).city || cityFromLocation || '').trim();
 
     const typeArr = Array.isArray(existingCommunity.type)
       ? existingCommunity.type
@@ -212,7 +232,7 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       description: existingCommunity.description ?? '',
       descriptionAr: (existingCommunity as any).descriptionAr ?? '',
       city: city || '',
-      location: typeof loc === 'string' ? loc : `${city}, ${country}`,
+      location: typeof loc === 'string' ? loc : city || '',
       communityType: (() => {
         const CITY_CATS = ['City Communities'];
         const PURPOSE_CATS = ['Awareness & Charity', 'Corporate', 'Education', 'Health', 'Special Purpose'];
@@ -321,14 +341,22 @@ export function CommunityEdit({ role }: CommunityEditProps) {
     if (!file) return;
 
     setLogoFile(file);
-    setFormData((prev) => ({ ...prev, logo: URL.createObjectURL(file) }));
+    if (logoPreviewUrlRef.current) URL.revokeObjectURL(logoPreviewUrlRef.current);
+    const nextUrl = URL.createObjectURL(file);
+    logoPreviewUrlRef.current = nextUrl;
+    setFormData((prev) => ({ ...prev, logo: nextUrl }));
+    e.target.value = '';
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImageFile(file);
-    setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
+    if (coverPreviewUrlRef.current) URL.revokeObjectURL(coverPreviewUrlRef.current);
+    const nextUrl = URL.createObjectURL(file);
+    coverPreviewUrlRef.current = nextUrl;
+    setFormData((prev) => ({ ...prev, image: nextUrl }));
+    e.target.value = '';
   };
 
 
@@ -364,6 +392,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
       })(),
       category: Array.isArray(formData.type) ? formData.type.filter(t => !['City Communities', 'Special Purpose', 'Group Communities'].includes(t)).join(', ') : (formData.category || ''),
       location,
+      country: formData.country,
+      city: formData.city,
       area: formData.area || undefined,
       foundedYear: formData.foundedYear != null && formData.foundedYear !== '' ? Number(formData.foundedYear) : undefined,
       isFeatured: formData.isFeatured ?? false,
@@ -576,8 +606,10 @@ export function CommunityEdit({ role }: CommunityEditProps) {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 >
                   <option value="">Select city...</option>
-                  {COMMUNITY_LOCATION_OPTIONS.map((c) => (
-                    <option key={c} value={c}>{t(`data.locations.${c}`, c)}</option>
+                  {(citiesForCountry.length ? citiesForCountry : COMMUNITY_LOCATION_OPTIONS).map((c) => (
+                    <option key={c} value={c}>
+                      {t(`data.locations.${c}`, { defaultValue: c })}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -685,52 +717,57 @@ export function CommunityEdit({ role }: CommunityEditProps) {
 
             <div className="space-y-3">
               {filteredTracks.length > 0 ? (
-                filteredTracks.map(track => (
-                  <label
-                    key={track._id}
-                    className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      name="primaryTrack"
-                      checked={formData.primaryTrack === track._id}
-                      onChange={() => toggleTrack(track._id)}
-                      className="mt-1 w-4 h-4"
-                      style={{ accentColor: '#C12D32' }}
-                    />
+                filteredTracks.map((track) => {
+                  const trackId = (track?._id ?? track?.id) as string | undefined;
+                  if (!trackId) return null;
 
-                    <div className="flex-1">
-                      <p className="font-medium" style={{ color: '#333' }}>
-                        {track.title}
-                      </p>
+                  return (
+                    <label
+                      key={trackId}
+                      className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        name="primaryTrack"
+                        checked={formData.primaryTrack === trackId}
+                        onChange={() => toggleTrack(trackId)}
+                        className="mt-1 w-4 h-4"
+                        style={{ accentColor: '#C12D32' }}
+                      />
 
-                      <div className="flex items-center gap-4 mt-1">
-                        <span className="text-sm" style={{ color: '#666' }}>
-                          {track.city}
-                        </span>
+                      <div className="flex-1">
+                        <p className="font-medium" style={{ color: '#333' }}>
+                          {track.title}
+                        </p>
 
-                        <span className="text-sm" style={{ color: '#666' }}>
-                          {track.distance} km
-                        </span>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-sm" style={{ color: '#666' }}>
+                            {track.city}
+                          </span>
 
-                        <span
-                          className="px-2 py-1 rounded-full text-xs"
-                          style={{
-                            backgroundColor:
-                              track.difficulty === 'Easy'
-                                ? '#10B981'
-                                : track.difficulty === 'Medium'
-                                  ? '#F59E0B'
-                                  : '#EF4444',
-                            color: '#fff'
-                          }}
-                        >
-                          {track.difficulty}
-                        </span>
+                          <span className="text-sm" style={{ color: '#666' }}>
+                            {track.distance} km
+                          </span>
+
+                          <span
+                            className="px-2 py-1 rounded-full text-xs"
+                            style={{
+                              backgroundColor:
+                                track.difficulty === 'Easy'
+                                  ? '#10B981'
+                                  : track.difficulty === 'Medium'
+                                    ? '#F59E0B'
+                                    : '#EF4444',
+                              color: '#fff',
+                            }}
+                          >
+                            {track.difficulty}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </label>
-                ))
+                    </label>
+                  );
+                })
               ) : (
                 <p className="text-sm text-center py-4" style={{ color: '#999' }}>
                   {t('communities.edit.noTracksInCity', { city: formData.city })}
@@ -837,8 +874,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.communityLogo')}</label>
                 <div className="mb-3">
-                  {(existingCommunity.logo || formData.logo) ? (
-                    <img src={existingCommunity.logo || formData.logo} alt="Current logo" className="w-20 h-20 rounded-lg object-cover" />
+                  {(formData.logo || existingCommunity.logo) ? (
+                    <img src={formData.logo || existingCommunity.logo} alt="Current logo" className="w-20 h-20 rounded-lg object-cover" />
                   ) : (
                     <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-xs" style={{ color: '#999' }}>No logo</div>
                   )}
@@ -867,8 +904,8 @@ export function CommunityEdit({ role }: CommunityEditProps) {
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('communities.edit.coverImage')}</label>
                 <div className="mb-3">
-                  {(existingCommunity.image || formData.image) ? (
-                    <img src={existingCommunity.image || formData.image} alt="Current cover" className="w-full h-32 rounded-lg object-cover" />
+                  {(formData.image || existingCommunity.image) ? (
+                    <img src={formData.image || existingCommunity.image} alt="Current cover" className="w-full h-32 rounded-lg object-cover" />
                   ) : (
                     <div className="w-full h-32 rounded-lg bg-gray-100 flex items-center justify-center text-sm" style={{ color: '#999' }}>No cover image</div>
                   )}
