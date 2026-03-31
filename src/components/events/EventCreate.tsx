@@ -3,6 +3,7 @@ import { ArrowLeft, Calendar, MapPin, Users, Settings, Award, Image as ImageIcon
 import { availableCategories } from '../../data/eventsData';
 import { toast } from 'sonner';
 import { getAllTracksEn } from '../../services/trackService';
+import { gccCountries, getCitiesByCountry, type GCCCountry } from '../../data/gccLocations';
 import { createEvent } from '../../services/eventsApi';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { UserRole } from '../../App';
@@ -150,23 +151,10 @@ const handleBadgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const [customAmenityInput, setCustomAmenityInput] = useState('');
 
-  // Fixed list of countries (GCC) so dropdown always shows all; cities/tracks still filter by data
-  const AVAILABLE_COUNTRIES = ['UAE', 'Saudi Arabia', 'Kuwait', 'Bahrain', 'Oman', 'Qatar'];
-  const availableCountries = AVAILABLE_COUNTRIES;
+  // Country → City → Track cascade (same as tracks module, using gccLocations)
+  const availableCountries = gccCountries as unknown as string[];
 
-  const availableCities = React.useMemo(() => {
-    if (!formData.country) return [];
-    const country = formData.country.trim();
-    const cities = Array.from(
-      new Set(
-        tracks
-          .filter((t: { country?: string }) => (t.country || 'UAE').trim() === country)
-          .map((t: { city?: string }) => (t.city || '').trim())
-          .filter(Boolean)
-      )
-    );
-    return cities.sort();
-  }, [tracks, formData.country]);
+  const availableCities = getCitiesByCountry((formData.country || '') as GCCCountry);
 
   const filteredTracks = React.useMemo(() => {
     if (!formData.country || !formData.city) return [];
@@ -199,21 +187,14 @@ const handleBadgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   // Keep city/trackId valid when tracks load: if current city not in available cities for selected country, clear city and trackId
   useEffect(() => {
-    if (tracks.length === 0 || !formData.country) return;
+    if (!formData.country) return;
     setFormData((prev) => {
-      const cities = Array.from(
-        new Set(
-          tracks
-            .filter((t: { country?: string }) => (t.country || 'UAE').trim() === prev.country.trim())
-            .map((t: { city?: string }) => (t.city || '').trim())
-            .filter(Boolean)
-        )
-      );
+      const cities = getCitiesByCountry((prev.country || '') as GCCCountry);
       const cityValid = !prev.city || cities.includes(prev.city);
       if (cityValid) return prev;
       return { ...prev, city: '', trackId: '' };
     });
-  }, [tracks, formData.country]);
+  }, [formData.country]);
 
   // Predefined amenities that appear as checkboxes
   const predefinedAmenities = ['water', 'toilets', 'parking', 'lighting', 'medical support', 'bike service'];
