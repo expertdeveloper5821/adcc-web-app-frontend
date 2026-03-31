@@ -58,7 +58,7 @@ export interface CommunityApiResponse {
 }
 
 /** Backend-allowed location values */
-export const COMMUNITY_LOCATION_OPTIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'] as const;
+export const COMMUNITY_LOCATION_OPTIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah' , 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain', 'Ajman', 'Al Fujairah', 'Al Sharjah', 'Al Ain', 'Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Fujairah', 'Ras Al Khaimah' , 'Al Dhafra' , 'Al Fujairah' , 'Al Sharjah' , 'Al Ain' , 'Abu Dhabi' , 'Dubai' , 'Sharjah' , 'Ajman' , 'Umm Al Quwain' , 'Fujairah' , 'Ras Al Khaimah' , 'Al Dhafra' ] as const;
 export type CommunityLocation = (typeof COMMUNITY_LOCATION_OPTIONS)[number];
 
 export interface CreateCommunityRequest {
@@ -135,7 +135,7 @@ export const createCommunity = async (
     const scalarKeys = [
       'title', 'titleAr', 'description', 'descriptionAr', 'type', 'category', 'location',
       'trackId', 'purposeType', 'ridesThisMonth', 'weeklyRides', 'fundsRaised', 'foundedYear',
-      'area', 'manager', 'city', 'isActive', 'isFeatured', 'status', 'isPublic',
+      'area', 'manager', 'city' ,'country', 'isActive', 'isFeatured', 'status', 'isPublic'
     ];
     scalarKeys.forEach((key) => {
       const val = d[key];
@@ -314,12 +314,12 @@ export const addGalleryImages = async (id: string, files: File[]): Promise<any> 
 // Delete gallery image from community
 export const deleteGalleryImage = async (
   id: string,
-  imageUrl: string
+  imageUrls: string
 ): Promise<any> => {
   try {
     const response = await api.delete<any>(
       `/v1/communities/${id}/gallery`,
-      { data: { imageUrl } }
+      { data: { imageUrls } }
     );
     console.log('📥 deleteGalleryImage response:', response.data);
     
