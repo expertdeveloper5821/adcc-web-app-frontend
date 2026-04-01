@@ -26,7 +26,7 @@
     "role": "Role:",
     "logout": "Logout",
     "roles": {
-      "super-admin": "Super Admin",
+      "Admin": "Super Admin",
       "content-manager": "Content Manager",
       "community-manager": "Community Manager",
       "moderator": "Moderator / Support"

@@ -245,8 +245,8 @@ export function CommunitiesList({ role }: CommunitiesListProps) {
     return filteredCommunities.slice(start, start + communitiesPerPage);
   }, [filteredCommunities, currentPage]);
 
-  const canEdit = role === 'super-admin' || role === 'community-manager';
-  const canCreate = role === 'super-admin' || role === 'community-manager';
+  const canEdit = true;
+  const canCreate = true;
 
   const handleDelete = (communityId: string) => {
     setCommunityToDelete(communityId);

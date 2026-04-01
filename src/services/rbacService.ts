@@ -19,6 +19,56 @@ export interface RbacRole {
   permissions: Array<string | RbacPermission>;
 }
 
+type RawMyPermissionsResponse = {
+  data?: {
+    permissions?: Array<string | RbacPermission>;
+    permissionKeys?: string[];
+    role?: {
+      _id?: string;
+      id?: string;
+      name?: string;
+      slug?: string;
+      permissions?: Array<string | RbacPermission>;
+      permissionKeys?: string[];
+    };
+  };
+  permissions?: Array<string | RbacPermission>;
+  permissionKeys?: string[];
+  role?: {
+    _id?: string;
+    id?: string;
+    name?: string;
+    slug?: string;
+    permissions?: Array<string | RbacPermission>;
+    permissionKeys?: string[];
+  };
+};
+
+type RawMyRbacResponse = {
+  data?: {
+    role?: {
+      _id?: string;
+      id?: string;
+      name?: string;
+      slug?: string;
+      permissions?: Array<string | RbacPermission>;
+      permissionKeys?: string[];
+    };
+    permissions?: Array<string | RbacPermission>;
+    permissionKeys?: string[];
+  };
+  role?: {
+    _id?: string;
+    id?: string;
+    name?: string;
+    slug?: string;
+    permissions?: Array<string | RbacPermission>;
+    permissionKeys?: string[];
+  };
+  permissions?: Array<string | RbacPermission>;
+  permissionKeys?: string[];
+};
+
 type RawRoleResponse = {
   roles?: RbacRole[];
   data?: RbacRole[] | { roles?: RbacRole[] };
@@ -35,6 +85,63 @@ const normalizeRolesResponse = (payload: RawRoleResponse): RbacRole[] => {
 export const getRbacRoles = async (): Promise<RbacRole[]> => {
   const res = await api.get<any>('/v1/rbac/roles');
   return normalizeRolesResponse(res.data as RawRoleResponse);
+};
+
+export const getRoleById = async (roleId: string): Promise<RbacRole> => {
+  const res = await api.get<any>(`/v1/rbac/roles/${roleId}`);
+  const payload = res.data as { data?: RbacRole } | RbacRole;
+  const data = (payload as any)?.data ?? payload;
+  return data as RbacRole;
+};
+
+export const getMyRbac = async (): Promise<{
+  role?: Partial<RbacRole>;
+  permissions: Array<string | RbacPermission>;
+}> => {
+  const res = await api.get<RawMyRbacResponse>('/v1/rbac/me');
+  const payload = res.data as RawMyRbacResponse;
+  const data = payload?.data ?? payload;
+  const role = data?.role ?? payload?.role;
+  const permissionKeys =
+    data?.permissionKeys ??
+    role?.permissionKeys ??
+    payload?.permissionKeys;
+  const permissions =
+    permissionKeys ??
+    data?.permissions ??
+    role?.permissions ??
+    payload?.permissions ??
+    [];
+
+  return {
+    role: role as Partial<RbacRole> | undefined,
+    permissions: Array.isArray(permissions) ? permissions : [],
+  };
+};
+
+export const getMyPermissions = async (): Promise<{
+  role?: Partial<RbacRole>;
+  permissions: Array<string | RbacPermission>;
+}> => {
+  const res = await api.get<RawMyPermissionsResponse>('/v1/en/rbac/me/permissions');
+  const payload = res.data as RawMyPermissionsResponse;
+  const data = payload?.data ?? payload;
+  const role = data?.role ?? payload?.role;
+  const permissionKeys =
+    data?.permissionKeys ??
+    role?.permissionKeys ??
+    payload?.permissionKeys;
+  const permissions =
+    permissionKeys ??
+    data?.permissions ??
+    role?.permissions ??
+    payload?.permissions ??
+    [];
+
+  return {
+    role: role as Partial<RbacRole> | undefined,
+    permissions: Array.isArray(permissions) ? permissions : [],
+  };
 };
 
 export const updateRolePermissions = async (

@@ -29,9 +29,9 @@ export function ChallengesList({ role }: ChallengesListProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const canCreate = role === 'super-admin' || role === 'community-manager';
-  const canEdit = role === 'super-admin' || role === 'community-manager';
-  const canDelete = role === 'super-admin';
+  const canCreate = true;
+  const canEdit = true;
+  const canDelete = true;
 
   const fetchChallenges = useCallback(async () => {
     try {

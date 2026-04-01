@@ -159,8 +159,8 @@ export function TracksList({ role }: TracksListProps) {
   }, [tracks, searchTerm, cityFilter, difficultyFilter, statusFilter, hasEventsFilter, hasCommunitiesFilter, trackStats]);
 
 
-  const canEdit = role === 'super-admin';
-  const canCreate = role === 'super-admin';
+  const canEdit = true;
+  const canCreate = true;
 
   const handleArchive = async (trackId: string, trackName: string) => {
     const confirmed = window.confirm(

@@ -22,7 +22,7 @@ type PermissionRow = {
 type RoleSlugMap = Record<RoleColumnKey, string>;
 
 const ROLE_SLUGS: RoleSlugMap = {
-  super: 'super-admin',
+  super: 'Admin',
   content: 'content-manager',
   community: 'community-manager',
   moderator: 'moderator',

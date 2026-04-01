@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { UserRole } from '../App';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -35,80 +35,109 @@ import { RolesPermissions } from './roles/RolesPermissions';
 import { BadgesList } from './badges/BadgesList';
 import { BadgesCreate } from './badges/BadgesCreate';
 import { LanguagesList } from './languages/LanguagesList';
-import { useEffect, useMemo } from 'react';
-import { getRbacRoles, type RbacRole, type RbacPermission } from '../services/rbacService';
+import { getMyPermissions, getMyRbac, getRoleById, type RbacRole } from '../services/rbacService';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  createPermissionChecker,
+  permissionKeysFromRole,
+  ROLE_DEFAULT_SIDEBAR_ITEMS,
+  SIDEBAR_PERMISSION_REQUIRED,
+  type SidebarItemId,
+} from '../rbac/rbacKeys';
+
+function normalizeRoleSlug(input: string): string {
+  return input.trim().toLowerCase().replace(/[\s_]+/g, '-');
+}
+
+function slugToUserRole(slug: string | undefined): UserRole | null {
+  if (!slug) return null;
+  const s = normalizeRoleSlug(slug);
+  const aliases: Record<string, UserRole> = {
+    'super-admin': 'Admin',
+    superadmin: 'Admin',
+    admin: 'Admin',
+    'content-manager': 'content-manager',
+    'contentent-manager': 'content-manager',
+    contentmanager: 'content-manager',
+    content: 'content-manager',
+    'community-manager': 'community-manager',
+    communitymanager: 'community-manager',
+    community: 'community-manager',
+    moderator: 'moderator',
+    moderate: 'moderator',
+  };
+  if (aliases[s]) return aliases[s];
+  const keys: UserRole[] = ['Admin', 'content-manager', 'community-manager', 'moderator'];
+  if (keys.includes(s as UserRole)) return s as UserRole;
+  return null;
+}
 
 export function Layout() {
-  const [currentRole, setCurrentRole] = useState<UserRole>('super-admin');
-  const [rolesBySlug, setRolesBySlug] = useState<Record<string, RbacRole>>({});
-  const location = useLocation();
-  // Extract current page from pathname
-  const getCurrentPage = () => {
-    const path = location.pathname;
-    if (path === '/dashboard') return 'dashboard';
-    if (path.startsWith('/events')) return 'events';
-    if (path.startsWith('/communities')) return 'communities';
-    if (path.startsWith('/tracks')) return 'tracks';
-    if (path.startsWith('/challenges')) return 'challenges';
-    if (path.startsWith('/feed')) return 'feed';
-    if (path.startsWith('/marketplace')) return 'marketplace';
-    if (path.startsWith('/cms')) return 'cms';
-    if (path.startsWith('/media')) return 'media';
-    if (path.startsWith('/push')) return 'push';
-    if (path.startsWith('/users')) return 'users';
-    if (path.startsWith('/reports')) return 'reports';
-    if (path.startsWith('/config')) return 'config';
-    if (path.startsWith('/roles')) return 'roles';
-    if (path.startsWith('/badges')) return 'badges';
-    if (path.startsWith('/languages')) return 'languages';
-    if (path.startsWith('/badges/create')) return 'badges-create';
-    if (path.startsWith('/badges/:id/edit')) return 'badges-edit';
-    return 'dashboard';
-  };
+  const { userProfile } = useAuth();
+  const [currentRole, setCurrentRole] = useState<UserRole>('moderator');
+  const [myRole, setMyRole] = useState<Partial<RbacRole> | undefined>(undefined);
+  const [permissionSet, setPermissionSet] = useState<Set<string>>(new Set<string>());
+  const [rbacLoaded, setRbacLoaded] = useState(false);
 
-  const currentPage = getCurrentPage();
   useEffect(() => {
-    const loadRoles = async () => {
+    const loadMyAccess = async () => {
       try {
-        const roles = await getRbacRoles();
-        const map: Record<string, RbacRole> = {};
-        roles.forEach((r) => {
-          if (r.slug) map[r.slug] = r;
-        });
-        setRolesBySlug(map);
+        const myRbac = await getMyRbac();
+        if (myRbac.role || (myRbac.permissions && myRbac.permissions.length > 0)) {
+          setMyRole(myRbac.role);
+          const fakeRole = { permissions: myRbac.permissions } as RbacRole;
+          setPermissionSet(permissionKeysFromRole(fakeRole));
+          return;
+        }
+
+        const roleId = userProfile?.roleId;
+        if (roleId) {
+          const role = await getRoleById(roleId);
+          setMyRole(role);
+          setPermissionSet(permissionKeysFromRole(role));
+          return;
+        }
+
+        const result = await getMyPermissions();
+        setMyRole(result.role);
+        const fakeRole = { permissions: result.permissions } as RbacRole;
+        setPermissionSet(permissionKeysFromRole(fakeRole));
       } catch (error: any) {
-        console.error('Error loading RBAC roles in layout', error);
-        toast.error(error?.response?.data?.message || 'Failed to load role permissions');
+        console.error('Error loading RBAC permissions in layout', error);
+        toast.error(error?.response?.data?.message || 'Failed to load your permissions');
+        setMyRole(undefined);
+        setPermissionSet(new Set<string>());
+      } finally {
+        setRbacLoaded(true);
       }
     };
-    loadRoles();
-  }, []);
+    void loadMyAccess();
+  }, [userProfile?.roleId]);
 
-  const permissionSet = useMemo(() => {
-    const role = rolesBySlug[currentRole];
-    const items = role?.permissions ?? [];
-    const set = new Set<string>();
-    items.forEach((p) => {
-      if (typeof p === 'string') return;
-      if (p.key) set.add(p.key);
-    });
-    return set;
-  }, [rolesBySlug, currentRole]);
+  useEffect(() => {
+    const mapped =
+      slugToUserRole(myRole?.slug) ||
+      slugToUserRole(myRole?.name) ||
+      slugToUserRole(userProfile?.role);
+    if (mapped) setCurrentRole(mapped);
+  }, [myRole?.slug, myRole?.name, userProfile?.role]);
 
-  const normalizePermissionKey = (key: string) =>
-    key.toLowerCase().replace(/[\s-]+/g, '_');
+  const isSuperAdminRole =
+    normalizeRoleSlug(myRole?.slug || '') === 'super-admin' ||
+    normalizeRoleSlug(userProfile?.role || '') === 'super-admin' ||
+    normalizeRoleSlug(userProfile?.role || '') === 'admin';
+  const rbacReady = rbacLoaded && !!userProfile;
 
-  const hasPermission = (key: string) => {
-    const aliases = key === 'app_configuration'
-      ? ['app_configuration', 'app_configure']
-      : [key];
-    const wanted = aliases.map(normalizePermissionKey);
-    for (const k of permissionSet) {
-      if (wanted.includes(normalizePermissionKey(k))) return true;
-    }
-    return false;
-  };
+  const hasPermission = useMemo(
+    () =>
+      createPermissionChecker({
+        rbacReady,
+        isSuperAdminRole,
+        permissionSet,
+      }),
+    [rbacReady, isSuperAdminRole, permissionSet],
+  );
 
   const Unauthorized = () => (
     <div className="rounded-2xl p-8 bg-white shadow-sm">
@@ -119,73 +148,85 @@ export function Layout() {
 
   const withPermission = (permissionKey: string, element: React.ReactElement) =>
     hasPermission(permissionKey) ? element : <Unauthorized />;
+  const withRoleSidebarAccess = (sidebarItem: SidebarItemId, element: React.ReactElement) => {
+    const allowedItems = ROLE_DEFAULT_SIDEBAR_ITEMS[currentRole] || [];
+    if (!allowedItems.includes(sidebarItem)) return <Unauthorized />;
+    const strictPerm = SIDEBAR_PERMISSION_REQUIRED[sidebarItem];
+    if (strictPerm && !hasPermission(strictPerm)) return <Unauthorized />;
+    return element;
+  };
 
-  function BadgesEditWrapper({ role }: { role: UserRole }) {
+  const roleTitle = useMemo(() => {
+    if (myRole?.name) return myRole.name;
+    if (userProfile?.role) return userProfile.role;
+    return currentRole;
+  }, [myRole?.name, userProfile?.role, currentRole]);
+
+  function BadgesEditWrapper() {
     const { id } = useParams<{ id: string }>();
     if (!id) return null;
     return <BadgesCreate navigate={() => {}} badgeId={id} />;
   }
-  
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFF9EF' }}>
-      <TopBar currentRole={currentRole} setRole={setCurrentRole} />
+      <TopBar roleTitle={roleTitle} />
       <div className="flex">
-        <Sidebar currentRole={currentRole} currentPage={currentPage} permissionSet={permissionSet} />
+        <Sidebar currentRole={currentRole} hasPermission={hasPermission} />
         <main className="flex-1 p-8 ml-64 mt-16">
           <Routes>
-            {/* Dashboard Routes */}
-            <Route path="/dashboard" element={
-              currentRole === 'super-admin' ? <SuperAdminDashboard /> :
-              currentRole === 'content-manager' ? <ContentManagerDashboard /> :
-              currentRole === 'community-manager' ? <CommunityManagerDashboard /> :
-              <ModeratorDashboard />
-            } />
-            
-            {/* Events Routes */}
+            <Route
+              path="/dashboard"
+              element={withPermission(
+                'view_dashboard',
+                currentRole === 'Admin' ? (
+                  <SuperAdminDashboard />
+                ) : currentRole === 'content-manager' ? (
+                  <ContentManagerDashboard />
+                ) : currentRole === 'community-manager' ? (
+                  <CommunityManagerDashboard />
+                ) : (
+                  <ModeratorDashboard />
+                ),
+              )}
+            />
+
             <Route path="/events" element={withPermission('manage_events', <EventsList navigate={() => {}} role={currentRole} />)} />
             <Route path="/events/create" element={withPermission('manage_events', <EventCreate navigate={() => {}} role={currentRole} />)} />
             <Route path="/events/:id/edit" element={withPermission('manage_events', <EventEdit navigate={() => {}} role={currentRole} />)} />
-            <Route path="/events/:id" element={withPermission('manage_events', <EventDetail navigate={() => {}} role={currentRole} />)} />
+            <Route path="/events/:id" element={withPermission('manage_events', <EventDetail />)} />
             <Route path="/events/:id/event-participants" element={withPermission('manage_events', <EventParticipants role={currentRole} />)} />
-            
-            {/* Communities Routes */}
-            <Route path="/communities" element={<CommunitiesList role={currentRole} />} />
-            <Route path="/communities/create" element={<CommunityCreate />} />
-            <Route path="/communities/:id/edit" element={<CommunityEdit navigate={() => {}} role={currentRole} />} />
-            <Route path="/communities/:id" element={<CommunityDetail />} />
-            
 
-            {/* Challenges Routes */}
-            <Route path="/challenges" element={<ChallengesList role={currentRole} />} />
-            <Route path="/challenges/create" element={<ChallengeCreate />} />
-            <Route path="/challenges/:id" element={<ChallengeDetail role={currentRole} />} />
-            <Route path="/challenges/:id/edit" element={<ChallengeCreate />} />
+            <Route path="/communities" element={withRoleSidebarAccess('communities', <CommunitiesList role={currentRole} />)} />
+            <Route path="/communities/create" element={withRoleSidebarAccess('communities', <CommunityCreate />)} />
+            <Route path="/communities/:id/edit" element={withRoleSidebarAccess('communities', <CommunityEdit navigate={() => {}} role={currentRole} />)} />
+            <Route path="/communities/:id" element={withRoleSidebarAccess('communities', <CommunityDetail />)} />
 
-            <Route path="/tracks" element={<TracksList navigate={() => {}} role={currentRole} />} />
-            <Route path="/tracks/create" element={<TrackCreate navigate={() => {}} role={currentRole} />} />
-            <Route path="/tracks/:id" element={<TrackDetail navigate={() => {}} role={currentRole} />} />
-            <Route path='/tracks/:id/edit' element={<TrackEdit navigate={() => {}} role={currentRole} />} />
+            <Route path="/challenges" element={withRoleSidebarAccess('challenges', <ChallengesList role={currentRole} />)} />
+            <Route path="/challenges/create" element={withRoleSidebarAccess('challenges', <ChallengeCreate />)} />
+            <Route path="/challenges/:id" element={withRoleSidebarAccess('challenges', <ChallengeDetail role={currentRole} />)} />
+            <Route path="/challenges/:id/edit" element={withRoleSidebarAccess('challenges', <ChallengeCreate />)} />
+
+            <Route path="/tracks" element={withRoleSidebarAccess('tracks', <TracksList navigate={() => {}} role={currentRole} />)} />
+            <Route path="/tracks/create" element={withRoleSidebarAccess('tracks', <TrackCreate navigate={() => {}} role={currentRole} />)} />
+            <Route path="/tracks/:id" element={withRoleSidebarAccess('tracks', <TrackDetail navigate={() => {}} role={currentRole} />)} />
+            <Route path="/tracks/:id/edit" element={withRoleSidebarAccess('tracks', <TrackEdit navigate={() => {}} role={currentRole} />)} />
             
-            {/* Badges Routes */}
-            <Route path="/badges" element={<BadgesList navigate={() => {}} role={currentRole} />} />
-            <Route path="/badges/create" element={<BadgesCreate navigate={() => {}} />} />
-            <Route path="/badges/:id/edit" element={<BadgesEditWrapper role={currentRole} />} />
-            {/* Other Routes */}
-            <Route path="/feed" element={withPermission('moderate_content', <FeedModeration />)} />
-            <Route path="/marketplace" element={withPermission('moderate_content', <MarketplaceModeration />)} />
-            <Route path="/cms" element={<CMS />} />
-            <Route path="/media" element={<MediaLibrary />} />
-            <Route path="/push" element={<PushNotifications />} />
+            <Route path="/badges" element={withRoleSidebarAccess('badges', <BadgesList navigate={() => {}} role={currentRole} />)} />
+            <Route path="/badges/create" element={withRoleSidebarAccess('badges', <BadgesCreate navigate={() => {}} />)} />
+            <Route path="/badges/:id/edit" element={withRoleSidebarAccess('badges', <BadgesEditWrapper />)} />
+            <Route path="/feed" element={withRoleSidebarAccess('feed', <FeedModeration />)} />
+            <Route path="/marketplace" element={withRoleSidebarAccess('marketplace', <MarketplaceModeration navigate={() => {}} role={currentRole} />)} />
+            <Route path="/cms" element={withPermission('manage_cms', <CMS />)} />
+            <Route path="/media" element={withPermission('manage_media', <MediaLibrary />)} />
+            <Route path="/push" element={withRoleSidebarAccess('push', <PushNotifications />)} />
             <Route path="/users" element={withPermission('manage_users', <UsersList role={currentRole} />)} />
-            <Route path="/reports" element={<Reports role={currentRole} />} />
+            <Route path="/reports" element={withRoleSidebarAccess('reports', <Reports role={currentRole} />)} />
             <Route path="/config" element={withPermission('app_configuration', <AppConfig />)} />
-            <Route path="/roles" element={<RolesPermissions />} />
-            <Route path="/languages" element={<LanguagesList />} />
-            
-            {/* Default redirect to dashboard */}
-            <Route path="/" element={
-              <Navigate to="/dashboard" replace />
-            } />
+            <Route path="/roles" element={withPermission('manage_roles', <RolesPermissions />)} />
+            <Route path="/languages" element={withPermission('manage_languages', <LanguagesList />)} />
+
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>

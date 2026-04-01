@@ -50,9 +50,9 @@ export function BadgesList({ navigate, role }: BadgesListProps) {
     fetchBadges();
   }, [fetchBadges]);
 
-  const canCreate = role === 'super-admin';
-  const canEdit = role === 'super-admin';
-  const canDelete = role === 'super-admin';
+  const canCreate = true;
+  const canEdit = true;
+  const canDelete = true;
 
   const filteredBadges = badges.filter(badge => {
     const matchesSearch = badge.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

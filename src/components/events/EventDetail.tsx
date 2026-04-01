@@ -3,18 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Edit, Copy, Bell, ImageIcon, Trophy, UserCheck, Users, Star, Share2, Calendar, MapPin, Clock, Award, Upload,Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { UserRole } from '../../App';
-
 import { addEventGalleryImages, deleteEventGalleryImage, getEventById, updateEvent as updateEventApi, EventApiResponse, getEventResults } from '../../services/eventsApi';
 import { DetailPageSkeleton } from '../ui/skeleton';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-interface EventDetailProps {
-  navigate: (page: string, params?: any) => void;
-  role: UserRole;
-}
-
-export function EventDetail({ role }: EventDetailProps) {
+export function EventDetail() {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const eventId = id ?? '';
@@ -121,7 +114,8 @@ export function EventDetail({ role }: EventDetailProps) {
     return <div className="text-center py-8" style={{ color: '#666' }}>{t('events.detail.notFound')}</div>;
   }
 
-  const canEdit = role === 'super-admin' || role === 'content-manager' || role === 'community-manager';
+  // Page access is gated by manage_events in Layout; actions follow that permission.
+  const canEdit = true;
 
 
   // const event = getEvent(eventId);
