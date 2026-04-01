@@ -10,6 +10,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { compressImage } from '../../utils/imageUtils';
 import { useLocale } from '../../contexts/LocaleContext';
 import { useTranslation } from 'react-i18next';
+import { gccCountries, getCitiesByCountry, type GCCCountry } from '../../data/gccLocations';
+import { translateGccCity, translateGccCountry } from '../../utils/locationI18n';
 
 
 interface TrackCreateProps {
@@ -49,8 +51,9 @@ const getFormFields = (t: (key: string) => string) => [
   { section: 1, name: 'slug', label: t('tracks.create.slug'), type: 'text', readOnly: true },
   { section: 1, name: 'description', label: t('tracks.create.description'), type: 'textarea', required: true, placeholder: t('tracks.create.placeholders.description') },
   { section: 1, name: 'trackType', label: t('tracks.create.trackType'), type: 'select', required: true, options: ['road', 'circuit', 'coastal', 'desert', 'urban'] },
-  { section: 1, name: 'country', label: t('tracks.create.country'), type: 'select', required: true, options: ['UAE', 'Saudi Arabia', 'Kuwait', 'Bahrain', 'Oman', 'Qatar'] },
-  { section: 1, name: 'city', label: t('tracks.create.city'), type: 'select', required: true, options: ['Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah', 'Al Ain'] },
+  { section: 1, name: 'country', label: t('tracks.create.country'), type: 'select', required: true, options: gccCountries as unknown as string[] },
+  // City options depend on selected country (computed inside component)
+  { section: 1, name: 'city', label: t('tracks.create.city'), type: 'select', required: true, options: [] as string[] },
   { section: 1, name: 'area', label: t('tracks.create.area'), type: 'text', placeholder: t('tracks.create.placeholders.area') },
   // Route Details
   { section: 2, name: 'distance', label: t('tracks.create.distance'), type: 'number', required: true, min: 0.1, step: 0.1 },
@@ -127,6 +130,22 @@ export function TrackCreate({ role }: TrackCreateProps) {
   const watchedLoopOptions = watch('loopOptions');
   const watchedFacilities = watch('facilities');
   const watchedLoopOptionInput = watch('loopOptionInput');
+  const watchedCountry = watch('country');
+  const watchedCity = watch('city');
+
+  const citiesForCountry = getCitiesByCountry((watchedCountry || '') as GCCCountry);
+
+  // Keep city valid when country changes (reset to first city if invalid)
+  useEffect(() => {
+    if (!watchedCountry) return;
+    if (!citiesForCountry.length) {
+      if (watchedCity) setValue('city', '');
+      return;
+    }
+    if (!watchedCity || !citiesForCountry.includes(watchedCity)) {
+      setValue('city', citiesForCountry[0]);
+    }
+  }, [watchedCountry, watchedCity, citiesForCountry, setValue]);
 
   const slugify = (text: string): string => {
     if (!text?.trim()) return '';
@@ -395,23 +414,35 @@ const onSubmit = async (data: FormData, action: 'draft' | 'publish') => {
                 surfaceType: 'tracks.create.surfaceOptions',
                 status: 'tracks.create.statusOptions',
                 visibility: 'tracks.create.visibilityOptions',
-                country: 'tracks.create.countryOptions',
-                city: 'tracks.create.cityOptions',
               };
               const translationPrefix = optionLabelMap[name];
  
+              const selectOptions =
+                name === 'city'
+                  ? citiesForCountry
+                  : options;
+
+              const disabled = name === 'city' ? !watchedCountry : false;
+
               return (
                 <select
                   value={selectValue}
                   onChange={onChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  disabled={disabled}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
 
-                  {options.map((opt: string) => (
-                   <option key={opt} value={opt}>{translationPrefix ? t(`${translationPrefix}.${opt}`) : opt}</option>
- 
-                   
-                   ))}
+                  {selectOptions.map((opt: string) => (
+                    <option key={opt} value={opt}>
+                      {name === 'country'
+                        ? translateGccCountry(t, opt)
+                        : name === 'city'
+                          ? translateGccCity(t, opt)
+                          : translationPrefix
+                            ? String(t(`${translationPrefix}.${opt}`, { defaultValue: opt }))
+                            : opt}
+                    </option>
+                  ))}
                 </select>
               );
             }

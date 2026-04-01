@@ -18,7 +18,7 @@ export interface CommunityApiResponse {
   area?: string;
   image?: string;
   logo?: string;
-  trackId?: string;
+  trackId?: string | string[] | { _id?: string; id?: string } | Array<{ _id?: string; id?: string }>;
   primaryTracks?: string[];
   trackName?: string;
   distance?: number;
@@ -58,7 +58,7 @@ export interface CommunityApiResponse {
 }
 
 /** Backend-allowed location values */
-export const COMMUNITY_LOCATION_OPTIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah'] as const;
+export const COMMUNITY_LOCATION_OPTIONS = ['Abu Dhabi', 'Dubai', 'Al Ain', 'Sharjah' , 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain', 'Ajman', 'Al Fujairah', 'Al Sharjah', 'Al Ain', 'Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Fujairah', 'Ras Al Khaimah' , 'Al Dhafra' , 'Al Fujairah' , 'Al Sharjah' , 'Al Ain' , 'Abu Dhabi' , 'Dubai' , 'Sharjah' , 'Ajman' , 'Umm Al Quwain' , 'Fujairah' , 'Ras Al Khaimah' , 'Al Dhafra' ] as const;
 export type CommunityLocation = (typeof COMMUNITY_LOCATION_OPTIONS)[number];
 
 export interface CreateCommunityRequest {
@@ -70,6 +70,7 @@ export interface CreateCommunityRequest {
   category: string;
   location?: string;
   image?: string;
+  trackId?: string | string[];
   trackName?: string;
   distance?: number;
   foundedYear?: number;
@@ -134,7 +135,7 @@ export const createCommunity = async (
     const scalarKeys = [
       'title', 'titleAr', 'description', 'descriptionAr', 'type', 'category', 'location',
       'trackId', 'purposeType', 'ridesThisMonth', 'weeklyRides', 'fundsRaised', 'foundedYear',
-      'area', 'manager', 'city', 'isActive', 'isFeatured', 'status', 'isPublic',
+      'area', 'manager', 'city' ,'country', 'isActive', 'isFeatured', 'status', 'isPublic'
     ];
     scalarKeys.forEach((key) => {
       const val = d[key];
@@ -273,9 +274,20 @@ export interface CommunityMember {
 export const getCommunityMembers = async (id: string): Promise<CommunityMember[]> => {
   try {
     const response = await api.get<any>(`/v1/communities/${id}/communityMembers`);
-    const data = (response.data as any)?.data ?? response.data;
+    const root = response.data as any;
+    const data = root?.data ?? root;
+
+    // Support common backend response shapes:
+    // - []
+    // - { data: [] }
+    // - { data: { members: [] } }
+    // - { data: { communityMembers: [] } }
+    // - { members: [] } / { communityMembers: [] }
     if (Array.isArray(data)) return data as CommunityMember[];
     if (Array.isArray(data?.members)) return data.members as CommunityMember[];
+    if (Array.isArray(data?.communityMembers)) return data.communityMembers as CommunityMember[];
+    if (Array.isArray(root?.members)) return root.members as CommunityMember[];
+    if (Array.isArray(root?.communityMembers)) return root.communityMembers as CommunityMember[];
     return [];
   } catch (error) {
     console.error('Error community members:', error);
@@ -302,12 +314,12 @@ export const addGalleryImages = async (id: string, files: File[]): Promise<any> 
 // Delete gallery image from community
 export const deleteGalleryImage = async (
   id: string,
-  imageUrl: string
+  imageUrls: string
 ): Promise<any> => {
   try {
     const response = await api.delete<any>(
       `/v1/communities/${id}/gallery`,
-      { data: { imageUrl } }
+      { data: { imageUrls } }
     );
     console.log('📥 deleteGalleryImage response:', response.data);
     

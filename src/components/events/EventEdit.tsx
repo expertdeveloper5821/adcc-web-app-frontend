@@ -3,8 +3,9 @@ import { ArrowLeft, FileText, Calendar, Clock, MapPin, Users, Settings, Award, I
 import { toast } from 'sonner';
 import { UserRole } from '../../App';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getEventById, updateEvent as updateEventApi, deleteEvent as deleteEventApi, disableEvent as disableEventApi, closeEventRegistration, reopenEventRegistration, completeEvent as completeEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
+import { getEventByIdEn, updateEvent as updateEventApi, deleteEvent as deleteEventApi, disableEvent as disableEventApi, closeEventRegistration, reopenEventRegistration, completeEvent as completeEventApi, EventApiResponse, availableCategories } from '../../services/eventsApi';
 import { getAllTracksEn, deleteTrack } from '../../services/trackService';
+import { gccCountries, getCitiesByCountry, type GCCCountry } from '../../data/gccLocations';
 import { getAllCommunities, deleteCommunity as deleteCommunityApi, CommunityApiResponse } from '../../services/communitiesApi';
 import { formatToInputDate } from '../../utils/date';
 import { useLocale } from '../../contexts/LocaleContext';
@@ -43,7 +44,7 @@ export function EventEdit({ role }: EventEditProps) {
     const fetchEvent = async () => {
       try {
         setIsLoading(true);
-        const data = await getEventById(id);
+        const data = await getEventByIdEn(id);
         console.log('result',data);
         setExistingEvent(data);
       } catch (error) {
@@ -330,23 +331,10 @@ export function EventEdit({ role }: EventEditProps) {
   // Custom amenities (those not in the predefined list)
   const customAmenities = formData.amenities.filter(a => !predefinedAmenities.includes(a));
 
-  // Country → City → Track cascade (same as EventCreate)
-  const AVAILABLE_COUNTRIES = ['UAE', 'Saudi Arabia', 'Kuwait', 'Bahrain', 'Oman', 'Qatar'];
-  const availableCountries = AVAILABLE_COUNTRIES;
+  // Country → City → Track cascade (same as tracks module, using gccLocations)
+  const availableCountries = gccCountries as unknown as string[];
 
-  const availableCities = React.useMemo(() => {
-    if (!formData.country) return [];
-    const country = formData.country.trim();
-    const cities = Array.from(
-      new Set(
-        tracks
-          .filter((t: { country?: string }) => (t.country || 'UAE').trim() === country)
-          .map((t: { city?: string }) => (t.city || '').trim())
-          .filter(Boolean)
-      )
-    );
-    return cities.sort();
-  }, [tracks, formData.country]);
+  const availableCities = getCitiesByCountry((formData.country || '') as GCCCountry);
 
   const filteredTracks = React.useMemo(() => {
     if (!formData.country || !formData.city) return [];
@@ -454,8 +442,13 @@ export function EventEdit({ role }: EventEditProps) {
       setExistingEvent(prev => prev ? { ...prev, status: 'Open' } : prev);
       setFormData(prev => ({ ...prev, status: 'Open' }));
       toast.success(t('events.edit.toasts.registrationReopened'));
-    } catch {
-      toast.error(t('events.edit.toasts.updateError'));
+    } catch (error: any) {
+      const backendMessage = error?.response?.data?.message;
+      if (backendMessage?.includes('already passed')) {
+        toast.error(t('events.edit.toasts.eventAlreadyPassed'));
+      } else {
+        toast.error(t('events.edit.toasts.updateError'));
+      }
     }
   };
 
@@ -1505,10 +1498,10 @@ export function EventEdit({ role }: EventEditProps) {
             </button>
             <button
               onClick={() => navigate(`/events/${id}`)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-200 transition-all hover:bg-gray-50"
               style={{ color: '#666' }}
             >
-              <X className="w-4 h-4" />
+              {/* <X className="w-4 h-4" /> */}
               <span>{t('common.cancel')}</span>
             </button>
           </div>

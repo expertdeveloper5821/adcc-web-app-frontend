@@ -36,21 +36,21 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
           <div className="p-2 rounded-lg" style={{ backgroundColor: '#ECC180' }}>
             <MapPin className="w-5 h-5" />
           </div>
-          <h2 className="text-xl" style={{ color: '#333' }}>3. Assign Primary Track</h2>
+          <h2 className="text-xl" style={{ color: '#333' }}>3. Assign Tracks</h2>
         </div>
         {selectedTrackIds.length > 0 && (
           <span
             className="px-3 py-1 rounded-full text-sm"
             style={{ backgroundColor: '#10B981', color: '#fff' }}
           >
-            1 selected
+            {selectedTrackIds.length} selected
           </span>
         )}
       </div>
 
       <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#FFF9EF' }}>
         <p className="text-sm" style={{ color: '#666' }}>
-          <strong>Tip:</strong> Select one primary cycling track for this community. Change city above to see different tracks.
+          <strong>Tip:</strong> Select one or more tracks for this community. Change city above to see different tracks.
         </p>
       </div>
 
@@ -70,8 +70,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
               }}
             >
               <input
-                type="radio"
-                name="community-primary-track"
+                type="checkbox"
                 checked={selectedTrackIds.includes(track.id)}
                 onChange={() => onToggle(track.id)}
                 className="mt-1 w-4 h-4"

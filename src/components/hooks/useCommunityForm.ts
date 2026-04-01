@@ -7,6 +7,7 @@ import type { CommunityApiResponse } from '../../services/communitiesApi';
 
 import { gccCountries, getCitiesByCountry } from '../../data/gccLocations';
 import { getAllTracksEn } from '../../services/trackService';
+import { COMMUNITY_LOCATION_OPTIONS } from '../../services/communitiesApi';
 
 // Coerce empty string from number inputs to undefined so optional number fields don't fail and scroll to this section
 const optionalNumber = (schema: z.ZodNumber) =>
@@ -206,7 +207,13 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
 
   // Update location when country/city changes
   useEffect(() => {
-    setValue('location', selectedCity);
+    // Backend validation: `location` is restricted to specific UAE values,
+    // but we still keep the real selected city in `city`.
+    const safeLocation = (COMMUNITY_LOCATION_OPTIONS as readonly string[]).includes(selectedCity)
+      ? selectedCity
+      : COMMUNITY_LOCATION_OPTIONS[0];
+
+    setValue('location', safeLocation);
     setValue('city', selectedCity);
     setValue('country', selectedCountry);
   }, [selectedCity, selectedCountry, setValue]);
@@ -274,10 +281,12 @@ export const useCommunityForm = ({ initialData, isEditMode }: UseCommunityFormPr
     });
   }, [setValue]);
 
-  // Single selection only: selecting a track replaces current selection; click again to deselect
+  // Multi selection: toggle a track in/out of selected list
   const toggleTrack = useCallback((trackId: string) => {
-    setSelectedTrackIds(prev =>
-      prev.includes(trackId) ? [] : [trackId]
+    setSelectedTrackIds((prev) =>
+      prev.includes(trackId)
+        ? prev.filter((id) => id !== trackId)
+        : [...prev, trackId]
     );
   }, []);
 

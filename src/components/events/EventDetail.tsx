@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Edit, Copy, Bell, ImageIcon, Trophy, UserCheck, Users, Star, Share2, Calendar, MapPin, Clock, Award, Upload } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, Bell, ImageIcon, Trophy, UserCheck, Users, Star, Share2, Calendar, MapPin, Clock, Award, Upload,Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { addEventGalleryImages, deleteEventGalleryImage, getEventById, updateEvent as updateEventApi, EventApiResponse, getEventResults } from '../../services/eventsApi';
 import { DetailPageSkeleton } from '../ui/skeleton';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export function EventDetail() {
   const { t, i18n } = useTranslation();
@@ -18,6 +19,7 @@ export function EventDetail() {
   const [updatingField, setUpdatingField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'participants' | 'results' | 'gallery' | 'notifications'>('overview');
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [deleteImageUrl, setDeleteImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     loadEvent();
@@ -83,6 +85,22 @@ export function EventDetail() {
     } finally {
       setIsUploadingGallery(false);
       e.target.value = '';
+    }
+  };
+
+  const handleGalleryDelete = async () => {
+    if (!eventId || !deleteImageUrl) return;
+    try {
+      await deleteEventGalleryImage(eventId, deleteImageUrl);
+      setEvent((prev) =>
+        prev ? { ...prev, galleryImages: prev.galleryImages.filter((img) => img !== deleteImageUrl) } : prev
+      );
+      toast.success(t('events.detail.toasts.imageRemoved') || 'Image removed successfully');
+    } catch (error: any) {
+      console.error('Error deleting gallery image:', error);
+      toast.error(error?.response?.data?.message || t('events.detail.toasts.deleteImageError') || 'Failed to delete image');
+    } finally {
+      setDeleteImageUrl(null);
     }
   };
 
@@ -631,8 +649,15 @@ export function EventDetail() {
           <div className="grid grid-cols-3 gap-4 mb-6">
             {event.galleryImages.length > 0 ? (
               event.galleryImages.map((img, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+                <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
                   <img src={img} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setDeleteImageUrl(img)}
+                    className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    title={t('events.detail.galleryTab.deleteImage') || 'Delete image'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))
             ) : (
@@ -688,6 +713,20 @@ export function EventDetail() {
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteImageUrl}
+        onClose={() => setDeleteImageUrl(null)}
+        onConfirm={handleGalleryDelete}
+        title={t('events.detail.galleryTab.confirmDeleteTitle')}
+        message={t('events.detail.galleryTab.confirmDeleteMessage')}
+        confirmLabel={t('events.detail.galleryTab.deleteImage')}
+        cancelLabel={t('common.cancel')}
+        icon={Trash2}
+        iconBgColor="#FEE2E2"
+        iconColor="#EF4444"
+        confirmBgColor="#EF4444"
+      />
     </div>
   );
 }

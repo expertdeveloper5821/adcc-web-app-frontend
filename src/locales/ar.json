@@ -883,7 +883,8 @@
         "archived": "تم أرشفة الحدث",
         "requiredFields": "العنوان وتاريخ الحدث مطلوبان",
         "updateSuccess": "تم تحديث الحدث بنجاح",
-        "updateError": "فشل في تحديث الحدث"
+        "updateError": "فشل في تحديث الحدث",
+        "eventAlreadyPassed": "لا يمكن إعادة فتح التسجيل لحدث قد انتهى بالفعل"
       }
     },
     "detail": {
@@ -947,7 +948,10 @@
       "galleryTab": {
         "heading": "معرض الفعالية",
         "upload": "رفع الصور",
-        "noImages": "لا توجد صور في المعرض بعد"
+        "noImages": "لا توجد صور في المعرض بعد",
+        "deleteImage": "حذف الصورة",
+        "confirmDeleteTitle": "حذف الصورة؟",
+        "confirmDeleteMessage": "هل أنت متأكد من حذف هذه الصورة؟ لا يمكن التراجع عن هذا الإجراء."
       },
       "notificationsTab": {
         "heading": "إرسال الإشعارات",
@@ -972,6 +976,8 @@
         "loadError": "فشل في تحميل الفعالية. يرجى المحاولة مرة أخرى.",
         "galleryUploadSuccess": "تم رفع صور المعرض",
         "galleryUploadError": "فشل في رفع صور المعرض",
+        "imageRemoved": "تم حذف الصورة بنجاح",
+        "deleteImageError": "فشل في حذف الصورة",
         "failedToUpdate": "فشل في التحديث",
         "failedToCancelEvent": "فشل في إلغاء الفعالية. يرجى المحاولة مرة أخرى."
       }
@@ -1703,7 +1709,49 @@
       "Ajman": "عجمان",
       "Umm Al Quwain": "أم القيوين",
       "Ras Al Khaimah": "رأس الخيمة",
-      "Fujairah": "الفجيرة"
+      "Fujairah": "الفجيرة",
+      "Riyadh": "الرياض",
+      "Jeddah": "جدة",
+      "Mecca": "مكة المكرمة",
+      "Medina": "المدينة المنورة",
+      "Dammam": "الدمام",
+      "Khobar": "الخبر",
+      "Dhahran": "الظهران",
+      "Taif": "الطائف",
+      "Tabuk": "تبوك",
+      "Abha": "أبها",
+      "Jubail": "الجبيل",
+      "Yanbu": "ينبع",
+      "Doha": "الدوحة",
+      "Al Wakrah": "الوكرة",
+      "Al Khor": "الخور",
+      "Al Rayyan": "الريان",
+      "Mesaieed": "مسيعيد",
+      "Dukhan": "دخان",
+      "Muscat": "مسقط",
+      "Salalah": "صلالة",
+      "Sohar": "صحار",
+      "Nizwa": "نزوى",
+      "Sur": "صور",
+      "Ibri": "عبري",
+      "Barka": "بركاء",
+      "Rustaq": "الرستاق",
+      "Kuwait City": "مدينة الكويت",
+      "Hawalli": "حولي",
+      "Salmiya": "السالمية",
+      "Farwaniya": "الفروانية",
+      "Jahra": "الجهراء",
+      "Ahmadi": "الأحمدي",
+      "Mangaf": "المنقف",
+      "Fahaheel": "الفحيحيل",
+      "Manama": "المنامة",
+      "Muharraq": "المحرق",
+      "Riffa": "الرفاع",
+      "Hamad Town": "مدينة حمد",
+      "Isa Town": "مدينة عيسى",
+      "Sitra": "سترة",
+      "Budaiya": "البديع",
+      "Jidhafs": "جد حفص"
     },
     "statuses": {
       "Open": "مفتوح",

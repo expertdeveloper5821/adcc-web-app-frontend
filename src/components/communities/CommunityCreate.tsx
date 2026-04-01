@@ -101,9 +101,9 @@ console.log('errorss',errors);
 
     try {
       // Backend: location must be one of "Abu Dhabi"|"Dubai"|"Al Ain"|"Sharjah"
-      const location = COMMUNITY_LOCATION_OPTIONS.includes(selectedCity as any)
-        ? selectedCity
-        : COMMUNITY_LOCATION_OPTIONS[0];
+      // const location = COMMUNITY_LOCATION_OPTIONS.includes(selectedCity as any)
+      //   ? selectedCity
+      //   : COMMUNITY_LOCATION_OPTIONS[0];
 
       // Build payload to match backend validation; images sent as File in FormData (same key names: image, logo)
       const communityData = {
@@ -119,10 +119,13 @@ console.log('errorss',errors);
           return [typeMarker];
         })(),
         category: Array.isArray(selectedCategories) ? selectedCategories.join(', ') : '',
-        location,
+        location : selectedCity,
+        country: selectedCountry,
+        city: selectedCity,
+        
         isActive: formData.status === 'active',
         isFeatured: formData.isFeatured ?? false,
-        trackId: selectedTrackIds?.[0] ?? undefined,
+        trackId: selectedTrackIds?.length ? selectedTrackIds : undefined,
         purposeType: formData.purposeType ?? '',
         ridesThisMonth: String(formData.ridesThisMonth ?? ''),
         weeklyRides: String(formData.weeklyRides ?? ''),

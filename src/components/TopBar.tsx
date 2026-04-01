@@ -43,6 +43,10 @@ export function TopBar({ roleTitle }: TopBarProps) {
     toast.info('No data found');
   };
 
+  const handleNotificationsClick = () => {
+    toast.info('No data found');
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50 flex items-center justify-between px-8">
       <div className={`flex items-center gap-4 flex-1 max-w-2xl ${isRtl ? 'mr-64' : 'ml-64'}`}>
@@ -89,7 +93,11 @@ export function TopBar({ roleTitle }: TopBarProps) {
         </div>
 
         {/* Notifications */}
-        <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <button
+          type="button"
+          onClick={handleNotificationsClick}
+          className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
           <Bell className="w-6 h-6" style={{ color: '#333' }} />
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ backgroundColor: '#C12D32' }} />
         </button>
