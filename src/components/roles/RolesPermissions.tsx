@@ -1,13 +1,26 @@
 import React from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-const permissions = [
-  { name: 'View Dashboard', super: true, content: true, community: true, moderator: true },
-  { name: 'Manage Events', super: true, content: true, community: true, moderator: false },
-  { name: 'Manage Users', super: true, content: false, community: false, moderator: true },
-  { name: 'Moderate Content', super: true, content: true, community: false, moderator: true },
-  { name: 'App Configuration', super: true, content: false, community: false, moderator: false },
-];
+type RoleColumnKey = 'super' | 'content' | 'community' | 'moderator';
+
+type PermissionRow = {
+  id: string;
+  name: string;
+  key: string;
+  group: string;
+  sortOrder: number;
+};
+
+type RoleSlugMap = Record<RoleColumnKey, string>;
+
+const ROLE_SLUGS: RoleSlugMap = {
+  super: 'Admin',
+  content: 'content-manager',
+  community: 'community-manager',
+  moderator: 'moderator',
+};
+
+type RolesBySlug = Record<string, RbacRole | undefined>;
 
 export function RolesPermissions() {
   return (

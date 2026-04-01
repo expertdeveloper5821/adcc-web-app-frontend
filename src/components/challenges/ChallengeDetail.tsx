@@ -18,7 +18,7 @@ export function ChallengeDetail({ role }: ChallengeDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'participants' | 'leaderboard' | 'notifications'>('overview');
 
-  const canEdit = role === 'super-admin' || role === 'community-manager';
+  const canEdit = true;
 
   const fetchChallenge = useCallback(async () => {
     if (!challengeId) {

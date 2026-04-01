@@ -135,7 +135,7 @@ export function TrackDetail({  role }: TrackDetailProps) {
     );
   }
 
-  const canEdit = role === 'super-admin';
+  const canEdit = true;
   const trackIdForApi = trackId ?? track?._id ?? track?.id ?? '';
   const upcomingEvents = linkedEvents.filter((e: any) => {
     const d = e.eventDate ?? e.date;

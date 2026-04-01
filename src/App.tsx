@@ -9,7 +9,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/Layout';
 
 
-export type UserRole = 'super-admin' | 'content-manager' | 'community-manager' | 'moderator';
+export type UserRole = 'Admin' | 'content-manager' | 'community-manager' | 'moderator';
 
 function AppContent() {
   const navigate = useNavigate();
