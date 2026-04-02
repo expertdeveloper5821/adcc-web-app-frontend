@@ -317,6 +317,7 @@ export function ChallengeCreate() {
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-600"
                 />
+                <p className="text-sm text-red-500">{formData.startDate > formData.endDate ? t('challenges.startDateMustBeBeforeEndDate') : ''}</p>
               </div>
             </div>
           </div>
