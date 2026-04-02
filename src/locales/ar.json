@@ -1562,6 +1562,12 @@
       "chapterMembers": "أعضاء الفروع ({{count}})"
     },
     "schedule": "الجدول",
+    "validation": {
+      "fixErrors": "يرجى تعبئة الحقول المطلوبة",
+      "titleRequired": "العنوان مطلوب",
+      "messageRequired": "الرسالة مطلوبة",
+      "scheduleIncomplete": "يرجى إدخال تاريخ ووقت الجدولة معًا"
+    },
     "sending": "جارٍ الإرسال...",
     "sendNotification": "إرسال الإشعار",
     "preview": "معاينة",
@@ -1825,6 +1831,7 @@
     "description": "الوصف *",
     "descriptionPlaceholder": "اوصف التحدي وما يحتاج المشاركون فعله...",
     "challengeType": "نوع التحدي *",
+    "startDateMustBeBeforeEndDate": "تاريخ البدء يجب أن يكون قبل تاريخ الانتهاء",
     "types": {
       "Distance": "مسافة - إجمالي الكيلومترات",
       "Frequency": "تكرار - عدد الجولات المكتملة",

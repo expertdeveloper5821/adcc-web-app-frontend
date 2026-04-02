@@ -1585,6 +1585,12 @@
       "chapterMembers": "Chapter Members ({{count}})"
     },
     "schedule": "Schedule",
+    "validation": {
+      "fixErrors": "Please fill in the required fields",
+      "titleRequired": "Title is required",
+      "messageRequired": "Message is required",
+      "scheduleIncomplete": "Please provide both schedule date and time"
+    },
     "sending": "Sending...",
     "sendNotification": "Send Notification",
     "preview": "Preview",
@@ -1848,6 +1854,7 @@
     "description": "Description *",
     "descriptionPlaceholder": "Describe the challenge and what participants need to do...",
     "challengeType": "Challenge Type *",
+    "startDateMustBeBeforeEndDate": "Start date must be before end date",
     "types": {
       "Distance": "Distance - Total kilometers ridden",
       "Frequency": "Frequency - Number of rides completed",

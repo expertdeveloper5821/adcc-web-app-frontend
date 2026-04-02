@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Send, Users, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { sendStaffWebPush } from '../../services/authApi';
 import { getAllUsers } from '../../services/usersApi';
 import { getAllEvents } from '../../services/eventsApi';
@@ -27,12 +27,49 @@ export function PushNotifications() {
   const [permission, setPermission] = useState<string>('unknown');
   const [swStatus, setSwStatus] = useState<string>('unknown');
   const [fcmToken, setFcmToken] = useState<string>('');
+  const [touched, setTouched] = useState<{
+    title?: boolean;
+    message?: boolean;
+    scheduleDate?: boolean;
+    scheduleTime?: boolean;
+  }>({});
+  const [errors, setErrors] = useState<{
+    title?: string;
+    message?: string;
+    schedule?: string;
+  }>({});
   const [audienceCounts, setAudienceCounts] = useState<AudienceCounts>({
     all: 0,
     active: 0,
     eventParticipants: 0,
     chapterMembers: 0,
   });
+
+  const validateForm = useMemo(() => {
+    return (values: { title: string; message: string; scheduleDate: string; scheduleTime: string }) => {
+      const nextErrors: { title?: string; message?: string; schedule?: string } = {};
+
+      if (!values.title.trim()) {
+        nextErrors.title = t('push.validation.titleRequired');
+      }
+      if (!values.message.trim()) {
+        nextErrors.message = t('push.validation.messageRequired');
+      }
+
+      const hasDate = Boolean(values.scheduleDate);
+      const hasTime = Boolean(values.scheduleTime);
+      if ((hasDate && !hasTime) || (!hasDate && hasTime)) {
+        nextErrors.schedule = t('push.validation.scheduleIncomplete');
+      }
+
+      return nextErrors;
+    };
+  }, [t]);
+
+  const currentValues = useMemo(
+    () => ({ title, message, scheduleDate, scheduleTime }),
+    [title, message, scheduleDate, scheduleTime]
+  );
 
   const payload = useMemo(
     () => ({
@@ -46,18 +83,39 @@ export function PushNotifications() {
   );
 
   const handleSend = async () => {
-    console.log('🟢 Send button clicked');
-    console.log('📤 Push payload:', payload);
+    
     if (isSending) return;
+
+    const values = { title, message, scheduleDate, scheduleTime };
+    const nextErrors = validateForm(values);
+    setErrors(nextErrors);
+    setTouched((prev) => ({
+      ...prev,
+      title: true,
+      message: true,
+      scheduleDate: true,
+      scheduleTime: true,
+    }));
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error(t('push.validation.fixErrors'));
+      return;
+    }
+
+    const nextPayload = {
+      title: values.title.trim() || undefined,
+      body: values.message.trim(),
+      audienceType: audience,
+      scheduleDate: values.scheduleDate || undefined,
+      scheduleTime: values.scheduleTime || undefined,
+    };
+
+    // console.log('📤 Push payload:', nextPayload);
+
     setIsSending(true);
     setLastResponse('');
     setLastError('');
     try {
-      if (!payload.body) {
-        toast.error(t('push.message'));
-        return;
-      }
-      const response = await sendStaffWebPush(payload);
+      const response = await sendStaffWebPush(nextPayload);
       setLastResponse(JSON.stringify(response, null, 2));
       toast.success(t('push.toasts.sent'));
     } catch (error: any) {
@@ -67,6 +125,11 @@ export function PushNotifications() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleBlur = (field: 'title' | 'message' | 'scheduleDate' | 'scheduleTime') => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors(validateForm(currentValues));
   };
 
   const refreshDebugInfo = async () => {
@@ -154,20 +217,28 @@ export function PushNotifications() {
               <input
                 type="text"
                 placeholder={t('push.titlePlaceholder')}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200"
+                className={`w-full px-4 py-2 rounded-lg border ${touched.title && errors.title ? 'border-red-500' : 'border-gray-200'}`}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => handleBlur('title')}
               />
+              {touched.title && errors.title ? (
+                <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+              ) : null}
             </div>
             <div>
               <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('push.message')}</label>
               <textarea
                 placeholder={t('push.messagePlaceholder')}
                 rows={4}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200"
+                className={`w-full px-4 py-2 rounded-lg border ${touched.message && errors.message ? 'border-red-500' : 'border-gray-200'}`}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onBlur={() => handleBlur('message')}
               />
+              {touched.message && errors.message ? (
+                <p className="mt-1 text-sm text-red-600">{errors.message}</p>
+              ) : null}
             </div>
             <div>
               <label className="block text-sm mb-2" style={{ color: '#666' }}>{t('push.audience')}</label>
@@ -188,17 +259,22 @@ export function PushNotifications() {
               <div className="grid grid-cols-2 gap-4">
                 <input
                   type="date"
-                  className="px-4 py-2 rounded-lg border border-gray-200"
+                  className={`px-4 py-2 rounded-lg border ${touched.scheduleDate && errors.schedule ? 'border-red-500' : 'border-gray-200'}`}
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
+                  onBlur={() => handleBlur('scheduleDate')}
                 />
                 <input
                   type="time"
-                  className="px-4 py-2 rounded-lg border border-gray-200"
+                  className={`px-4 py-2 rounded-lg border ${touched.scheduleTime && errors.schedule ? 'border-red-500' : 'border-gray-200'}`}
                   value={scheduleTime}
                   onChange={(e) => setScheduleTime(e.target.value)}
+                  onBlur={() => handleBlur('scheduleTime')}
                 />
               </div>
+              {(touched.scheduleDate || touched.scheduleTime) && errors.schedule ? (
+                <p className="mt-1 text-sm text-red-600">{errors.schedule}</p>
+              ) : null}
             </div>
             <button
               type="button"
