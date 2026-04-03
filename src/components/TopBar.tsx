@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, Bell, ChevronDown, LogOut } from 'lucide-react';
-import { toast } from 'sonner';
+import { Search, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
+import { TopBarNotifications } from './TopBarNotifications';
 
 interface TopBarProps {
   roleTitle: string;
@@ -37,10 +37,6 @@ export function TopBar({ roleTitle }: TopBarProps) {
     } catch (error) {
       // Error handled in AuthContext
     }
-  };
-
-  const handleNotificationsClick = () => {
-    toast.info('No data found');
   };
 
   return (
@@ -88,15 +84,7 @@ export function TopBar({ roleTitle }: TopBarProps) {
           <span className="text-sm">{roleTitle}</span>
         </div>
 
-        {/* Notifications */}
-        <button
-          type="button"
-          onClick={handleNotificationsClick}
-          className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <Bell className="w-6 h-6" style={{ color: '#333' }} />
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ backgroundColor: '#C12D32' }} />
-        </button>
+        <TopBarNotifications isRtl={isRtl} />
 
         {/* User Avatar */}
         <div className="relative" ref={userMenuRef}>

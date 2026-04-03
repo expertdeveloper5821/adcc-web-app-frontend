@@ -35,6 +35,7 @@ import { RolesPermissions } from './roles/RolesPermissions';
 import { BadgesList } from './badges/BadgesList';
 import { BadgesCreate } from './badges/BadgesCreate';
 import { LanguagesList } from './languages/LanguagesList';
+import { AdminNotificationsPage } from './notifications/AdminNotificationsPage';
 import { getMyPermissions, getMyRbac, getRoleById, type RbacRole } from '../services/rbacService';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -225,6 +226,10 @@ export function Layout() {
             <Route path="/config" element={withPermission('app_configuration', <AppConfig />)} />
             <Route path="/roles" element={withPermission('manage_roles', <RolesPermissions />)} />
             <Route path="/languages" element={withPermission('manage_languages', <LanguagesList />)} />
+            <Route
+              path="/notifications"
+              element={withPermission('view_dashboard', <AdminNotificationsPage />)}
+            />
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
