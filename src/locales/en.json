@@ -180,6 +180,12 @@
       "upcomingEvents": "Upcoming Events",
       "monthlyGrowth": "Monthly Growth",
       "chapterPerformance": "Chapter Performance",
+      "communityOverview": "Community overview",
+      "totalCommunities": "Total communities",
+      "featuredCommunities": "Featured communities",
+      "activeCommunitiesLabel": "Active communities",
+      "openEvents": "Open events",
+      "featuredEvents": "Featured events",
       "communityEngagement": "Community Engagement",
       "avgEventRating": "Average Event Rating",
       "memberSatisfaction": "Member Satisfaction",
@@ -205,7 +211,10 @@
       "registrations": "registrations",
       "likes": "likes",
       "comments": "comments",
-      "shares": "shares"
+      "shares": "shares",
+      "bannersSummary": "{{count}} active banner(s). Open CMS to manage creatives and placement.",
+      "eventsPromotedCount": "{{count}} event(s) currently promoted",
+      "feedPostsCount": "{{count}} feed post(s)"
     },
     "moderator": {
       "title": "Moderation Dashboard",
@@ -227,7 +236,12 @@
       "target": "Target",
       "highPriority": "High Priority",
       "requiresAttention": "2 items require immediate attention",
-      "reviewNow": "Review Now"
+      "requiresAttentionDynamic": "{{count}} high-priority item(s) in the queue ({{total}} total pending)",
+      "reviewNow": "Review Now",
+      "queueType": {
+        "feed_post": "Feed post",
+        "user": "User"
+      }
     },
     "upcomingEvents": "Upcoming Events",
     "event": "Event",
@@ -244,6 +258,7 @@
     "actionRequiredBody": "Review and moderate pending content to maintain community standards.",
     "recentActivity": "Recent Activity",
     "popularTracks": "Popular Tracks",
+    "trackEventsCount": "{{count}} events",
     "riders": "{{count}} riders",
     "communityGrowth": "Community Growth",
     "pushPerformance": "Push Campaign Performance",

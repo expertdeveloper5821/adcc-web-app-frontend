@@ -3,14 +3,24 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, ShoppingBag, AlertCircle } from 'lucide-react';
 
-export function PendingApprovals() {
+interface PendingApprovalsProps {
+  pendingFeedPosts?: number;
+  pendingStoreItems?: number;
+  reportedFeedPosts?: number;
+}
+
+export function PendingApprovals({
+  pendingFeedPosts = 0,
+  pendingStoreItems = 0,
+  reportedFeedPosts = 0,
+}: PendingApprovalsProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const approvals = [
-    { type: 'feed', count: 12, label: t('dashboard.pendingPosts'), icon: <MessageSquare className="w-5 h-5" /> },
-    { type: 'marketplace', count: 8, label: t('dashboard.marketplaceItems'), icon: <ShoppingBag className="w-5 h-5" /> },
-    { type: 'reports', count: 3, label: t('dashboard.reportedContent'), icon: <AlertCircle className="w-5 h-5" /> },
+    { type: 'feed', count: pendingFeedPosts, label: t('dashboard.pendingPosts'), icon: <MessageSquare className="w-5 h-5" /> },
+    { type: 'marketplace', count: pendingStoreItems, label: t('dashboard.marketplaceItems'), icon: <ShoppingBag className="w-5 h-5" /> },
+    { type: 'reports', count: reportedFeedPosts, label: t('dashboard.reportedContent'), icon: <AlertCircle className="w-5 h-5" /> },
   ];
 
   return (
