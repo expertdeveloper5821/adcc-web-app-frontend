@@ -165,12 +165,13 @@ export function Reports({ role }: ReportsProps) {
 
         <div className="p-6 rounded-2xl shadow-sm bg-white">
           <div className="mb-6">
-            <h2 className="text-xl" style={{ color: '#333' }}>Completed Events Per Month</h2>
-            {completedEventsSummary ? (
+            <h2 className="text-xl" style={{ color: '#333' }}>Event Activity
+            </h2>
+            {/* {completedEventsSummary ? (
               <p className="text-sm mt-1" style={{ color: '#666' }}>
                 In selected range: {completedEventsSummary.rangeCompletedEvents} | All time: {completedEventsSummary.totalCompletedEvents}
               </p>
-            ) : null}
+            ) : null} */}
           </div>
           {isLoadingCompletedEvents ? (
             <div className="flex items-center justify-center h-[300px]">

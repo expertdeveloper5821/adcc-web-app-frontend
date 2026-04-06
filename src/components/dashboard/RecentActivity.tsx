@@ -59,7 +59,7 @@ export function RecentActivity() {
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <h2 className="text-xl mb-6" style={{ color: '#333' }}>{t('dashboard.recentActivity')}</h2>
       
-      <div className="space-y-4">
+      {/* <div className="space-y-4">
         {activities.map((activity) => (
           <div key={activity.id} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0">
             <div className="p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: `${activity.color}20` }}>
@@ -73,6 +73,11 @@ export function RecentActivity() {
             </div>
           </div>
         ))}
+      </div> */}
+
+      
+      <div className="flex items-center justify-center h-full">
+        <div className="text-sm text-gray-500">No data found</div>
       </div>
     </div>
   );

@@ -15,17 +15,18 @@ export function PushPerformance() {
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.pushPerformance')}</h2>
-        <button
+         <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.pushPerformance')}</h2>
+       {/* <button
           onClick={() => navigate('/push')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
         >
           {t('dashboard.viewAll')}
-        </button>
+        </button> */}
       </div>
 
-      <div className="space-y-4">
+      <div className="flex items-center justify-center h-full"> No data found</div>
+      {/* <div className="space-y-4">
         {campaigns.map((campaign, index) => (
           <div key={index} className="p-4 rounded-xl" style={{ backgroundColor: '#FFF9EF' }}>
             <div className="flex items-center justify-between mb-3">
@@ -51,7 +52,7 @@ export function PushPerformance() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }

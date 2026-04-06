@@ -1,54 +1,72 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Star } from 'lucide-react';
+import type { DashboardLandingUpcomingEvent } from '../../services/dashboardApi';
 
-const events = [
-  {
-    id: '1',
-    name: 'Al Wathba Morning Ride',
-    city: 'Abu Dhabi',
-    date: 'Jan 15, 2026',
-    track: 'Al Wathba Circuit',
-    registrations: 124,
-    capacity: 150,
-    rating: 4.8,
-    status: 'Published',
-    image: 'https://images.unsplash.com/photo-1707297391684-e07bd2368432?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjeWNsaW5nJTIwZ3JvdXAlMjByb2FkfGVufDF8fHx8MTc2ODEzNjQzNXww&ixlib=rb-4.1.0&q=80&w=400'
-  },
-  {
-    id: '2',
-    name: 'Yas Island Sprint Challenge',
-    city: 'Abu Dhabi',
-    date: 'Jan 18, 2026',
-    track: 'Yas Marina Circuit',
-    registrations: 89,
-    capacity: 100,
-    rating: 4.9,
-    status: 'Published',
-    image: 'https://images.unsplash.com/photo-1716738634956-1494117b349b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaWtlJTIwcmFjZSUyMHRyYWNrfGVufDF8fHx8MTc2ODEzNjQzNXww&ixlib=rb-4.1.0&q=80&w=400'
-  },
-  {
-    id: '3',
-    name: 'Desert Adventure Ride',
-    city: 'Al Ain',
-    date: 'Jan 22, 2026',
-    track: 'Desert Route 1',
-    registrations: 67,
-    capacity: 80,
-    rating: 4.7,
-    status: 'Published',
-    image: 'https://images.unsplash.com/photo-1718527192815-bb68dd23ce74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkZXNlcnQlMjBjeWNsaW5nJTIwdWFlfGVufDF8fHx8MTc2ODEzNjQzNnww&ixlib=rb-4.1.0&q=80&w=400'
-  },
-];
+interface UpcomingEventsProps {
+  upcomingEvent?: DashboardLandingUpcomingEvent | null;
+  loading?: boolean;
+}
 
-export function UpcomingEvents({ navigate }: UpcomingEventsProps) {
-  const { t } = useTranslation();
+function formatEventDate(eventDate?: string, eventTime?: string, locale?: string): string {
+  if (!eventDate) return '—';
+  try {
+    const d = new Date(eventDate);
+    if (Number.isNaN(d.getTime())) return eventDate;
+    const datePart = d.toLocaleDateString(locale || 'en', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    return eventTime ? `${datePart} ${eventTime}` : datePart;
+  } catch {
+    return eventDate;
+  }
+}
+
+function resolveTrackName(event: DashboardLandingUpcomingEvent): string {
+  if (event.trackName) return event.trackName;
+  if (event.track && typeof event.track === 'object') {
+    return event.track.name || event.track.title || '—';
+  }
+  if (typeof event.track === 'string') return event.track;
+  return '—';
+}
+
+export function UpcomingEvents({ upcomingEvent, loading }: UpcomingEventsProps) {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+
+  const row = useMemo(() => {
+    if (!upcomingEvent) return null;
+    const id = String(upcomingEvent._id ?? upcomingEvent.id ?? '');
+    const title = upcomingEvent.title || upcomingEvent.name || '—';
+    const image =
+      upcomingEvent.mainImage ||
+      upcomingEvent.eventImage ||
+      'https://images.unsplash.com/photo-1707297391684-e07bd2368432?w=400';
+    const max = upcomingEvent.maxParticipants ?? 0;
+    const regs = upcomingEvent.registrations ?? 0;
+    return {
+      id,
+      name: title,
+      city: upcomingEvent.city || '—',
+      date: formatEventDate(upcomingEvent.eventDate, upcomingEvent.eventTime, i18n.language),
+      track: resolveTrackName(upcomingEvent),
+      registrations: regs,
+      capacity: max,
+      rating: upcomingEvent.rating,
+      image,
+    };
+  }, [upcomingEvent, i18n.language]);
+
   return (
     <div className="p-6 rounded-2xl shadow-sm bg-white">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl" style={{ color: '#333' }}>{t('dashboard.upcomingEvents')}</h2>
         <button
+          type="button"
           onClick={() => navigate('/events')}
           className="text-sm hover:underline"
           style={{ color: '#C12D32' }}
@@ -70,49 +88,64 @@ export function UpcomingEvents({ navigate }: UpcomingEventsProps) {
             </tr>
           </thead>
           <tbody>
-            {events.map((event) => (
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-sm" style={{ color: '#666' }}>
+                  {t('common.loading')}
+                </td>
+              </tr>
+            ) : !row ? (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-sm" style={{ color: '#666' }}>
+                  {t('common.noResults')}
+                </td>
+              </tr>
+            ) : (
               <tr
-                key={event.id}
-                onClick={() => navigate(`/events/${event.id}`)}
+                onClick={() => row.id && navigate(`/events/${row.id}`)}
                 className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <td className="py-3 px-2">
                   <div className="flex items-center gap-3">
                     <img
-                      src={event.image}
-                      alt={event.name}
+                      src={row.image}
+                      alt=""
                       className="w-12 h-12 rounded-lg object-cover"
                     />
-                    <span className="text-sm" style={{ color: '#333' }}>{event.name}</span>
+                    <span className="text-sm" style={{ color: '#333' }}>{row.name}</span>
                   </div>
                 </td>
                 <td className="py-3 px-2">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" style={{ color: '#999' }} />
-                    <span className="text-sm" style={{ color: '#333' }}>{event.city}</span>
+                    <span className="text-sm" style={{ color: '#333' }}>{row.city}</span>
                   </div>
                 </td>
                 <td className="py-3 px-2">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" style={{ color: '#999' }} />
-                    <span className="text-sm" style={{ color: '#333' }}>{event.date}</span>
+                    <span className="text-sm" style={{ color: '#333' }}>{row.date}</span>
                   </div>
                 </td>
-                <td className="py-3 px-2 text-sm" style={{ color: '#333' }}>{event.track}</td>
+                <td className="py-3 px-2 text-sm" style={{ color: '#333' }}>{row.track}</td>
                 <td className="py-3 px-2">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" style={{ color: '#999' }} />
-                    <span className="text-sm" style={{ color: '#333' }}>{event.registrations}/{event.capacity}</span>
+                    <span className="text-sm" style={{ color: '#333' }}>
+                      {row.capacity > 0 ? `${row.registrations}/${row.capacity}` : String(row.registrations)}
+                    </span>
                   </div>
                 </td>
                 <td className="py-3 px-2">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-current" style={{ color: '#CF9F0C' }} />
-                    <span className="text-sm" style={{ color: '#333' }}>{event.rating}</span>
+                    <span className="text-sm" style={{ color: '#333' }}>
+                      {row.rating != null ? row.rating : '—'}
+                    </span>
                   </div>
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

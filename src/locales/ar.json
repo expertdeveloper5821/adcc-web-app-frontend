@@ -189,6 +189,12 @@
       "upcomingEvents": "الفعاليات القادمة",
       "monthlyGrowth": "النمو الشهري",
       "chapterPerformance": "أداء الفروع",
+      "communityOverview": "نظرة عامة على المجتمع",
+      "totalCommunities": "إجمالي المجتمعات",
+      "featuredCommunities": "المجتمعات المميزة",
+      "activeCommunitiesLabel": "المجتمعات النشطة",
+      "openEvents": "الفعاليات المفتوحة",
+      "featuredEvents": "الفعاليات المميزة",
       "communityEngagement": "تفاعل المجتمع",
       "avgEventRating": "متوسط تقييم الفعاليات",
       "memberSatisfaction": "رضا الأعضاء",
@@ -214,7 +220,10 @@
       "registrations": "تسجيلات",
       "likes": "إعجابات",
       "comments": "تعليقات",
-      "shares": "مشاركات"
+      "shares": "مشاركات",
+      "bannersSummary": "{{count}} لافتة نشطة. افتح نظام إدارة المحتوى لإدارة التصاميم والمواضع.",
+      "eventsPromotedCount": "{{count}} فعالية مروجة حالياً",
+      "feedPostsCount": "{{count}} منشور في الموجز"
     },
     "moderator": {
       "title": "لوحة تحكم الإشراف",
@@ -236,7 +245,12 @@
       "target": "الهدف",
       "highPriority": "أولوية عالية",
       "requiresAttention": "عنصران يتطلبان اهتماماً فورياً",
-      "reviewNow": "مراجعة الآن"
+      "requiresAttentionDynamic": "{{count}} عنصر عالي الأولوية في الطابور ({{total}} إجمالي المعلق)",
+      "reviewNow": "مراجعة الآن",
+      "queueType": {
+        "feed_post": "منشور الموجز",
+        "user": "مستخدم"
+      }
     },
     "upcomingEvents": "الفعاليات القادمة",
     "event": "الفعالية",
@@ -253,6 +267,7 @@
     "actionRequiredBody": "راجع المحتوى المعلق وأشرف عليه للحفاظ على معايير المجتمع.",
     "recentActivity": "النشاط الأخير",
     "popularTracks": "المسارات الشائعة",
+    "trackEventsCount": "{{count}} فعالية",
     "riders": "{{count}} راكب",
     "communityGrowth": "نمو المجتمع",
     "pushPerformance": "أداء حملات الإشعارات",
