@@ -166,7 +166,7 @@ export function FeedModeration() {
                     <span>Reject</span>
                   </button>
                   <button
-                    onClick={() => userId && handleBanUser(userId, !post.createdBy.banFeedPost)}
+                    onClick={() => userId && handleBanUser(userId, !post.banFeedPost)}
                     disabled={!userId}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
                     style={{
@@ -177,7 +177,7 @@ export function FeedModeration() {
                     }}
                   >
                     <Ban className="w-4 h-4" />
-                    <span>{post.createdBy.banFeedPost ? 'Unban User' : 'Ban User'}</span>
+                    <span>{post.banFeedPost ? 'Unban User' : 'Ban User'}</span>
                   </button>
                 </div>
               </div>
