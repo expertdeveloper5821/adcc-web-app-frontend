@@ -98,7 +98,29 @@ export function Login({ onSwitchToRegister, onLoginSuccess }: LoginProps) {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="relative my-6"> */}
+            {/* <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div> */}
+            {/* <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white" style={{ color: '#666' }}>
+                or
+              </span>
+            </div> */}
+          {/* </div> */}
+
+          {/* <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading}
+            className="w-full py-3 rounded-lg border border-gray-200 bg-white transition-all hover:bg-gray-50 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            style={{ color: '#333' }}
+          >
+            <GoogleIcon />
+            {googleLoading ? t('auth.signingIn') : t('auth.signInWithGoogle')}
+          </button> */}
+
+          {/* <div className="mt-6 text-center">
             <p style={{ color: '#666' }}>
               Don't have an account?{' '}
               <button
@@ -109,7 +131,7 @@ export function Login({ onSwitchToRegister, onLoginSuccess }: LoginProps) {
                 Sign up
               </button>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
